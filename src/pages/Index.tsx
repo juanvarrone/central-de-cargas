@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Package, Truck } from "lucide-react";
+import { MapPin, Package, Truck, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
@@ -17,7 +17,7 @@ const Index = () => {
           </p>
         </header>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <Package className="w-12 h-12 text-blue-600 mb-4" />
@@ -56,6 +56,19 @@ const Index = () => {
               </Link>
             </CardContent>
           </Card>
+
+          <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <Bell className="w-12 h-12 text-purple-600 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Configurar Alertas</h2>
+              <p className="text-neutral-600 mb-4">
+                Personaliza tus notificaciones para cargas y transportes
+              </p>
+              <Link to="/alertas">
+                <Button className="w-full" variant="secondary">Configurar</Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="bg-white rounded-lg p-8 shadow-sm">
@@ -68,6 +81,7 @@ const Index = () => {
                 <li>Especifica fechas y condiciones</li>
                 <li>Propone una tarifa inicial</li>
                 <li>Negocia con transportistas interesados</li>
+                <li>Recibe alertas de transportistas disponibles</li>
               </ul>
             </div>
             <div>
@@ -77,6 +91,7 @@ const Index = () => {
                 <li>Filtra por origen y destino</li>
                 <li>Visualiza en el mapa interactivo</li>
                 <li>Negocia tarifas directamente</li>
+                <li>Configura alertas para cargas de interés</li>
               </ul>
             </div>
           </div>

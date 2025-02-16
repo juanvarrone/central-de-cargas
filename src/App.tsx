@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import PublicarCarga from "./pages/PublicarCarga";
 import ListadoCargas from "./pages/ListadoCargas";
 import MapaCargas from "./pages/MapaCargas";
+import ConfigurarAlertas from "./pages/ConfigurarAlertas";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/publicar" element={<PublicarCarga />} />
           <Route path="/cargas" element={<ListadoCargas />} />
           <Route path="/mapa" element={<MapaCargas />} />
+          <Route path="/alertas" element={<ConfigurarAlertas />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
