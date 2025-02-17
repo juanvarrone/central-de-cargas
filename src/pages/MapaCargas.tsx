@@ -73,7 +73,7 @@ const MapaCargas = () => {
     <div className="min-h-screen bg-neutral-50">
       <div className="container mx-auto px-4 py-8">
         <Card className="h-[calc(100vh-8rem)]">
-          <LoadScript googleMapsApiKey="TU_API_KEY_DE_GOOGLE_MAPS">
+          <LoadScript googleMapsApiKey="AIzaSyAyjXoR5-0I-FHD-4NwTvTrF7LWIciirbU">
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
               center={center}
