@@ -9,6 +9,59 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cargas: {
+        Row: {
+          created_at: string
+          destino: string
+          estado: string
+          fecha_carga: string
+          id: string
+          observaciones: string | null
+          origen: string
+          tarifa: number
+          tipo_camion: string
+          tipo_carga: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          destino: string
+          estado?: string
+          fecha_carga: string
+          id?: string
+          observaciones?: string | null
+          origen: string
+          tarifa: number
+          tipo_camion: string
+          tipo_carga: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          destino?: string
+          estado?: string
+          fecha_carga?: string
+          id?: string
+          observaciones?: string | null
+          origen?: string
+          tarifa?: number
+          tipo_camion?: string
+          tipo_carga?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargas_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
