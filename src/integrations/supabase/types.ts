@@ -13,11 +13,15 @@ export type Database = {
         Row: {
           created_at: string
           destino: string
+          destino_lat: number | null
+          destino_lng: number | null
           estado: string
           fecha_carga: string
           id: string
           observaciones: string | null
           origen: string
+          origen_lat: number | null
+          origen_lng: number | null
           tarifa: number
           tipo_camion: string
           tipo_carga: string
@@ -27,11 +31,15 @@ export type Database = {
         Insert: {
           created_at?: string
           destino: string
+          destino_lat?: number | null
+          destino_lng?: number | null
           estado?: string
           fecha_carga: string
           id?: string
           observaciones?: string | null
           origen: string
+          origen_lat?: number | null
+          origen_lng?: number | null
           tarifa: number
           tipo_camion: string
           tipo_carga: string
@@ -41,11 +49,15 @@ export type Database = {
         Update: {
           created_at?: string
           destino?: string
+          destino_lat?: number | null
+          destino_lng?: number | null
           estado?: string
           fecha_carga?: string
           id?: string
           observaciones?: string | null
           origen?: string
+          origen_lat?: number | null
+          origen_lng?: number | null
           tarifa?: number
           tipo_camion?: string
           tipo_carga?: string
