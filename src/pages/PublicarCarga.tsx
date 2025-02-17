@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,10 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import CargoMap from "@/components/CargoMap";
+import CargoLocationFields from "@/components/CargoLocationFields";
+import CargoDetailsFields from "@/components/CargoDetailsFields";
+import { geocodeAddress } from "@/utils/geocoding";
 
 const cargaSchema = z.object({
   origen: z.string().min(2, "El origen es requerido"),
@@ -47,24 +49,6 @@ const PublicarCarga = () => {
       observaciones: "",
     },
   });
-
-  const geocodeAddress = async (address: string): Promise<Coordinates> => {
-    try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyAyjXoR5-0I-FHD-4NwTvTrF7LWIciirbU`
-      );
-      const data = await response.json();
-      
-      if (data.results && data.results[0]) {
-        const { lat, lng } = data.results[0].geometry.location;
-        return { lat, lng };
-      }
-      return null;
-    } catch (error) {
-      console.error("Error geocoding address:", error);
-      return null;
-    }
-  };
 
   const handleOrigenChange = async (value: string) => {
     const coords = await geocodeAddress(value);
@@ -139,16 +123,6 @@ const PublicarCarga = () => {
     }
   };
 
-  const mapContainerStyle = {
-    width: "100%",
-    height: "300px",
-  };
-
-  const center = {
-    lat: -34.0,
-    lng: -64.0,
-  };
-
   return (
     <div className="min-h-screen bg-neutral-50 py-8">
       <div className="container max-w-2xl mx-auto px-4">
@@ -159,144 +133,20 @@ const PublicarCarga = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="origen"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Origen</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Ciudad de origen" 
-                            {...field} 
-                            onChange={(e) => {
-                              field.onChange(e);
-                              handleOrigenChange(e.target.value);
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="destino"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Destino</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Ciudad de destino" 
-                            {...field}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              handleDestinoChange(e.target.value);
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <CargoLocationFields
+                  form={form}
+                  onOrigenChange={handleOrigenChange}
+                  onDestinoChange={handleDestinoChange}
+                />
 
-                <LoadScript googleMapsApiKey="AIzaSyAyjXoR5-0I-FHD-4NwTvTrF7LWIciirbU">
-                  <GoogleMap
-                    mapContainerStyle={mapContainerStyle}
-                    center={origenCoords || center}
-                    zoom={4}
-                  >
-                    {origenCoords && (
-                      <Marker
-                        position={origenCoords}
-                        draggable={true}
-                        onDragEnd={(e) => {
-                          setOrigenCoords({
-                            lat: e.latLng!.lat(),
-                            lng: e.latLng!.lng(),
-                          });
-                        }}
-                        title="Origen"
-                      />
-                    )}
-                    {destinoCoords && (
-                      <Marker
-                        position={destinoCoords}
-                        draggable={true}
-                        onDragEnd={(e) => {
-                          setDestinoCoords({
-                            lat: e.latLng!.lat(),
-                            lng: e.latLng!.lng(),
-                          });
-                        }}
-                        title="Destino"
-                        icon={{
-                          url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
-                        }}
-                      />
-                    )}
-                  </GoogleMap>
-                </LoadScript>
+                <CargoMap
+                  origenCoords={origenCoords}
+                  destinoCoords={destinoCoords}
+                  onOrigenChange={setOrigenCoords}
+                  onDestinoChange={setDestinoCoords}
+                />
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="fechaCarga"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fecha de Carga</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="tipoCarga"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de Carga</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ej: Palletizado, Granel" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="tipoCamion"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de Camión</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ej: Semi, Chasis" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="tarifa"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tarifa Propuesta (ARS)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0.00" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <CargoDetailsFields form={form} />
 
                 <FormField
                   control={form.control}
