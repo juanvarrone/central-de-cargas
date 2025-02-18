@@ -9,6 +9,8 @@ import NotFound from "./pages/NotFound";
 import PublicarCarga from "./pages/PublicarCarga";
 import Auth from "./pages/Auth";
 import { Toaster } from "./components/ui/toaster";
+import TerminosCondiciones from "./pages/TerminosCondiciones";
+import PoliticasPrivacidad from "./pages/PoliticasPrivacidad";
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
         <Route path="/listado-cargas" element={<ListadoCargas />} />
         <Route path="/mapa-cargas" element={<MapaCargas />} />
         <Route path="/publicar-carga" element={<PublicarCarga />} />
+        <Route path="/terminos-y-condiciones" element={<TerminosCondiciones />} />
+        <Route path="/politicas-de-privacidad" element={<PoliticasPrivacidad />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />

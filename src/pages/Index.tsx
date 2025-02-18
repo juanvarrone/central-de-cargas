@@ -1,6 +1,8 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -53,8 +55,25 @@ const Index = () => {
         </Card>
 
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>Versión 1.0.0</p>
-          {/* Aquí podemos agregar en el futuro un componente que verifique actualizaciones */}
+          <p className="mb-2">Versión 1.0.0</p>
+          <div className="space-x-4">
+            <Link 
+              to="/terminos-y-condiciones" 
+              className="text-gray-600 hover:text-gray-900 underline"
+            >
+              Términos y Condiciones
+            </Link>
+            <span>•</span>
+            <Link 
+              to="/politicas-de-privacidad" 
+              className="text-gray-600 hover:text-gray-900 underline"
+            >
+              Políticas de Privacidad
+            </Link>
+          </div>
+          <p className="mt-4 text-xs">
+            © {new Date().getFullYear()} Sistema de Gestión de Cargas. Todos los derechos reservados. CUIT: XX-XXXXXXXX-X
+          </p>
         </div>
       </div>
     </div>
