@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import CargoMap from "@/components/CargoMap";
 import CargoLocationFields from "@/components/CargoLocationFields";
 import CargoDetailsFields from "@/components/CargoDetailsFields";
@@ -60,21 +60,6 @@ const PublicarCarga = () => {
     setDestinoCoords(coords);
   };
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Acceso denegado",
-          description: "Debes iniciar sesión para publicar una carga",
-          variant: "destructive",
-        });
-        navigate("/auth");
-      }
-    };
-    checkAuth();
-  }, [navigate, toast]);
-
   const onSubmit = async (data: z.infer<typeof cargaSchema>) => {
     if (!origenCoords || !destinoCoords) {
       toast({
@@ -87,9 +72,6 @@ const PublicarCarga = () => {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
-
       const { error } = await supabase.from("cargas").insert({
         origen: data.origen,
         destino: data.destino,
@@ -98,7 +80,6 @@ const PublicarCarga = () => {
         tipo_camion: data.tipoCamion,
         tarifa: parseFloat(data.tarifa),
         observaciones: data.observaciones || null,
-        usuario_id: user.id,
         origen_lat: origenCoords.lat,
         origen_lng: origenCoords.lng,
         destino_lat: destinoCoords.lat,

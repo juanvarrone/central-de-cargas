@@ -7,7 +7,6 @@ import ListadoCargas from "./pages/ListadoCargas";
 import MapaCargas from "./pages/MapaCargas";
 import NotFound from "./pages/NotFound";
 import PublicarCarga from "./pages/PublicarCarga";
-import Auth from "./pages/Auth";
 import { Toaster } from "./components/ui/toaster";
 import TerminosCondiciones from "./pages/TerminosCondiciones";
 import PoliticasPrivacidad from "./pages/PoliticasPrivacidad";
@@ -17,7 +16,6 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
         <Route path="/configurar-alertas" element={<ConfigurarAlertas />} />
         <Route path="/listado-cargas" element={<ListadoCargas />} />
         <Route path="/mapa-cargas" element={<MapaCargas />} />
