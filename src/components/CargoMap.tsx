@@ -24,17 +24,23 @@ const CargoMap = ({
     height: "300px",
   };
 
-  const center = {
+  const center = origenCoords || {
     lat: -34.0,
     lng: -64.0,
   };
 
   return (
-    <LoadScript googleMapsApiKey="AIzaSyAyjXoR5-0I-FHD-4NwTvTrF7LWIciirbU">
+    <LoadScript googleMapsApiKey="AIzaSyAyjXoR5-0I-FHD-4NwTvTrF7LWIciirbU" libraries={["places"]}>
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
-        center={origenCoords || center}
-        zoom={4}
+        center={center}
+        zoom={origenCoords && destinoCoords ? 6 : 4}
+        options={{
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: true,
+        }}
       >
         {origenCoords && (
           <Marker

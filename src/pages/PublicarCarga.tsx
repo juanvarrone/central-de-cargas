@@ -17,7 +17,9 @@ import { geocodeAddress } from "@/utils/geocoding";
 
 const cargaSchema = z.object({
   origen: z.string().min(2, "El origen es requerido"),
+  origen_detalle: z.string().min(2, "El detalle del origen es requerido"),
   destino: z.string().min(2, "El destino es requerido"),
+  destino_detalle: z.string().min(2, "El detalle del destino es requerido"),
   fechaCarga: z.string().min(1, "La fecha de carga es requerida"),
   tipoCarga: z.string().min(2, "El tipo de carga es requerido"),
   tipoCamion: z.string().min(2, "El tipo de camión es requerido"),
@@ -41,7 +43,9 @@ const PublicarCarga = () => {
     resolver: zodResolver(cargaSchema),
     defaultValues: {
       origen: "",
+      origen_detalle: "",
       destino: "",
+      destino_detalle: "",
       fechaCarga: "",
       tipoCarga: "",
       tipoCamion: "",
@@ -74,7 +78,9 @@ const PublicarCarga = () => {
     try {
       const { error } = await supabase.from("cargas").insert({
         origen: data.origen,
+        origen_detalle: data.origen_detalle,
         destino: data.destino,
+        destino_detalle: data.destino_detalle,
         fecha_carga: new Date(data.fechaCarga).toISOString(),
         tipo_carga: data.tipoCarga,
         tipo_camion: data.tipoCamion,
@@ -84,6 +90,7 @@ const PublicarCarga = () => {
         origen_lng: origenCoords.lng,
         destino_lat: destinoCoords.lat,
         destino_lng: destinoCoords.lng,
+        estado: "disponible",
       });
 
       if (error) throw error;
