@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      app_modules: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cargas: {
         Row: {
           created_at: string
@@ -81,11 +108,13 @@ export type Database = {
           avg_overall_rating: number | null
           avg_punctuality_rating: number | null
           avg_respect_rating: number | null
+          blocked_reason: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
           is_admin: boolean | null
+          is_blocked: boolean | null
           total_reviews: number | null
           updated_at: string
         }
@@ -95,11 +124,13 @@ export type Database = {
           avg_overall_rating?: number | null
           avg_punctuality_rating?: number | null
           avg_respect_rating?: number | null
+          blocked_reason?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
           is_admin?: boolean | null
+          is_blocked?: boolean | null
           total_reviews?: number | null
           updated_at?: string
         }
@@ -109,11 +140,13 @@ export type Database = {
           avg_overall_rating?: number | null
           avg_punctuality_rating?: number | null
           avg_respect_rating?: number | null
+          blocked_reason?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
           is_admin?: boolean | null
+          is_blocked?: boolean | null
           total_reviews?: number | null
           updated_at?: string
         }
@@ -210,15 +243,41 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
