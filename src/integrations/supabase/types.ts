@@ -77,29 +77,111 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          avg_equipment_rating: number | null
+          avg_overall_rating: number | null
+          avg_punctuality_rating: number | null
+          avg_respect_rating: number | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          total_reviews: number | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          avg_equipment_rating?: number | null
+          avg_overall_rating?: number | null
+          avg_punctuality_rating?: number | null
+          avg_respect_rating?: number | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
+          total_reviews?: number | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          avg_equipment_rating?: number | null
+          avg_overall_rating?: number | null
+          avg_punctuality_rating?: number | null
+          avg_respect_rating?: number | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          total_reviews?: number | null
           updated_at?: string
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          carga_id: string | null
+          comments: string | null
+          created_at: string
+          equipment_rating: number | null
+          id: string
+          overall_rating: number | null
+          punctuality_rating: number | null
+          respect_rating: number | null
+          reviewed_id: string
+          reviewer_id: string
+          reviewer_type: string
+          updated_at: string
+        }
+        Insert: {
+          carga_id?: string | null
+          comments?: string | null
+          created_at?: string
+          equipment_rating?: number | null
+          id?: string
+          overall_rating?: number | null
+          punctuality_rating?: number | null
+          respect_rating?: number | null
+          reviewed_id: string
+          reviewer_id: string
+          reviewer_type: string
+          updated_at?: string
+        }
+        Update: {
+          carga_id?: string | null
+          comments?: string | null
+          created_at?: string
+          equipment_rating?: number | null
+          id?: string
+          overall_rating?: number | null
+          punctuality_rating?: number | null
+          respect_rating?: number | null
+          reviewed_id?: string
+          reviewer_id?: string
+          reviewer_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_carga_id_fkey"
+            columns: ["carga_id"]
+            isOneToOne: false
+            referencedRelation: "cargas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewed_id_fkey"
+            columns: ["reviewed_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
