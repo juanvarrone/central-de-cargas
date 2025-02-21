@@ -1,9 +1,10 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Star } from "lucide-react";
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Star } from "lucide-react";
 
 interface Review {
   id: string;
@@ -16,6 +17,7 @@ interface Review {
   reviewer: {
     full_name: string | null;
   };
+  reviewer_type: string;
 }
 
 interface ReviewsListProps {
@@ -25,60 +27,67 @@ interface ReviewsListProps {
 const ReviewsList = ({ userId }: ReviewsListProps) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("reviews")
-          .select(`
-            *,
-            reviewer:profiles!reviews_reviewer_id_fkey(full_name)
-          `)
-          .eq("reviewed_id", userId)
-          .order("created_at", { ascending: false });
+    const fetchActiveCategories = async () => {
+      const { data, error } = await supabase
+        .from("review_category_settings")
+        .select("category")
+        .eq("is_active", true);
 
-        if (error) throw error;
-
-        setReviews(data || []);
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las reseñas",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (error) {
+        console.error("Error fetching active categories:", error);
+        return;
       }
+
+      setActiveCategories(data.map(item => item.category));
     };
 
+    const fetchReviews = async () => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select(`
+          *,
+          reviewer:reviewer_id(full_name)
+        `)
+        .eq("reviewed_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching reviews:", error);
+        return;
+      }
+
+      setReviews(data as Review[]);
+      setLoading(false);
+    };
+
+    fetchActiveCategories();
     fetchReviews();
-  }, [userId, toast]);
+  }, [userId]);
 
   if (loading) {
     return <div>Cargando reseñas...</div>;
   }
 
   if (reviews.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          No hay reseñas disponibles.
-        </CardContent>
-      </Card>
-    );
+    return <div>No hay reseñas disponibles.</div>;
   }
 
   const renderStars = (rating: number) => {
     return [...Array(5)].map((_, index) => (
       <Star
         key={index}
-        className={`w-4 h-4 ${
+        className={`h-4 w-4 ${
           index < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
         }`}
       />
     ));
+  };
+
+  const getReviewerType = (type: string) => {
+    return type === "shipper" ? "Dador de Carga" : "Transportista";
   };
 
   return (
@@ -86,40 +95,55 @@ const ReviewsList = ({ userId }: ReviewsListProps) => {
       {reviews.map((review) => (
         <Card key={review.id}>
           <CardContent className="p-6">
-            <div className="space-y-4">
+            <div className="flex flex-col space-y-4">
               <div className="flex items-center justify-between">
-                <div className="font-medium">
-                  {review.reviewer.full_name || "Usuario Anónimo"}
+                <div>
+                  <p className="font-semibold">
+                    {review.reviewer.full_name || "Usuario"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {getReviewerType(review.reviewer_type)} •{" "}
+                    {format(new Date(review.created_at), "d 'de' MMMM, yyyy", {
+                      locale: es,
+                    })}
+                  </p>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {new Date(review.created_at).toLocaleDateString()}
+                <div className="flex items-center">
+                  {renderStars(review.overall_rating)}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Puntualidad</p>
-                  <div className="flex">{renderStars(review.punctuality_rating)}</div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Estado del Equipo</p>
-                  <div className="flex">{renderStars(review.equipment_rating)}</div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Trato Recibido</p>
-                  <div className="flex">{renderStars(review.respect_rating)}</div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Calificación General</p>
-                  <div className="flex">{renderStars(review.overall_rating)}</div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {activeCategories.includes("punctuality") && (
+                  <div>
+                    <p className="text-sm font-medium">Puntualidad</p>
+                    <div className="flex items-center">
+                      {renderStars(review.punctuality_rating)}
+                    </div>
+                  </div>
+                )}
+
+                {activeCategories.includes("equipment") && (
+                  <div>
+                    <p className="text-sm font-medium">Estado del Equipo</p>
+                    <div className="flex items-center">
+                      {renderStars(review.equipment_rating)}
+                    </div>
+                  </div>
+                )}
+
+                {activeCategories.includes("respect") && (
+                  <div>
+                    <p className="text-sm font-medium">Trato Recibido</p>
+                    <div className="flex items-center">
+                      {renderStars(review.respect_rating)}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {review.comments && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Comentarios</p>
-                  <p className="text-sm">{review.comments}</p>
-                </div>
+                <p className="text-sm text-gray-600">{review.comments}</p>
               )}
             </div>
           </CardContent>
@@ -130,3 +154,4 @@ const ReviewsList = ({ userId }: ReviewsListProps) => {
 };
 
 export default ReviewsList;
+

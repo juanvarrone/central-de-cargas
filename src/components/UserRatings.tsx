@@ -1,10 +1,14 @@
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star } from "lucide-react";
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
-interface UserProfile {
+interface UserRatingsProps {
+  userId: string;
+}
+
+interface ProfileRatings {
   avg_punctuality_rating: number;
   avg_equipment_rating: number;
   avg_respect_rating: number;
@@ -12,16 +16,28 @@ interface UserProfile {
   total_reviews: number;
 }
 
-interface UserRatingsProps {
-  userId: string;
-}
-
 const UserRatings = ({ userId }: UserRatingsProps) => {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [ratings, setRatings] = useState<ProfileRatings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const { data } = await supabase
+    const fetchActiveCategories = async () => {
+      const { data, error } = await supabase
+        .from("review_category_settings")
+        .select("category")
+        .eq("is_active", true);
+
+      if (error) {
+        console.error("Error fetching active categories:", error);
+        return;
+      }
+
+      setActiveCategories(data.map(item => item.category));
+    };
+
+    const fetchRatings = async () => {
+      const { data, error } = await supabase
         .from("profiles")
         .select(
           "avg_punctuality_rating, avg_equipment_rating, avg_respect_rating, avg_overall_rating, total_reviews"
@@ -29,72 +45,85 @@ const UserRatings = ({ userId }: UserRatingsProps) => {
         .eq("id", userId)
         .single();
 
-      setProfile(data);
+      if (error) {
+        console.error("Error fetching ratings:", error);
+        return;
+      }
+
+      setRatings(data);
+      setLoading(false);
     };
 
-    fetchProfile();
+    fetchActiveCategories();
+    fetchRatings();
   }, [userId]);
 
-  if (!profile) return null;
+  if (loading) {
+    return <div>Cargando calificaciones...</div>;
+  }
 
-  const renderStars = (rating: number) => {
+  if (!ratings) {
+    return <div>No se encontraron calificaciones.</div>;
+  }
+
+  const renderStars = (rating: number | null) => {
+    if (!rating) return null;
     const roundedRating = Math.round(rating);
-    return [...Array(5)].map((_, index) => (
-      <Star
-        key={index}
-        className={`w-4 h-4 ${
-          index < roundedRating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-        }`}
-      />
-    ));
+
+    return (
+      <div className="flex items-center gap-1">
+        {[...Array(5)].map((_, index) => (
+          <Star
+            key={index}
+            className={`h-4 w-4 ${
+              index < roundedRating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+            }`}
+          />
+        ))}
+        <span className="ml-2 text-sm text-muted-foreground">
+          {rating.toFixed(1)}
+        </span>
+      </div>
+    );
   };
 
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium">Calificaciones Promedio</h3>
-            <span className="text-sm text-muted-foreground">
-              {profile.total_reviews} reseñas en total
-            </span>
-          </div>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Calificaciones</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            {ratings.total_reviews || 0} reseñas
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="font-medium">Calificación General</span>
+          {renderStars(ratings.avg_overall_rating)}
+        </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Puntualidad</p>
-              <div className="flex items-center space-x-2">
-                <div className="flex">{renderStars(profile.avg_punctuality_rating)}</div>
-                <span className="text-sm">
-                  {profile.avg_punctuality_rating.toFixed(1)}
-                </span>
-              </div>
+        <div className="space-y-2">
+          {activeCategories.includes("punctuality") && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Puntualidad</span>
+              {renderStars(ratings.avg_punctuality_rating)}
             </div>
+          )}
 
-            <div>
-              <p className="text-sm text-muted-foreground">Estado del Equipo</p>
-              <div className="flex items-center space-x-2">
-                <div className="flex">{renderStars(profile.avg_equipment_rating)}</div>
-                <span className="text-sm">{profile.avg_equipment_rating.toFixed(1)}</span>
-              </div>
+          {activeCategories.includes("equipment") && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Estado del Equipo</span>
+              {renderStars(ratings.avg_equipment_rating)}
             </div>
+          )}
 
-            <div>
-              <p className="text-sm text-muted-foreground">Trato Recibido</p>
-              <div className="flex items-center space-x-2">
-                <div className="flex">{renderStars(profile.avg_respect_rating)}</div>
-                <span className="text-sm">{profile.avg_respect_rating.toFixed(1)}</span>
-              </div>
+          {activeCategories.includes("respect") && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Trato Recibido</span>
+              {renderStars(ratings.avg_respect_rating)}
             </div>
-
-            <div>
-              <p className="text-sm text-muted-foreground">Calificación General</p>
-              <div className="flex items-center space-x-2">
-                <div className="flex">{renderStars(profile.avg_overall_rating)}</div>
-                <span className="text-sm">{profile.avg_overall_rating.toFixed(1)}</span>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -102,3 +131,4 @@ const UserRatings = ({ userId }: UserRatingsProps) => {
 };
 
 export default UserRatings;
+

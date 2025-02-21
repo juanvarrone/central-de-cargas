@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,7 +26,26 @@ interface ReviewFormProps {
 
 const ReviewForm = ({ reviewedId, cargaId, reviewerType, onSuccess }: ReviewFormProps) => {
   const [loading, setLoading] = useState(false);
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchActiveCategories = async () => {
+      const { data, error } = await supabase
+        .from("review_category_settings")
+        .select("category")
+        .eq("is_active", true);
+
+      if (error) {
+        console.error("Error fetching active categories:", error);
+        return;
+      }
+
+      setActiveCategories(data.map(item => item.category));
+    };
+
+    fetchActiveCategories();
+  }, []);
 
   const form = useForm({
     resolver: zodResolver(reviewSchema),
@@ -95,80 +114,86 @@ const ReviewForm = ({ reviewedId, cargaId, reviewerType, onSuccess }: ReviewForm
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="punctuality_rating"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Puntualidad</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1"
-                >
-                  {ratingOptions.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`punctuality-${option.value}`} />
-                      <label htmlFor={`punctuality-${option.value}`}>{option.label}</label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {activeCategories.includes("punctuality") && (
+          <FormField
+            control={form.control}
+            name="punctuality_rating"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Puntualidad</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    {ratingOptions.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.value} id={`punctuality-${option.value}`} />
+                        <label htmlFor={`punctuality-${option.value}`}>{option.label}</label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
-        <FormField
-          control={form.control}
-          name="equipment_rating"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Estado del Equipo</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1"
-                >
-                  {ratingOptions.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`equipment-${option.value}`} />
-                      <label htmlFor={`equipment-${option.value}`}>{option.label}</label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {activeCategories.includes("equipment") && (
+          <FormField
+            control={form.control}
+            name="equipment_rating"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Estado del Equipo</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    {ratingOptions.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.value} id={`equipment-${option.value}`} />
+                        <label htmlFor={`equipment-${option.value}`}>{option.label}</label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
-        <FormField
-          control={form.control}
-          name="respect_rating"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Trato Recibido</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1"
-                >
-                  {ratingOptions.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`respect-${option.value}`} />
-                      <label htmlFor={`respect-${option.value}`}>{option.label}</label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {activeCategories.includes("respect") && (
+          <FormField
+            control={form.control}
+            name="respect_rating"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Trato Recibido</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    {ratingOptions.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.value} id={`respect-${option.value}`} />
+                        <label htmlFor={`respect-${option.value}`}>{option.label}</label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
@@ -197,3 +222,4 @@ const ReviewForm = ({ reviewedId, cargaId, reviewerType, onSuccess }: ReviewForm
 };
 
 export default ReviewForm;
+
