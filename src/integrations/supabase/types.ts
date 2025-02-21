@@ -85,6 +85,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_admin: boolean | null
           total_reviews: number | null
           updated_at: string
         }
@@ -98,6 +99,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_admin?: boolean | null
           total_reviews?: number | null
           updated_at?: string
         }
@@ -111,8 +113,33 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
           total_reviews?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      review_category_settings: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: number
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: number
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: number
+          is_active?: boolean | null
+          updated_at?: string | null
         }
         Relationships: []
       }
