@@ -1,6 +1,7 @@
 
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { Package, Truck } from "lucide-react";
+import { useMemo } from "react";
 
 type Coordinates = {
   lat: number;
@@ -30,6 +31,9 @@ const CargoMap = ({
     lng: -64.0,
   };
 
+  // Memoize the libraries array to prevent unnecessary reloads
+  const libraries = useMemo(() => ["places"], []);
+
   // Calculate distance between points in kilometers
   const calculateDistance = () => {
     if (!origenCoords || !destinoCoords) return null;
@@ -55,9 +59,32 @@ const CargoMap = ({
 
   const distance = calculateDistance();
 
+  const truckIconUrl = `data:image/svg+xml,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 17h4V5H2v12h3m5 0h4"/>
+      <path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/>
+      <path d="M14 17h1"/>
+      <circle cx="7.5" cy="17.5" r="2.5"/>
+      <circle cx="17.5" cy="17.5" r="2.5"/>
+    </svg>
+  `)}`;
+
+  const packageIconUrl = `data:image/svg+xml,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m16 16 2 2 4-4"/>
+      <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/>
+      <path d="M7.5 4.27l9 5.15"/>
+      <polyline points="3.29 7 12 12 20.71 7"/>
+      <line x1="12" y1="22" x2="12" y2="12"/>
+    </svg>
+  `)}`;
+
   return (
     <div className="space-y-2">
-      <LoadScript googleMapsApiKey="AIzaSyD8ns70mGT3vZSmWPw7YOIduUiqB5RAl8g" libraries={["places"]}>
+      <LoadScript 
+        googleMapsApiKey="AIzaSyD8ns70mGT3vZSmWPw7YOIduUiqB5RAl8g" 
+        libraries={libraries}
+      >
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
           center={center}
@@ -81,15 +108,7 @@ const CargoMap = ({
               }}
               title="Origen"
               icon={{
-                url: "data:image/svg+xml," + encodeURIComponent(`
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black">
-                    <path d="M3 3h18v13H3z"/>
-                    <path d="m2 7 10 7 10-7"/>
-                    <path d="M3 7h18"/>
-                    <path d="M7 14.5h10"/>
-                    <path d="M7 11.5h10"/>
-                  </svg>
-                `),
+                url: truckIconUrl,
                 scaledSize: new google.maps.Size(32, 32)
               }}
             />
@@ -106,11 +125,7 @@ const CargoMap = ({
               }}
               title="Destino"
               icon={{
-                url: "data:image/svg+xml," + encodeURIComponent(`
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                  </svg>
-                `),
+                url: packageIconUrl,
                 scaledSize: new google.maps.Size(32, 32)
               }}
             />

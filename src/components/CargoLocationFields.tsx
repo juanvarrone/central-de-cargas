@@ -56,10 +56,6 @@ const CargoLocationFields = ({
                     {...field}
                     ref={origenRef}
                     placeholder="Ingrese dirección de origen" 
-                    onChange={(e) => {
-                      field.onChange(e);
-                      onOrigenChange(e.target.value);
-                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -95,10 +91,6 @@ const CargoLocationFields = ({
                     {...field}
                     ref={destinoRef}
                     placeholder="Ingrese dirección de destino"
-                    onChange={(e) => {
-                      field.onChange(e);
-                      onDestinoChange(e.target.value);
-                    }}
                   />
                 </FormControl>
                 <FormMessage />
