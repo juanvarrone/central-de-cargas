@@ -3,7 +3,6 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { useEffect, useRef } from "react";
-import { Autocomplete } from "@react-google-maps/api";
 
 interface CargoLocationFieldsProps {
   form: UseFormReturn<any>;
@@ -76,7 +75,7 @@ const CargoLocationFields = ({
                 <FormControl>
                   <Input 
                     {...field}
-                    placeholder="Nombre de empresa/edificio/contacto" 
+                    placeholder="Nombre de empresa/edificio/contacto"
                   />
                 </FormControl>
                 <FormMessage />
@@ -115,7 +114,7 @@ const CargoLocationFields = ({
                 <FormControl>
                   <Input 
                     {...field}
-                    placeholder="Nombre de empresa/edificio/contacto" 
+                    placeholder="Nombre de empresa/edificio/contacto"
                   />
                 </FormControl>
                 <FormMessage />

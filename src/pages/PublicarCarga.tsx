@@ -79,9 +79,9 @@ const PublicarCarga = () => {
     setLoading(true);
     try {
       const { error } = await supabase.from("cargas").insert({
-        origen: data.origen,
+        origen_direccion: data.origen,
         origen_detalle: data.origen_detalle,
-        destino: data.destino,
+        destino_direccion: data.destino,
         destino_detalle: data.destino_detalle,
         fecha_carga: new Date(data.fechaCarga).toISOString(),
         cantidad_cargas: data.cantidadCargas,
