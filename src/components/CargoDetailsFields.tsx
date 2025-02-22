@@ -8,6 +8,16 @@ interface CargoDetailsFieldsProps {
 }
 
 const CargoDetailsFields = ({ form }: CargoDetailsFieldsProps) => {
+  const formatCurrency = (value: string) => {
+    const number = value.replace(/\D/g, "");
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Number(number));
+  };
+
   return (
     <>
       <div className="grid md:grid-cols-2 gap-6">
@@ -77,11 +87,20 @@ const CargoDetailsFields = ({ form }: CargoDetailsFieldsProps) => {
       <FormField
         control={form.control}
         name="tarifa"
-        render={({ field }) => (
+        render={({ field: { onChange, ...field } }) => (
           <FormItem>
-            <FormLabel>Tarifa Propuesta (ARS)</FormLabel>
+            <FormLabel>Tarifa Propuesta</FormLabel>
             <FormControl>
-              <Input type="number" placeholder="0.00" {...field} />
+              <Input 
+                type="text"
+                placeholder="$ 0"
+                {...field}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^\d]/g, "");
+                  onChange(value);
+                  e.target.value = formatCurrency(value);
+                }}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

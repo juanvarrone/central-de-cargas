@@ -79,15 +79,15 @@ const PublicarCarga = () => {
     setLoading(true);
     try {
       const { error } = await supabase.from("cargas").insert({
-        origen_direccion: data.origen,
+        origen: data.origen,
         origen_detalle: data.origen_detalle,
-        destino_direccion: data.destino,
+        destino: data.destino,
         destino_detalle: data.destino_detalle,
         fecha_carga: new Date(data.fechaCarga).toISOString(),
         cantidad_cargas: data.cantidadCargas,
         tipo_carga: data.tipoCarga,
         tipo_camion: data.tipoCamion,
-        tarifa: parseFloat(data.tarifa),
+        tarifa: parseFloat(data.tarifa.replace(/\D/g, "")),
         observaciones: data.observaciones || null,
         origen_lat: origenCoords.lat,
         origen_lng: origenCoords.lng,
