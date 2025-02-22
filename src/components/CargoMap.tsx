@@ -30,7 +30,7 @@ const CargoMap = ({
   };
 
   return (
-    <LoadScript googleMapsApiKey="AIzaSyAyjXoR5-0I-FHD-4NwTvTrF7LWIciirbU" libraries={["places"]}>
+    <LoadScript googleMapsApiKey="AIzaSyD8ns70mGT3vZSmWPw7YOIduUiqB5RAl8g" libraries={["places"]}>
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={center}
