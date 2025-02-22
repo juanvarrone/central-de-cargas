@@ -1,5 +1,5 @@
 
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { GoogleMap, LoadScript, Marker, Libraries } from "@react-google-maps/api";
 import { Package, Truck } from "lucide-react";
 import { useMemo } from "react";
 
@@ -32,7 +32,7 @@ const CargoMap = ({
   };
 
   // Memoize the libraries array to prevent unnecessary reloads
-  const libraries = useMemo(() => ["places"], []);
+  const libraries: Libraries = useMemo(() => ["places"], []);
 
   // Calculate distance between points in kilometers
   const calculateDistance = () => {

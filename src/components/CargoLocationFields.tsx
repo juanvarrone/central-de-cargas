@@ -33,13 +33,14 @@ const CargoLocationFields = ({
         const place = autocomplete.getPlace();
         if (place.formatted_address) {
           onPlaceSelect(place.formatted_address);
+          form.setValue(inputRef === origenRef.current ? "origen" : "destino", place.formatted_address);
         }
       });
     };
 
     setupAutocomplete(origenRef.current, onOrigenChange);
     setupAutocomplete(destinoRef.current, onDestinoChange);
-  }, [onOrigenChange, onDestinoChange]);
+  }, [onOrigenChange, onDestinoChange, form]);
 
   return (
     <div className="space-y-6">
@@ -50,7 +51,7 @@ const CargoLocationFields = ({
             name="origen"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Origen</FormLabel>
+                <FormLabel>Domicilio de origen</FormLabel>
                 <FormControl>
                   <Input 
                     {...field}
@@ -85,7 +86,7 @@ const CargoLocationFields = ({
             name="destino"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Destino</FormLabel>
+                <FormLabel>Domicilio de destino</FormLabel>
                 <FormControl>
                   <Input 
                     {...field}
