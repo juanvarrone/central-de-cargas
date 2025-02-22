@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CargoMap from "@/components/CargoMap";
 import CargoLocationFields from "@/components/CargoLocationFields";
 import CargoDetailsFields from "@/components/CargoDetailsFields";
@@ -21,6 +21,7 @@ const cargaSchema = z.object({
   destino: z.string().min(2, "El destino es requerido"),
   destino_detalle: z.string().min(2, "El detalle del destino es requerido"),
   fechaCarga: z.string().min(1, "La fecha de carga es requerida"),
+  cantidadCargas: z.number().min(1).max(10),
   tipoCarga: z.string().min(2, "El tipo de carga es requerido"),
   tipoCamion: z.string().min(2, "El tipo de camión es requerido"),
   tarifa: z.string().min(1, "La tarifa es requerida"),
@@ -47,6 +48,7 @@ const PublicarCarga = () => {
       destino: "",
       destino_detalle: "",
       fechaCarga: "",
+      cantidadCargas: 1,
       tipoCarga: "",
       tipoCamion: "",
       tarifa: "",
@@ -82,6 +84,7 @@ const PublicarCarga = () => {
         destino: data.destino,
         destino_detalle: data.destino_detalle,
         fecha_carga: new Date(data.fechaCarga).toISOString(),
+        cantidad_cargas: data.cantidadCargas,
         tipo_carga: data.tipoCarga,
         tipo_camion: data.tipoCamion,
         tarifa: parseFloat(data.tarifa),

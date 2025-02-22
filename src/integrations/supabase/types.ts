@@ -38,6 +38,7 @@ export type Database = {
       }
       cargas: {
         Row: {
+          cantidad_cargas: number
           created_at: string
           destino: string
           destino_lat: number | null
@@ -56,6 +57,7 @@ export type Database = {
           usuario_id: string
         }
         Insert: {
+          cantidad_cargas?: number
           created_at?: string
           destino: string
           destino_lat?: number | null
@@ -74,6 +76,7 @@ export type Database = {
           usuario_id: string
         }
         Update: {
+          cantidad_cargas?: number
           created_at?: string
           destino?: string
           destino_lat?: number | null
@@ -237,6 +240,47 @@ export type Database = {
           {
             foreignKeyName: "reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ubicaciones_favoritas: {
+        Row: {
+          created_at: string
+          direccion: string
+          id: string
+          lat: number | null
+          lng: number | null
+          tipo: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          direccion: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          tipo: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          direccion?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          tipo?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ubicaciones_favoritas_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
