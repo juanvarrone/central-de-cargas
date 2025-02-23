@@ -242,4 +242,3 @@ const PublicarCarga = () => {
 };
 
 export default PublicarCarga;
-

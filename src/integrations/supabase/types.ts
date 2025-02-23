@@ -41,13 +41,16 @@ export type Database = {
           cantidad_cargas: number
           created_at: string
           destino: string
+          destino_detalle: string | null
           destino_lat: number | null
           destino_lng: number | null
           estado: string
-          fecha_carga: string
+          fecha_carga_desde: string
+          fecha_carga_hasta: string | null
           id: string
           observaciones: string | null
           origen: string
+          origen_detalle: string | null
           origen_lat: number | null
           origen_lng: number | null
           tarifa: number
@@ -60,13 +63,16 @@ export type Database = {
           cantidad_cargas?: number
           created_at?: string
           destino: string
+          destino_detalle?: string | null
           destino_lat?: number | null
           destino_lng?: number | null
           estado?: string
-          fecha_carga: string
+          fecha_carga_desde: string
+          fecha_carga_hasta?: string | null
           id?: string
           observaciones?: string | null
           origen: string
+          origen_detalle?: string | null
           origen_lat?: number | null
           origen_lng?: number | null
           tarifa: number
@@ -79,13 +85,16 @@ export type Database = {
           cantidad_cargas?: number
           created_at?: string
           destino?: string
+          destino_detalle?: string | null
           destino_lat?: number | null
           destino_lng?: number | null
           estado?: string
-          fecha_carga?: string
+          fecha_carga_desde?: string
+          fecha_carga_hasta?: string | null
           id?: string
           observaciones?: string | null
           origen?: string
+          origen_detalle?: string | null
           origen_lat?: number | null
           origen_lng?: number | null
           tarifa?: number
