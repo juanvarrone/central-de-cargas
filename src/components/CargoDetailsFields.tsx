@@ -23,19 +23,6 @@ const CargoDetailsFields = ({ form }: CargoDetailsFieldsProps) => {
       <div className="grid md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
-          name="fechaCarga"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Fecha de Carga</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="cantidadCargas"
           render={({ field }) => (
             <FormItem>
@@ -53,9 +40,6 @@ const CargoDetailsFields = ({ form }: CargoDetailsFieldsProps) => {
             </FormItem>
           )}
         />
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
           name="tipoCarga"
@@ -69,6 +53,9 @@ const CargoDetailsFields = ({ form }: CargoDetailsFieldsProps) => {
             </FormItem>
           )}
         />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
           name="tipoCamion"
@@ -82,30 +69,33 @@ const CargoDetailsFields = ({ form }: CargoDetailsFieldsProps) => {
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="tarifa"
+          render={({ field: { onChange, ...field } }) => (
+            <FormItem>
+              <FormLabel>Tarifa Propuesta</FormLabel>
+              <FormControl>
+                <Input 
+                  type="text"
+                  placeholder="$ 0"
+                  {...field}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^\d]/g, "");
+                    onChange(value);
+                    e.target.value = formatCurrency(value);
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value.replace(/[^\d]/g, "");
+                    e.target.value = formatCurrency(value);
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
-
-      <FormField
-        control={form.control}
-        name="tarifa"
-        render={({ field: { onChange, ...field } }) => (
-          <FormItem>
-            <FormLabel>Tarifa Propuesta</FormLabel>
-            <FormControl>
-              <Input 
-                type="text"
-                placeholder="$ 0"
-                {...field}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^\d]/g, "");
-                  onChange(value);
-                  e.target.value = formatCurrency(value);
-                }}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </>
   );
 };

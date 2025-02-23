@@ -9,18 +9,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import CargoMap from "@/components/CargoMap";
 import CargoLocationFields from "@/components/CargoLocationFields";
 import CargoDetailsFields from "@/components/CargoDetailsFields";
 import { geocodeAddress } from "@/utils/geocoding";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const cargaSchema = z.object({
   origen: z.string().min(2, "El origen es requerido"),
   origen_detalle: z.string().min(2, "El detalle del origen es requerido"),
   destino: z.string().min(2, "El destino es requerido"),
   destino_detalle: z.string().min(2, "El detalle del destino es requerido"),
-  fechaCarga: z.string().min(1, "La fecha de carga es requerida"),
+  tipo_fecha: z.enum(["exacta", "rango"]),
+  fecha_carga_desde: z.string().min(1, "La fecha de carga es requerida"),
+  fecha_carga_hasta: z.string().optional(),
   cantidadCargas: z.number().min(1).max(10),
   tipoCarga: z.string().min(2, "El tipo de carga es requerido"),
   tipoCamion: z.string().min(2, "El tipo de camión es requerido"),
@@ -47,7 +50,9 @@ const PublicarCarga = () => {
       origen_detalle: "",
       destino: "",
       destino_detalle: "",
-      fechaCarga: "",
+      tipo_fecha: "exacta" as const,
+      fecha_carga_desde: "",
+      fecha_carga_hasta: "",
       cantidadCargas: 1,
       tipoCarga: "",
       tipoCamion: "",
@@ -83,7 +88,8 @@ const PublicarCarga = () => {
         origen_detalle: data.origen_detalle,
         destino: data.destino,
         destino_detalle: data.destino_detalle,
-        fecha_carga: new Date(data.fechaCarga).toISOString(),
+        fecha_carga_desde: new Date(data.fecha_carga_desde).toISOString(),
+        fecha_carga_hasta: data.fecha_carga_hasta ? new Date(data.fecha_carga_hasta).toISOString() : null,
         cantidad_cargas: data.cantidadCargas,
         tipo_carga: data.tipoCarga,
         tipo_camion: data.tipoCamion,
@@ -136,6 +142,66 @@ const PublicarCarga = () => {
                   onOrigenChange={setOrigenCoords}
                   onDestinoChange={setDestinoCoords}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="tipo_fecha"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de fecha</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="exacta" id="exacta" />
+                            <label htmlFor="exacta">Fecha exacta</label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="rango" id="rango" />
+                            <label htmlFor="rango">Rango de fecha</label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="fecha_carga_desde"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {form.watch("tipo_fecha") === "exacta" ? "Fecha de Carga" : "Fecha Desde"}
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {form.watch("tipo_fecha") === "rango" && (
+                    <FormField
+                      control={form.control}
+                      name="fecha_carga_hasta"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha Hasta</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
 
                 <CargoDetailsFields form={form} />
 

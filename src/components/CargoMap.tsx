@@ -99,12 +99,7 @@ const CargoMap = ({
                 }
               }}
               icon={{
-                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2">
-                    <path d="M10 17h4V5H2v12h3m5 0h4 M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/>
-                  </svg>
-                `),
-                anchor: new google.maps.Point(12, 12),
+                url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
               }}
             />
           )}
@@ -121,12 +116,7 @@ const CargoMap = ({
                 }
               }}
               icon={{
-                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2">
-                    <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/>
-                  </svg>
-                `),
-                anchor: new google.maps.Point(12, 12),
+                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
               }}
             />
           )}
