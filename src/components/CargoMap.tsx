@@ -1,6 +1,5 @@
 
 import { GoogleMap, LoadScript, Marker, Libraries } from "@react-google-maps/api";
-import { Package, Truck } from "lucide-react";
 import { useMemo } from "react";
 
 type Coordinates = {
@@ -37,7 +36,7 @@ const CargoMap = ({
     if (!origenCoords || !destinoCoords) return null;
 
     const rad = (x: number) => (x * Math.PI) / 180;
-    const R = 6371; // Earth's radius in kilometers
+    const R = 6371; // Radio de la Tierra en kilómetros
 
     const dLat = rad(destinoCoords.lat - origenCoords.lat);
     const dLon = rad(destinoCoords.lng - origenCoords.lng);
@@ -60,7 +59,7 @@ const CargoMap = ({
   return (
     <div className="space-y-2">
       <LoadScript 
-        googleMapsApiKey="AIzaSyD8ns70mGT3vZSmWPw7YOIduUiqB5RAl8g" 
+        googleMapsApiKey="AIzaSyD8ns70mGT3vZSmWPw7YOIduUiqB5RAl8g"
         libraries={libraries}
       >
         <GoogleMap
@@ -72,6 +71,19 @@ const CargoMap = ({
             streetViewControl: false,
             mapTypeControl: false,
             fullscreenControl: true,
+          }}
+          onClick={(e) => {
+            if (!origenCoords) {
+              onOrigenChange({
+                lat: e.latLng?.lat() || 0,
+                lng: e.latLng?.lng() || 0,
+              });
+            } else if (!destinoCoords) {
+              onDestinoChange({
+                lat: e.latLng?.lat() || 0,
+                lng: e.latLng?.lng() || 0,
+              });
+            }
           }}
         >
           {origenCoords && (
@@ -87,12 +99,12 @@ const CargoMap = ({
                 }
               }}
               icon={{
-                path: "M10 17h4V5H2v12h3m5 0h4 M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1",
-                fillColor: "#1d4ed8",
-                fillOpacity: 1,
-                strokeWeight: 1,
-                strokeColor: "#1d4ed8",
-                scale: 1.5,
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2">
+                    <path d="M10 17h4V5H2v12h3m5 0h4 M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/>
+                  </svg>
+                `),
+                anchor: new google.maps.Point(12, 12),
               }}
             />
           )}
@@ -109,12 +121,12 @@ const CargoMap = ({
                 }
               }}
               icon={{
-                path: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14",
-                fillColor: "#059669",
-                fillOpacity: 1,
-                strokeWeight: 1,
-                strokeColor: "#059669",
-                scale: 1.5,
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2">
+                    <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/>
+                  </svg>
+                `),
+                anchor: new google.maps.Point(12, 12),
               }}
             />
           )}

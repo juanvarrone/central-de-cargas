@@ -26,21 +26,20 @@ const CargoLocationFields = ({
 
       const autocomplete = new google.maps.places.Autocomplete(inputRef, {
         componentRestrictions: { country: "ar" },
-        fields: ["address_components", "formatted_address", "geometry"],
+        fields: ["address_components", "formatted_address", "geometry", "name"],
       });
 
       autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace();
         if (place.formatted_address) {
           onPlaceSelect(place.formatted_address);
-          form.setValue(inputRef === origenRef.current ? "origen" : "destino", place.formatted_address);
         }
       });
     };
 
     setupAutocomplete(origenRef.current, onOrigenChange);
     setupAutocomplete(destinoRef.current, onDestinoChange);
-  }, [onOrigenChange, onDestinoChange, form]);
+  }, [onOrigenChange, onDestinoChange]);
 
   return (
     <div className="space-y-6">
@@ -56,7 +55,7 @@ const CargoLocationFields = ({
                   <Input 
                     {...field}
                     ref={origenRef}
-                    placeholder="Ingrese dirección de origen" 
+                    placeholder="Ingrese dirección de origen"
                   />
                 </FormControl>
                 <FormMessage />

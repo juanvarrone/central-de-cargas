@@ -6,14 +6,24 @@ type Coordinates = {
 
 export const geocodeAddress = async (address: string): Promise<Coordinates> => {
   try {
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyAyjXoR5-0I-FHD-4NwTvTrF7LWIciirbU`
-    );
-    const data = await response.json();
+    const geocoder = new google.maps.Geocoder();
     
-    if (data.results && data.results[0]) {
-      const { lat, lng } = data.results[0].geometry.location;
-      return { lat, lng };
+    const result = await new Promise<google.maps.GeocoderResult[]>((resolve, reject) => {
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === google.maps.GeocoderStatus.OK && results) {
+          resolve(results);
+        } else {
+          reject(new Error(`Geocoding failed: ${status}`));
+        }
+      });
+    });
+
+    if (result[0]?.geometry?.location) {
+      const location = result[0].geometry.location;
+      return {
+        lat: location.lat(),
+        lng: location.lng(),
+      };
     }
     return null;
   } catch (error) {
