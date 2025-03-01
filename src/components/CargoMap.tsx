@@ -99,7 +99,9 @@ const CargoMap = ({
                 }
               }}
               icon={{
-                url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                anchor: new google.maps.Point(10, 34),
+                scaledSize: new google.maps.Size(20, 34)
               }}
             />
           )}
@@ -116,7 +118,9 @@ const CargoMap = ({
                 }
               }}
               icon={{
-                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                anchor: new google.maps.Point(10, 34),
+                scaledSize: new google.maps.Size(20, 34)
               }}
             />
           )}

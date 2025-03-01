@@ -2,8 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Filter } from "lucide-react";
+import { MapPin, Truck } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const provinciasArgentina = [
   "Buenos Aires",
@@ -40,23 +40,29 @@ interface CargoMapFiltersProps {
 }
 
 const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
+  const resetFilters = () => {
+    onFilterChange({
+      provinciaOrigen: undefined,
+      provinciaDestino: undefined,
+      tipoCamion: undefined
+    });
+  };
+
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Filter className="h-4 w-4" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Filtros de búsqueda</SheetTitle>
-          <SheetDescription>
-            Filtra las cargas según tus preferencias
-          </SheetDescription>
-        </SheetHeader>
-        <div className="space-y-4 py-4">
+    <div className="space-y-6 h-full">
+      <CardHeader className="px-0">
+        <CardTitle>Filtros de búsqueda</CardTitle>
+        <CardDescription>
+          Filtra las cargas según tus preferencias
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        <div className="space-y-6">
           <div className="space-y-2">
-            <Label>Provincia de origen</Label>
+            <Label className="flex items-center gap-2">
+              <MapPin className="text-green-500 h-4 w-4" />
+              Provincia de origen
+            </Label>
             <Select
               onValueChange={(value) =>
                 onFilterChange({ provinciaOrigen: value })
@@ -75,7 +81,10 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Provincia de destino</Label>
+            <Label className="flex items-center gap-2">
+              <MapPin className="text-red-500 h-4 w-4" />
+              Provincia de destino
+            </Label>
             <Select
               onValueChange={(value) =>
                 onFilterChange({ provinciaDestino: value })
@@ -94,7 +103,10 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Tipo de camión</Label>
+            <Label className="flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              Tipo de camión
+            </Label>
             <Select
               onValueChange={(value) =>
                 onFilterChange({ tipoCamion: value })
@@ -111,8 +123,17 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
             </Select>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </CardContent>
+      <div className="mt-auto pt-4 border-t">
+        <Button 
+          variant="outline" 
+          className="w-full" 
+          onClick={resetFilters}
+        >
+          Limpiar filtros
+        </Button>
+      </div>
+    </div>
   );
 };
 
