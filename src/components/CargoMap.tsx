@@ -105,7 +105,7 @@ const CargoMap = ({
                 strokeWeight: 1,
                 strokeColor: "#166534",
                 scale: 1.5,
-                anchor: new google.maps.Point(12, 17),
+                anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
               }}
             />
           )}
@@ -128,7 +128,7 @@ const CargoMap = ({
                 strokeWeight: 1,
                 strokeColor: "#991b1b",
                 scale: 1.5,
-                anchor: new google.maps.Point(12, 17),
+                anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
               }}
             />
           )}

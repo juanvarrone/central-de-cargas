@@ -6,7 +6,8 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import CargoMapFilters from "@/components/cargo/CargoMapFilters";
 import CargasMapa from "@/components/cargo/CargasMapa";
@@ -14,7 +15,7 @@ import { Filters } from "@/types/mapa-cargas";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router-dom";
-import { User as UserIcon, Menu, LogOut } from "lucide-react";
+import { User as UserIcon, Menu, LogOut, Truck, Bell } from "lucide-react";
 
 const MapaCargas = () => {
   const [filters, setFilters] = useState<Filters>({});
@@ -24,9 +25,14 @@ const MapaCargas = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchUser();
@@ -47,14 +53,21 @@ const MapaCargas = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
+    try {
+      await supabase.auth.signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (
     <div className="min-h-screen bg-neutral-50">
       <div className="container mx-auto px-4 py-2">
-        <div className="flex justify-end mb-4 py-2">
+        <div className="flex justify-between items-center mb-4 py-2">
+          <Link to="/" className="text-xl font-bold text-primary">
+            Central de Cargas
+          </Link>
           {!loading && (
             user ? (
               <DropdownMenu>
@@ -65,14 +78,21 @@ const MapaCargas = () => {
                     <Menu size={16} className="ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to="/mis-cargas">Mis Cargas</Link>
+                <DropdownMenuContent align="end" className="w-56 bg-white">
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link to="/mis-cargas" className="flex items-center">
+                      <Truck size={16} className="mr-2" />
+                      Mis Cargas
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/mis-alertas">Mis Alertas</Link>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link to="/mis-alertas" className="flex items-center">
+                      <Bell size={16} className="mr-2" />
+                      Mis Alertas
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
                     <LogOut size={16} className="mr-2" />
                     Cerrar sesión
                   </DropdownMenuItem>
@@ -85,15 +105,15 @@ const MapaCargas = () => {
             )
           )}
         </div>
-        <div className="flex gap-4 h-[calc(100vh-10rem)]">
-          <Card className="flex-1 relative">
-            <CargasMapa filters={filters} />
-          </Card>
-          <div className="w-80">
+        <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-10rem)]">
+          <div className="w-full md:w-80 order-2 md:order-2">
             <Card className="p-4 h-full">
               <CargoMapFilters onFilterChange={handleFilterChange} />
             </Card>
           </div>
+          <Card className="flex-1 relative order-1 md:order-1">
+            <CargasMapa filters={filters} />
+          </Card>
         </div>
       </div>
     </div>

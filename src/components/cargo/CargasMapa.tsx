@@ -50,6 +50,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
 
         setCargas(data || []);
       } catch (error: any) {
+        console.error("Error fetching cargas:", error);
         toast({
           title: "Error",
           description: "No se pudieron cargar las ubicaciones de las cargas",
@@ -102,7 +103,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                   strokeWeight: 1,
                   strokeColor: "#166534",
                   scale: 1.5,
-                  anchor: new google.maps.Point(12, 17),
+                  anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
                 }}
               />
             )}
@@ -122,7 +123,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                   strokeWeight: 1,
                   strokeColor: "#991b1b",
                   scale: 1.5,
-                  anchor: new google.maps.Point(12, 17),
+                  anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
                 }}
               />
             )}
