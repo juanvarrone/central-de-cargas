@@ -99,9 +99,13 @@ const CargoMap = ({
                 }
               }}
               icon={{
-                url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
-                anchor: new google.maps.Point(10, 34),
-                scaledSize: new google.maps.Size(20, 34)
+                path: "M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z",
+                fillColor: "#22c55e",
+                fillOpacity: 1,
+                strokeWeight: 1,
+                strokeColor: "#166534",
+                scale: 1.5,
+                anchor: new google.maps.Point(12, 17),
               }}
             />
           )}
@@ -118,9 +122,13 @@ const CargoMap = ({
                 }
               }}
               icon={{
-                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                anchor: new google.maps.Point(10, 34),
-                scaledSize: new google.maps.Size(20, 34)
+                path: "M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z",
+                fillColor: "#ef4444",
+                fillOpacity: 1,
+                strokeWeight: 1,
+                strokeColor: "#991b1b",
+                scale: 1.5,
+                anchor: new google.maps.Point(12, 17),
               }}
             />
           )}

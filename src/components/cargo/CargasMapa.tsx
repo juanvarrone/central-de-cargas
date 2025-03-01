@@ -85,10 +85,9 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
         }}
       >
         {cargas.map((carga) => (
-          <>
+          <div key={carga.id}>
             {carga.origen_lat && carga.origen_lng && (
               <Marker
-                key={`origen-${carga.id}`}
                 position={{
                   lat: carga.origen_lat,
                   lng: carga.origen_lng,
@@ -109,7 +108,6 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
             )}
             {carga.destino_lat && carga.destino_lng && (
               <Marker
-                key={`destino-${carga.id}`}
                 position={{
                   lat: carga.destino_lat,
                   lng: carga.destino_lng,
@@ -128,7 +126,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                 }}
               />
             )}
-          </>
+          </div>
         ))}
         {selectedCarga && (
           <InfoWindow
