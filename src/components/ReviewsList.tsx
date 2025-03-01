@@ -6,6 +6,10 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Star } from "lucide-react";
 
+interface Reviewer {
+  full_name: string | null;
+}
+
 interface Review {
   id: string;
   created_at: string;
@@ -14,9 +18,7 @@ interface Review {
   respect_rating: number;
   overall_rating: number;
   comments: string | null;
-  reviewer: {
-    full_name: string | null;
-  };
+  reviewer: Reviewer;
   reviewer_type: string;
 }
 
@@ -59,7 +61,20 @@ const ReviewsList = ({ userId }: ReviewsListProps) => {
         return;
       }
 
-      setReviews(data as Review[]);
+      // Process the data to ensure it matches the Review interface
+      const processedReviews = data.map(item => {
+        // Handle reviewer data which might have an error
+        const reviewer = typeof item.reviewer === 'object' && item.reviewer !== null
+          ? item.reviewer
+          : { full_name: 'Usuario desconocido' };
+
+        return {
+          ...item,
+          reviewer: reviewer
+        };
+      }) as Review[];
+
+      setReviews(processedReviews);
       setLoading(false);
     };
 
@@ -154,4 +169,3 @@ const ReviewsList = ({ userId }: ReviewsListProps) => {
 };
 
 export default ReviewsList;
-

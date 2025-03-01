@@ -11,7 +11,7 @@ interface Carga {
   id: string;
   origen: string;
   destino: string;
-  fecha_carga: string;
+  fecha_carga_desde: string;
   tipo_carga: string;
   tipo_camion: string;
   tarifa: number;
@@ -104,7 +104,7 @@ const ListadoCargas = () => {
                         <div>
                           <p className="text-sm text-neutral-500">Fecha de Carga</p>
                           <p className="font-medium">
-                            {new Date(carga.fecha_carga).toLocaleDateString()}
+                            {new Date(carga.fecha_carga_desde).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
