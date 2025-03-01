@@ -15,7 +15,7 @@ import { Filters } from "@/types/mapa-cargas";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router-dom";
-import { User as UserIcon, Menu, LogOut, Truck, Bell } from "lucide-react";
+import { User as UserIcon, Menu, LogOut, Truck, Bell, ArrowLeft } from "lucide-react";
 
 const MapaCargas = () => {
   const [filters, setFilters] = useState<Filters>({});
@@ -65,9 +65,19 @@ const MapaCargas = () => {
     <div className="min-h-screen bg-neutral-50">
       <div className="container mx-auto px-4 py-2">
         <div className="flex justify-between items-center mb-4 py-2">
-          <Link to="/" className="text-xl font-bold text-primary">
-            Central de Cargas
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate("/")}
+              className="mr-2"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <Link to="/" className="text-xl font-bold text-primary">
+              Central de Cargas
+            </Link>
+          </div>
           {!loading && (
             user ? (
               <DropdownMenu>
@@ -106,12 +116,12 @@ const MapaCargas = () => {
           )}
         </div>
         <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-10rem)]">
-          <div className="w-full md:w-80 order-2 md:order-2">
+          <div className="w-full md:w-80 order-2 md:order-1">
             <Card className="p-4 h-full">
               <CargoMapFilters onFilterChange={handleFilterChange} />
             </Card>
           </div>
-          <Card className="flex-1 relative order-1 md:order-1">
+          <Card className="flex-1 relative order-1 md:order-2">
             <CargasMapa filters={filters} />
           </Card>
         </div>

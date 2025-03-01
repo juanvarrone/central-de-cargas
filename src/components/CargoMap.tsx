@@ -56,6 +56,31 @@ const CargoMap = ({
 
   const distance = calculateDistance();
 
+  // Get optimized marker options for better mobile display
+  const getMarkerOptions = (isOrigin: boolean) => {
+    const baseOptions = {
+      path: "M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z",
+      fillOpacity: 1,
+      strokeWeight: 1,
+      scale: 1.5,
+      anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
+    };
+
+    if (isOrigin) {
+      return {
+        ...baseOptions,
+        fillColor: "#22c55e",
+        strokeColor: "#166534",
+      };
+    } else {
+      return {
+        ...baseOptions,
+        fillColor: "#ef4444",
+        strokeColor: "#991b1b",
+      };
+    }
+  };
+
   return (
     <div className="space-y-2">
       <LoadScript 
@@ -98,15 +123,7 @@ const CargoMap = ({
                   });
                 }
               }}
-              icon={{
-                path: "M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z",
-                fillColor: "#22c55e",
-                fillOpacity: 1,
-                strokeWeight: 1,
-                strokeColor: "#166534",
-                scale: 1.5,
-                anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
-              }}
+              icon={getMarkerOptions(true)}
             />
           )}
           {destinoCoords && (
@@ -121,15 +138,7 @@ const CargoMap = ({
                   });
                 }
               }}
-              icon={{
-                path: "M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z",
-                fillColor: "#ef4444",
-                fillOpacity: 1,
-                strokeWeight: 1,
-                strokeColor: "#991b1b",
-                scale: 1.5,
-                anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
-              }}
+              icon={getMarkerOptions(false)}
             />
           )}
         </GoogleMap>

@@ -8,8 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
+import { ArrowLeft } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("Ingresa un email válido"),
@@ -46,6 +47,7 @@ const Auth = () => {
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
@@ -59,6 +61,7 @@ const Auth = () => {
         description: error.message,
         variant: "destructive",
       });
+      setLoading(false);
     }
   };
 
@@ -66,7 +69,7 @@ const Auth = () => {
     setLoading(true);
     try {
       if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
           options: {
@@ -78,29 +81,36 @@ const Auth = () => {
 
         if (signUpError) throw signUpError;
 
-        // Insert into profiles table
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: (await supabase.auth.getUser()).data.user?.id,
-              email: values.email,
-              full_name: values.fullName,
-            }
-          ]);
+        console.log("Sign up data:", data);
 
-        if (profileError) throw profileError;
+        if (data?.user?.id) {
+          // Insert into profiles table
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: data.user.id,
+                email: values.email,
+                full_name: values.fullName,
+              }
+            ]);
+
+          if (profileError) throw profileError;
+        }
 
         toast({
           title: "Registro exitoso",
           description: "Por favor, revisa tu email para confirmar tu cuenta.",
         });
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        console.log("Logging in with:", values.email);
+        const { error: signInError, data } = await supabase.auth.signInWithPassword({
           email: values.email,
           password: values.password,
         });
 
+        console.log("Sign in result:", data);
+        
         if (signInError) throw signInError;
 
         toast({
@@ -110,6 +120,7 @@ const Auth = () => {
         navigate("/");
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -123,7 +134,15 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
-        <CardHeader>
+        <CardHeader className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 left-2"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft size={20} />
+          </Button>
           <CardTitle>{isSignUp ? "Crear cuenta" : "Iniciar sesión"}</CardTitle>
           <CardDescription>
             {isSignUp
@@ -138,6 +157,7 @@ const Auth = () => {
               className="w-full flex items-center justify-center gap-2" 
               variant="outline"
               onClick={() => handleSocialLogin('google')}
+              disabled={loading}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -165,6 +185,7 @@ const Auth = () => {
               className="w-full flex items-center justify-center gap-2" 
               variant="outline"
               onClick={() => handleSocialLogin('facebook')}
+              disabled={loading}
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/>
@@ -243,6 +264,7 @@ const Auth = () => {
                     variant="ghost"
                     className="w-full"
                     onClick={() => setIsSignUp(!isSignUp)}
+                    disabled={loading}
                   >
                     {isSignUp
                       ? "¿Ya tienes cuenta? Inicia sesión"
