@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
@@ -41,12 +42,19 @@ const PublicarCarga = () => {
           toast({
             title: "Acceso restringido",
             description: "Debes iniciar sesión para publicar una carga",
+            variant: "warning",
           });
-          navigate('/auth');
+          navigate('/auth', { replace: true });
+          return;
         }
       } catch (error) {
         console.error("Error fetching user:", error);
-        navigate('/auth');
+        toast({
+          title: "Error de autenticación",
+          description: "No se pudo verificar tu sesión. Por favor inicia sesión nuevamente.",
+          variant: "destructive",
+        });
+        navigate('/auth', { replace: true });
       } finally {
         setAuthLoading(false);
       }
@@ -58,7 +66,12 @@ const PublicarCarga = () => {
       (event, session) => {
         setUser(session?.user || null);
         if (!session?.user) {
-          navigate('/auth');
+          toast({
+            title: "Sesión finalizada",
+            description: "Tu sesión ha expirado. Por favor inicia sesión nuevamente.",
+            variant: "warning",
+          });
+          navigate('/auth', { replace: true });
         }
       }
     );
@@ -106,7 +119,7 @@ const PublicarCarga = () => {
   }
 
   if (!user) {
-    return null;
+    return null; // This will not be rendered as we redirect in the useEffect
   }
 
   return (

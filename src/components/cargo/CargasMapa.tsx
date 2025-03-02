@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { GoogleMap, InfoWindow, LoadScript, Marker } from "@react-google-maps/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
   const [cargas, setCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCarga, setSelectedCarga] = useState<SelectedCarga | null>(null);
+  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const { toast } = useToast();
 
   const mapContainerStyle = {
@@ -25,6 +26,25 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
     lat: -34.0,
     lng: -64.0,
   };
+
+  const onLoad = useCallback((map: google.maps.Map) => {
+    setMapInstance(map);
+  }, []);
+
+  // Function to recenter map if needed
+  const adjustMapForSelectedCarga = useCallback(() => {
+    if (selectedCarga && mapInstance) {
+      const position = selectedCarga.tipo === "origen" 
+        ? { lat: selectedCarga.carga.origen_lat || 0, lng: selectedCarga.carga.origen_lng || 0 }
+        : { lat: selectedCarga.carga.destino_lat || 0, lng: selectedCarga.carga.destino_lng || 0 };
+      
+      mapInstance.panTo(position);
+    }
+  }, [selectedCarga, mapInstance]);
+
+  useEffect(() => {
+    adjustMapForSelectedCarga();
+  }, [selectedCarga, adjustMapForSelectedCarga]);
 
   useEffect(() => {
     const fetchCargas = async () => {
@@ -49,7 +69,8 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
         if (error) throw error;
 
         console.log("Cargas fetched:", data);
-        setCargas(data || []);
+        // Cast data to Carga[] to ensure type compatibility
+        setCargas(data as unknown as Carga[]);
       } catch (error: any) {
         console.error("Error fetching cargas:", error);
         toast({
@@ -85,6 +106,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
           mapTypeControl: false,
           fullscreenControl: true,
         }}
+        onLoad={onLoad}
       >
         {cargas.map((carga) => (
           <div key={carga.id}>
@@ -104,7 +126,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                   strokeWeight: 1,
                   strokeColor: "#166534",
                   scale: 2,
-                  anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 22) : null,
+                  anchor: new google.maps.Point(12, 22),
                 }}
               />
             )}
@@ -124,7 +146,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                   strokeWeight: 1,
                   strokeColor: "#991b1b",
                   scale: 2,
-                  anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 22) : null,
+                  anchor: new google.maps.Point(12, 22),
                 }}
               />
             )}
@@ -135,12 +157,12 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
             position={
               selectedCarga.tipo === "origen"
                 ? {
-                    lat: selectedCarga.carga.origen_lat,
-                    lng: selectedCarga.carga.origen_lng,
+                    lat: selectedCarga.carga.origen_lat || 0,
+                    lng: selectedCarga.carga.origen_lng || 0,
                   }
                 : {
-                    lat: selectedCarga.carga.destino_lat,
-                    lng: selectedCarga.carga.destino_lng,
+                    lat: selectedCarga.carga.destino_lat || 0,
+                    lng: selectedCarga.carga.destino_lng || 0,
                   }
             }
             onCloseClick={() => setSelectedCarga(null)}
