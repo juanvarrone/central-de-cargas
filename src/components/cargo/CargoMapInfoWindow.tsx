@@ -9,6 +9,8 @@ interface CargoMapInfoWindowProps {
   tipo: "origen" | "destino";
   lugar: string;
   detalle?: string;
+  provincia?: string;
+  ciudad?: string;
   tipoCarga: string;
   tipoCamion: string;
   fechaCargaDesde: string;
@@ -23,6 +25,8 @@ const CargoMapInfoWindow = ({
   tipo,
   lugar,
   detalle,
+  provincia,
+  ciudad,
   tipoCarga,
   tipoCamion,
   fechaCargaDesde,
@@ -65,13 +69,15 @@ const CargoMapInfoWindow = ({
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         {detalle && <p><strong>Detalle:</strong> {detalle}</p>}
+        {provincia && <p><strong>Provincia:</strong> {provincia}</p>}
+        {ciudad && <p><strong>Ciudad:</strong> {ciudad}</p>}
         <p><strong>Tipo de carga:</strong> {tipoCarga}</p>
         <p><strong>Tipo de camión:</strong> {tipoCamion}</p>
         <p><strong>Fecha de carga:</strong> {new Date(fechaCargaDesde).toLocaleDateString()}</p>
         {fechaCargaHasta && (
           <p><strong>Hasta:</strong> {new Date(fechaCargaHasta).toLocaleDateString()}</p>
         )}
-        <p><strong>Tarifa:</strong> ${tarifa}</p>
+        <p><strong>Tarifa:</strong> ${tarifa.toLocaleString()}</p>
         {observaciones && <p><strong>Observaciones:</strong> {observaciones}</p>}
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">

@@ -58,27 +58,17 @@ const CargoMap = ({
 
   // Get optimized marker options for better mobile display
   const getMarkerOptions = (isOrigin: boolean) => {
-    const baseOptions = {
-      path: "M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z",
-      fillOpacity: 1,
-      strokeWeight: 1,
-      scale: 1.5,
-      anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
+    return {
+      icon: {
+        path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+        fillColor: isOrigin ? "#22c55e" : "#ef4444",
+        fillOpacity: 1,
+        strokeWeight: 1,
+        strokeColor: isOrigin ? "#166534" : "#991b1b",
+        scale: 2,
+        anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 22) : null,
+      },
     };
-
-    if (isOrigin) {
-      return {
-        ...baseOptions,
-        fillColor: "#22c55e",
-        strokeColor: "#166534",
-      };
-    } else {
-      return {
-        ...baseOptions,
-        fillColor: "#ef4444",
-        strokeColor: "#991b1b",
-      };
-    }
   };
 
   return (
@@ -123,7 +113,7 @@ const CargoMap = ({
                   });
                 }
               }}
-              icon={getMarkerOptions(true)}
+              options={getMarkerOptions(true)}
             />
           )}
           {destinoCoords && (
@@ -138,7 +128,7 @@ const CargoMap = ({
                   });
                 }
               }}
-              icon={getMarkerOptions(false)}
+              options={getMarkerOptions(false)}
             />
           )}
         </GoogleMap>

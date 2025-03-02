@@ -11,8 +11,12 @@ export const useCargoSubmission = () => {
     const { error } = await supabase.from("cargas").insert({
       origen: data.origen,
       origen_detalle: data.origen_detalle,
+      origen_provincia: data.origen_provincia,
+      origen_ciudad: data.origen_ciudad,
       destino: data.destino,
       destino_detalle: data.destino_detalle,
+      destino_provincia: data.destino_provincia,
+      destino_ciudad: data.destino_ciudad,
       fecha_carga_desde: new Date(data.fecha_carga_desde).toISOString(),
       fecha_carga_hasta: data.fecha_carga_hasta ? new Date(data.fecha_carga_hasta).toISOString() : null,
       cantidad_cargas: data.cantidadCargas,
