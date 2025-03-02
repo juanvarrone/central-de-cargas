@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 
@@ -25,6 +25,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectAfterLogin = location.state?.from || "/";
 
   const form = useForm<AuthFormValues>({
     resolver: zodResolver(authSchema),
@@ -39,11 +41,11 @@ const Auth = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/");
+        navigate(redirectAfterLogin);
       }
     };
     checkSession();
-  }, [navigate]);
+  }, [navigate, redirectAfterLogin]);
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     try {
@@ -69,6 +71,7 @@ const Auth = () => {
     setLoading(true);
     try {
       if (isSignUp) {
+        console.log("Signing up with:", values);
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
@@ -84,24 +87,11 @@ const Auth = () => {
         console.log("Sign up data:", data);
 
         if (data?.user?.id) {
-          // Insert into profiles table
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: data.user.id,
-                email: values.email,
-                full_name: values.fullName,
-              }
-            ]);
-
-          if (profileError) throw profileError;
+          toast({
+            title: "Registro exitoso",
+            description: "Por favor, revisa tu email para confirmar tu cuenta.",
+          });
         }
-
-        toast({
-          title: "Registro exitoso",
-          description: "Por favor, revisa tu email para confirmar tu cuenta.",
-        });
       } else {
         console.log("Logging in with:", values.email);
         const { error: signInError, data } = await supabase.auth.signInWithPassword({
@@ -117,7 +107,7 @@ const Auth = () => {
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de vuelta.",
         });
-        navigate("/");
+        navigate(redirectAfterLogin);
       }
     } catch (error: any) {
       console.error("Auth error:", error);

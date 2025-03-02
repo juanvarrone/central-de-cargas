@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
@@ -37,8 +36,17 @@ const PublicarCarga = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
+        
+        if (!user) {
+          toast({
+            title: "Acceso restringido",
+            description: "Debes iniciar sesión para publicar una carga",
+          });
+          navigate('/auth');
+        }
       } catch (error) {
         console.error("Error fetching user:", error);
+        navigate('/auth');
       } finally {
         setAuthLoading(false);
       }
@@ -49,13 +57,16 @@ const PublicarCarga = () => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user || null);
+        if (!session?.user) {
+          navigate('/auth');
+        }
       }
     );
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate, toast]);
 
   const handleSubmit = async (data: any) => {
     setLoading(true);
@@ -85,6 +96,18 @@ const PublicarCarga = () => {
       console.error("Error signing out:", error);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <p>Cargando...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 py-8">

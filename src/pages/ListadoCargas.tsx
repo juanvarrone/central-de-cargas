@@ -1,5 +1,5 @@
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/card";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Package, 
@@ -41,13 +41,18 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { Button as ButtonUI } from "@/components/ui/button";
 
 interface Carga {
   id: string;
   origen: string;
   origen_detalle: string | null;
+  origen_provincia: string | null;
+  origen_ciudad: string | null;
   destino: string;
   destino_detalle: string | null;
+  destino_provincia: string | null;
+  destino_ciudad: string | null;
   fecha_carga_desde: string;
   fecha_carga_hasta: string | null;
   tipo_carga: string;
@@ -62,6 +67,7 @@ const ListadoCargas = () => {
   const [cargas, setCargas] = useState<Carga[]>([]);
   const [filteredCargas, setFilteredCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [tipoCargaFilter, setTipoCargaFilter] = useState("");
   const [tipoCamionFilter, setTipoCamionFilter] = useState("");
@@ -96,15 +102,21 @@ const ListadoCargas = () => {
 
   useEffect(() => {
     const fetchCargas = async () => {
+      setError(null);
       try {
+        console.log("Fetching cargas...");
         const { data, error } = await supabase
           .from("cargas")
           .select("*")
           .eq("estado", "disponible")
           .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase error:", error);
+          throw error;
+        }
 
+        console.log("Cargas data:", data);
         setCargas(data || []);
         setFilteredCargas(data || []);
         
@@ -112,10 +124,14 @@ const ListadoCargas = () => {
         if (data && data.length > 0) {
           const uniqueTiposCarga = [...new Set(data.map(carga => carga.tipo_carga))];
           const uniqueTiposCamion = [...new Set(data.map(carga => carga.tipo_camion))];
+          console.log("Tipos de carga:", uniqueTiposCarga);
+          console.log("Tipos de camión:", uniqueTiposCamion);
           setTiposCarga(uniqueTiposCarga);
           setTiposCamion(uniqueTiposCamion);
         }
       } catch (error: any) {
+        console.error("Error catching block:", error);
+        setError(error.message);
         toast({
           title: "Error",
           description: "No se pudieron cargar las cargas disponibles",
@@ -137,10 +153,12 @@ const ListadoCargas = () => {
       const search = searchTerm.toLowerCase();
       results = results.filter(
         carga =>
-          carga.origen.toLowerCase().includes(search) ||
-          carga.destino.toLowerCase().includes(search) ||
-          carga.tipo_carga.toLowerCase().includes(search) ||
-          carga.tipo_camion.toLowerCase().includes(search)
+          carga.origen?.toLowerCase().includes(search) ||
+          carga.destino?.toLowerCase().includes(search) ||
+          carga.tipo_carga?.toLowerCase().includes(search) ||
+          carga.tipo_camion?.toLowerCase().includes(search) ||
+          carga.origen_provincia?.toLowerCase().includes(search) ||
+          carga.destino_provincia?.toLowerCase().includes(search)
       );
     }
     
@@ -174,34 +192,48 @@ const ListadoCargas = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-neutral-50 py-8">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-bold mb-4">Error</h1>
+          <p className="text-red-500">{error}</p>
+          <ButtonUI onClick={() => window.location.reload()} className="mt-4">
+            Intentar nuevamente
+          </ButtonUI>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 py-8">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-2">
-            <Button 
+            <ButtonUI 
               variant="ghost" 
               size="icon" 
               onClick={() => navigate("/")}
               className="mr-2"
             >
               <ArrowLeft size={20} />
-            </Button>
+            </ButtonUI>
             <h1 className="text-3xl font-bold">Cargas Disponibles</h1>
           </div>
           <div className="flex items-center gap-4">
             <Link to="/publicar-carga">
-              <Button>Publicar Carga</Button>
+              <ButtonUI>Publicar Carga</ButtonUI>
             </Link>
             {!loading && (
               user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <ButtonUI variant="outline" className="flex items-center gap-2">
                       <UserIcon size={16} />
                       <span className="hidden sm:inline">{user.email?.split('@')[0]}</span>
                       <Menu size={16} className="ml-1" />
-                    </Button>
+                    </ButtonUI>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 bg-white">
                     <DropdownMenuItem asChild className="cursor-pointer">
@@ -224,9 +256,9 @@ const ListadoCargas = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button asChild variant="outline">
+                <ButtonUI asChild variant="outline">
                   <Link to="/auth">Iniciar sesión</Link>
-                </Button>
+                </ButtonUI>
               )
             )}
           </div>
@@ -314,6 +346,9 @@ const ListadoCargas = () => {
                           {carga.origen_detalle && (
                             <p className="text-xs text-muted-foreground">{carga.origen_detalle}</p>
                           )}
+                          {carga.origen_provincia && (
+                            <p className="text-xs text-muted-foreground">{carga.origen_provincia}, {carga.origen_ciudad}</p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -324,6 +359,9 @@ const ListadoCargas = () => {
                           <p className="font-medium">{carga.destino}</p>
                           {carga.destino_detalle && (
                             <p className="text-xs text-muted-foreground">{carga.destino_detalle}</p>
+                          )}
+                          {carga.destino_provincia && (
+                            <p className="text-xs text-muted-foreground">{carga.destino_provincia}, {carga.destino_ciudad}</p>
                           )}
                         </div>
                       </div>
@@ -356,9 +394,9 @@ const ListadoCargas = () => {
                     <TableCell>{carga.cantidad_cargas}</TableCell>
                     <TableCell>{carga.tarifa.toLocaleString()}</TableCell>
                     <TableCell className="text-right">
-                      <Button asChild size="sm">
+                      <ButtonUI asChild size="sm">
                         <Link to={`/cargas/${carga.id}`}>Ver Detalles</Link>
-                      </Button>
+                      </ButtonUI>
                     </TableCell>
                   </TableRow>
                 ))}

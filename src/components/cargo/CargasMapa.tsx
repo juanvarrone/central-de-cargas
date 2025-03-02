@@ -35,10 +35,10 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
           .eq("estado", "disponible");
 
         if (filters.provinciaOrigen) {
-          query = query.ilike("origen", `%${filters.provinciaOrigen}%`);
+          query = query.ilike("origen_provincia", `%${filters.provinciaOrigen}%`);
         }
         if (filters.provinciaDestino) {
-          query = query.ilike("destino", `%${filters.provinciaDestino}%`);
+          query = query.ilike("destino_provincia", `%${filters.provinciaDestino}%`);
         }
         if (filters.tipoCamion) {
           query = query.eq("tipo_camion", filters.tipoCamion);
@@ -48,6 +48,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
 
         if (error) throw error;
 
+        console.log("Cargas fetched:", data);
         setCargas(data || []);
       } catch (error: any) {
         console.error("Error fetching cargas:", error);
@@ -97,13 +98,13 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                   setSelectedCarga({ carga, tipo: "origen" })
                 }
                 icon={{
-                  path: "M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z",
+                  path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
                   fillColor: "#22c55e",
                   fillOpacity: 1,
                   strokeWeight: 1,
                   strokeColor: "#166534",
-                  scale: 1.5,
-                  anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
+                  scale: 2,
+                  anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 22) : null,
                 }}
               />
             )}
@@ -117,13 +118,13 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                   setSelectedCarga({ carga, tipo: "destino" })
                 }
                 icon={{
-                  path: "M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z",
+                  path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
                   fillColor: "#ef4444",
                   fillOpacity: 1,
                   strokeWeight: 1,
                   strokeColor: "#991b1b",
-                  scale: 1.5,
-                  anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 17) : null,
+                  scale: 2,
+                  anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 22) : null,
                 }}
               />
             )}
@@ -156,6 +157,16 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                 selectedCarga.tipo === "origen"
                   ? selectedCarga.carga.origen_detalle
                   : selectedCarga.carga.destino_detalle
+              }
+              provincia={
+                selectedCarga.tipo === "origen"
+                  ? selectedCarga.carga.origen_provincia
+                  : selectedCarga.carga.destino_provincia
+              }
+              ciudad={
+                selectedCarga.tipo === "origen"
+                  ? selectedCarga.carga.origen_ciudad
+                  : selectedCarga.carga.destino_ciudad
               }
               tipoCarga={selectedCarga.carga.tipo_carga}
               tipoCamion={selectedCarga.carga.tipo_camion}
