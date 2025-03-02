@@ -1,10 +1,11 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { GoogleMap, InfoWindow, LoadScript, Marker } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, LoadScript, Marker, Libraries } from "@react-google-maps/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CargoMapInfoWindow from "@/components/cargo/CargoMapInfoWindow";
 import { Carga, Filters, SelectedCarga } from "@/types/mapa-cargas";
+import { useMemo } from "react";
 
 interface CargasMapaProps {
   filters: Filters;
@@ -26,6 +27,8 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
     lat: -34.0,
     lng: -64.0,
   };
+
+  const libraries: Libraries = useMemo(() => ["places"], []);
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMapInstance(map);
@@ -94,8 +97,26 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
     );
   }
 
+  // Get marker options function
+  const getMarkerOptions = (isOrigin: boolean) => {
+    return {
+      icon: {
+        path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+        fillColor: isOrigin ? "#22c55e" : "#ef4444",
+        fillOpacity: 1,
+        strokeWeight: 1,
+        strokeColor: isOrigin ? "#166534" : "#991b1b",
+        scale: 2,
+        anchor: { x: 12, y: 22 },
+      },
+    };
+  };
+
   return (
-    <LoadScript googleMapsApiKey="AIzaSyD8ns70mGT3vZSmWPw7YOIduUiqB5RAl8g">
+    <LoadScript 
+      googleMapsApiKey="AIzaSyD8ns70mGT3vZSmWPw7YOIduUiqB5RAl8g"
+      libraries={libraries}
+    >
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={center}
@@ -119,15 +140,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                 onClick={() =>
                   setSelectedCarga({ carga, tipo: "origen" })
                 }
-                icon={{
-                  path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-                  fillColor: "#22c55e",
-                  fillOpacity: 1,
-                  strokeWeight: 1,
-                  strokeColor: "#166534",
-                  scale: 2,
-                  anchor: new google.maps.Point(12, 22),
-                }}
+                options={getMarkerOptions(true)}
               />
             )}
             {carga.destino_lat && carga.destino_lng && (
@@ -139,15 +152,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
                 onClick={() =>
                   setSelectedCarga({ carga, tipo: "destino" })
                 }
-                icon={{
-                  path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-                  fillColor: "#ef4444",
-                  fillOpacity: 1,
-                  strokeWeight: 1,
-                  strokeColor: "#991b1b",
-                  scale: 2,
-                  anchor: new google.maps.Point(12, 22),
-                }}
+                options={getMarkerOptions(false)}
               />
             )}
           </div>

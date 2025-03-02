@@ -66,7 +66,7 @@ const CargoMap = ({
         strokeWeight: 1,
         strokeColor: isOrigin ? "#166534" : "#991b1b",
         scale: 2,
-        anchor: window.google && window.google.maps ? new window.google.maps.Point(12, 22) : null,
+        anchor: { x: 12, y: 22 },
       },
     };
   };
