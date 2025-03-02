@@ -5,13 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import CargoMap from "@/components/CargoMap";
 import CargoLocationFields from "@/components/CargoLocationFields";
 import CargoDetailsFields from "@/components/CargoDetailsFields";
 import CargoDateTypeField from "./CargoDateTypeField";
 import CargoDateFields from "./CargoDateFields";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { geocodeAddress } from "@/utils/geocoding";
 import { CargaFormData, cargaSchema } from "@/types/cargo";
 
@@ -28,6 +28,8 @@ type Coordinates = {
 const CargoForm = ({ onSubmit, loading }: CargoFormProps) => {
   const [origenCoords, setOrigenCoords] = useState<Coordinates>(null);
   const [destinoCoords, setDestinoCoords] = useState<Coordinates>(null);
+  const location = useLocation();
+  const savedFormData = location.state?.formData || null;
 
   const form = useForm<CargaFormData>({
     resolver: zodResolver(cargaSchema),
@@ -46,6 +48,36 @@ const CargoForm = ({ onSubmit, loading }: CargoFormProps) => {
       observaciones: "",
     },
   });
+
+  // Restore saved form data if available
+  useEffect(() => {
+    if (savedFormData) {
+      console.log("Restoring saved form data:", savedFormData);
+      
+      // Populate the form with saved data
+      Object.entries(savedFormData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          // @ts-ignore
+          form.setValue(key, value);
+        }
+      });
+      
+      // Restore coordinates if available
+      if (savedFormData.origen_lat && savedFormData.origen_lng) {
+        setOrigenCoords({
+          lat: savedFormData.origen_lat,
+          lng: savedFormData.origen_lng
+        });
+      }
+      
+      if (savedFormData.destino_lat && savedFormData.destino_lng) {
+        setDestinoCoords({
+          lat: savedFormData.destino_lat,
+          lng: savedFormData.destino_lng
+        });
+      }
+    }
+  }, [savedFormData, form]);
 
   const handleOrigenChange = async (value: string) => {
     const coords = await geocodeAddress(value);

@@ -37,25 +37,9 @@ const PublicarCarga = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
-        
-        if (!user) {
-          toast({
-            title: "Acceso restringido",
-            description: "Debes iniciar sesión para publicar una carga",
-            variant: "warning",
-          });
-          navigate('/auth', { replace: true });
-          return;
-        }
+        setAuthLoading(false);
       } catch (error) {
         console.error("Error fetching user:", error);
-        toast({
-          title: "Error de autenticación",
-          description: "No se pudo verificar tu sesión. Por favor inicia sesión nuevamente.",
-          variant: "destructive",
-        });
-        navigate('/auth', { replace: true });
-      } finally {
         setAuthLoading(false);
       }
     };
@@ -65,13 +49,12 @@ const PublicarCarga = () => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user || null);
-        if (!session?.user) {
+        if (event === 'SIGNED_OUT') {
           toast({
             title: "Sesión finalizada",
             description: "Tu sesión ha expirado. Por favor inicia sesión nuevamente.",
-            variant: "warning",
+            variant: "destructive",
           });
-          navigate('/auth', { replace: true });
         }
       }
     );
@@ -82,6 +65,20 @@ const PublicarCarga = () => {
   }, [navigate, toast]);
 
   const handleSubmit = async (data: any) => {
+    // Check authentication when user submits the form
+    if (!user) {
+      toast({
+        title: "Inicio de sesión requerido",
+        description: "Para publicar una carga, debes iniciar sesión primero",
+        variant: "destructive",
+      });
+      navigate('/auth', { 
+        state: { from: '/publicar-carga', formData: data },
+        replace: true 
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       await submitCargo(data);
@@ -116,10 +113,6 @@ const PublicarCarga = () => {
         <p>Cargando...</p>
       </div>
     );
-  }
-
-  if (!user) {
-    return null; // This will not be rendered as we redirect in the useEffect
   }
 
   return (

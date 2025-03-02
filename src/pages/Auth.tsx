@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -27,6 +26,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const redirectAfterLogin = location.state?.from || "/";
+  const formData = location.state?.formData || null;
 
   const form = useForm<AuthFormValues>({
     resolver: zodResolver(authSchema),
@@ -41,11 +41,15 @@ const Auth = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate(redirectAfterLogin);
+        if (formData && redirectAfterLogin === '/publicar-carga') {
+          navigate(redirectAfterLogin, { state: { formData } });
+        } else {
+          navigate(redirectAfterLogin);
+        }
       }
     };
     checkSession();
-  }, [navigate, redirectAfterLogin]);
+  }, [navigate, redirectAfterLogin, formData]);
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     try {
@@ -107,7 +111,12 @@ const Auth = () => {
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de vuelta.",
         });
-        navigate(redirectAfterLogin);
+        
+        if (formData && redirectAfterLogin === '/publicar-carga') {
+          navigate(redirectAfterLogin, { state: { formData } });
+        } else {
+          navigate(redirectAfterLogin);
+        }
       }
     } catch (error: any) {
       console.error("Auth error:", error);

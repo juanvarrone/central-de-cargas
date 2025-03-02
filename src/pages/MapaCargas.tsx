@@ -16,12 +16,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router-dom";
 import { User as UserIcon, Menu, LogOut, Truck, Bell, ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const MapaCargas = () => {
   const [filters, setFilters] = useState<Filters>({});
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -30,6 +32,11 @@ const MapaCargas = () => {
         setUser(user);
       } catch (error) {
         console.error("Error fetching user:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo verificar tu sesión. Por favor intenta nuevamente.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -46,7 +53,7 @@ const MapaCargas = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [toast]);
 
   const handleFilterChange = (newFilters: Filters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
@@ -60,6 +67,14 @@ const MapaCargas = () => {
       console.error("Error signing out:", error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <p>Cargando...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50">
