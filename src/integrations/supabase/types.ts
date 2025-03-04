@@ -41,18 +41,22 @@ export type Database = {
           cantidad_cargas: number
           created_at: string
           destino: string
+          destino_ciudad: string | null
           destino_detalle: string | null
           destino_lat: number | null
           destino_lng: number | null
+          destino_provincia: string | null
           estado: string
           fecha_carga_desde: string
           fecha_carga_hasta: string | null
           id: string
           observaciones: string | null
           origen: string
+          origen_ciudad: string | null
           origen_detalle: string | null
           origen_lat: number | null
           origen_lng: number | null
+          origen_provincia: string | null
           tarifa: number
           tipo_camion: string
           tipo_carga: string
@@ -63,18 +67,22 @@ export type Database = {
           cantidad_cargas?: number
           created_at?: string
           destino: string
+          destino_ciudad?: string | null
           destino_detalle?: string | null
           destino_lat?: number | null
           destino_lng?: number | null
+          destino_provincia?: string | null
           estado?: string
           fecha_carga_desde: string
           fecha_carga_hasta?: string | null
           id?: string
           observaciones?: string | null
           origen: string
+          origen_ciudad?: string | null
           origen_detalle?: string | null
           origen_lat?: number | null
           origen_lng?: number | null
+          origen_provincia?: string | null
           tarifa: number
           tipo_camion: string
           tipo_carga: string
@@ -85,18 +93,22 @@ export type Database = {
           cantidad_cargas?: number
           created_at?: string
           destino?: string
+          destino_ciudad?: string | null
           destino_detalle?: string | null
           destino_lat?: number | null
           destino_lng?: number | null
+          destino_provincia?: string | null
           estado?: string
           fecha_carga_desde?: string
           fecha_carga_hasta?: string | null
           id?: string
           observaciones?: string | null
           origen?: string
+          origen_ciudad?: string | null
           origen_detalle?: string | null
           origen_lat?: number | null
           origen_lng?: number | null
+          origen_provincia?: string | null
           tarifa?: number
           tipo_camion?: string
           tipo_carga?: string

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -41,6 +42,7 @@ const Auth = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
+        console.log("User is already logged in, redirecting to:", redirectAfterLogin);
         if (formData && redirectAfterLogin === '/publicar-carga') {
           navigate(redirectAfterLogin, { state: { formData } });
         } else {
@@ -95,6 +97,7 @@ const Auth = () => {
             title: "Registro exitoso",
             description: "Por favor, revisa tu email para confirmar tu cuenta.",
           });
+          // After signup, don't navigate - wait for email confirmation
         }
       } else {
         console.log("Logging in with:", values.email);
@@ -112,6 +115,7 @@ const Auth = () => {
           description: "Bienvenido de vuelta.",
         });
         
+        // Immediately redirect after successful login
         if (formData && redirectAfterLogin === '/publicar-carga') {
           navigate(redirectAfterLogin, { state: { formData } });
         } else {
@@ -122,7 +126,7 @@ const Auth = () => {
       console.error("Auth error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Error en la autenticación",
         variant: "destructive",
       });
     } finally {
