@@ -3,13 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const useCargoSubmission = () => {
   const submitCargo = async (data: any) => {
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) {
+    // Get the current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    // Check if user is authenticated
+    if (userError || !userData.user) {
+      console.error("Authentication error:", userError);
       throw new Error("Usuario no autenticado");
     }
 
     // Added error handling and more detailed error messages
     try {
+      console.log("Submitting cargo with user ID:", userData.user.id);
+      
       const { error } = await supabase.from("cargas").insert({
         origen: data.origen,
         origen_detalle: data.origen_detalle,
@@ -31,7 +37,7 @@ export const useCargoSubmission = () => {
         destino_lat: data.destino_lat,
         destino_lng: data.destino_lng,
         estado: "disponible",
-        usuario_id: user.data.user.id,
+        usuario_id: userData.user.id,
       });
 
       if (error) {
