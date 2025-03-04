@@ -1,14 +1,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 
@@ -39,15 +39,20 @@ const Auth = () => {
   });
 
   useEffect(() => {
+    console.log("Auth component mounted");
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log("User is already logged in, redirecting to:", redirectAfterLogin);
-        if (formData && redirectAfterLogin === '/publicar-carga') {
-          navigate(redirectAfterLogin, { state: { formData } });
-        } else {
-          navigate(redirectAfterLogin);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log("User is already logged in, redirecting to:", redirectAfterLogin);
+          if (formData && redirectAfterLogin === '/publicar-carga') {
+            navigate(redirectAfterLogin, { state: { formData } });
+          } else {
+            navigate(redirectAfterLogin);
+          }
         }
+      } catch (error) {
+        console.error("Error checking session:", error);
       }
     };
     checkSession();
@@ -69,11 +74,13 @@ const Auth = () => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
 
   const onSubmit = async (values: AuthFormValues) => {
+    console.log("Form submitted", values);
     setLoading(true);
     try {
       if (isSignUp) {
@@ -105,11 +112,14 @@ const Auth = () => {
           email: values.email,
           password: values.password,
         });
+        
+        if (signInError) {
+          console.error("Sign in error:", signInError);
+          throw signInError;
+        }
 
         console.log("Sign in result:", data);
         
-        if (signInError) throw signInError;
-
         toast({
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de vuelta.",
