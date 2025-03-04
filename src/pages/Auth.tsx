@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
@@ -217,73 +217,75 @@ const Auth = () => {
               </div>
             </div>
 
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="tu@email.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contraseña</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {isSignUp && (
+            <FormProvider {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="fullName"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre completo</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="tu@email.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
 
-              <div className="space-y-4">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading
-                    ? "Cargando..."
-                    : isSignUp
-                    ? "Crear cuenta"
-                    : "Iniciar sesión"}
-                </Button>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contraseña</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  disabled={loading}
-                >
-                  {isSignUp
-                    ? "¿Ya tienes cuenta? Inicia sesión"
-                    : "¿No tienes cuenta? Regístrate"}
-                </Button>
-              </div>
-            </form>
+                {isSignUp && (
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre completo</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <div className="space-y-4">
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading
+                      ? "Cargando..."
+                      : isSignUp
+                      ? "Crear cuenta"
+                      : "Iniciar sesión"}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    disabled={loading}
+                  >
+                    {isSignUp
+                      ? "¿Ya tienes cuenta? Inicia sesión"
+                      : "¿No tienes cuenta? Regístrate"}
+                  </Button>
+                </div>
+              </form>
+            </FormProvider>
           </div>
         </CardContent>
       </Card>
