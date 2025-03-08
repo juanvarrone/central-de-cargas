@@ -229,7 +229,7 @@ const Auth = () => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email perro</FormLabel>
                       <FormControl>
                         <Input placeholder="tu@email.com" {...field} />
                       </FormControl>
