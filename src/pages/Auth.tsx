@@ -264,7 +264,11 @@ const Auth = () => {
                 )}
 
                 <div className="space-y-4">
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading}
+                  >
                     {loading
                       ? "Cargando..."
                       : isSignUp
