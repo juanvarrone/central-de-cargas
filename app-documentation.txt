@@ -1,0 +1,233 @@
+
+# CENTRAL DE CARGAS - DOCUMENTACIÓN TÉCNICA
+
+## ESTRUCTURA GENERAL DE LA APLICACIÓN
+
+Esta aplicación es un sistema de gestión de cargas que permite a usuarios publicar, buscar y tomar cargas de transporte. Está construida con React, TypeScript, Tailwind CSS, y utiliza Supabase como backend.
+
+## TECNOLOGÍAS PRINCIPALES
+
+- **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
+- **Enrutamiento**: React Router DOM
+- **Formularios**: React Hook Form con Zod para validación
+- **Mapas**: Google Maps API (@react-google-maps/api)
+- **Backend**: Supabase (Auth, Database, Storage)
+- **Estilos**: Tailwind CSS
+
+## ESTRUCTURA DE ARCHIVOS Y COMPONENTES
+
+### Páginas Principales (src/pages/)
+
+1. **Index.tsx**
+   - Página de inicio que muestra las opciones principales del sistema
+   - Contiene navegación a las principales funcionalidades
+   - Gestiona la sesión del usuario y muestra opciones dependiendo del estado de autenticación
+   - Detecta si el usuario es admin y muestra el enlace al panel de administración
+
+2. **Auth.tsx**
+   - Maneja la autenticación (inicio de sesión y registro)
+   - Implementa formularios para ambos procesos
+   - Integra con Supabase Auth
+
+3. **PublicarCarga.tsx**
+   - Permite a usuarios crear nuevas cargas
+   - Utiliza CargoForm para la entrada de datos
+   - Integra con useCargoSubmission para guardar en la base de datos
+
+4. **ListadoCargas.tsx**
+   - Muestra un listado de cargas disponibles
+   - Permite filtrar y ordenar cargas
+   - Ofrece opciones para tomar cargas
+
+5. **MapaCargas.tsx**
+   - Visualiza cargas en un mapa interactivo
+   - Utiliza Google Maps para mostrar origen y destino
+   - Permite filtrar cargas por ubicación y tipo
+
+6. **ConfigurarAlertas.tsx**
+   - Permite a usuarios configurar notificaciones basadas en criterios
+   - Gestiona preferencias de alertas para nuevas cargas
+
+7. **Admin.tsx**
+   - Panel de administración para usuarios con privilegios
+   - Incluye gestión de módulos y usuarios
+   - Verifica permisos de administrador antes de mostrar contenido
+
+8. **NotFound.tsx**
+   - Página 404 para rutas inexistentes
+
+9. **PoliticasPrivacidad.tsx / TerminosCondiciones.tsx**
+   - Páginas legales de la aplicación
+
+### Componentes (src/components/)
+
+#### UI Components (src/components/ui/)
+- Sistema de componentes de shadcn/ui para la interfaz de usuario
+- Incluye botones, formularios, tarjetas, modales, etc.
+
+#### Cargo Components (src/components/cargo/)
+1. **CargoForm.tsx**
+   - Formulario principal para ingreso de datos de cargas
+   - Maneja la validación y envío de datos
+   - Integra con componentes de mapas y campos especializados
+
+2. **CargasMapa.tsx**
+   - Componente para visualizar cargas en mapa
+   - Permite interacción con marcadores de origen/destino
+
+3. **CargoDateFields.tsx / CargoDateTypeField.tsx**
+   - Componentes especializados para selección de fechas
+   - Permite elegir fechas exactas o rangos
+
+4. **CargoMapFilters.tsx**
+   - Filtros para el mapa de cargas
+   - Permite filtrar por provincia, tipo de carga, etc.
+
+5. **CargoMapInfoWindow.tsx**
+   - Ventana de información al hacer clic en marcadores del mapa
+   - Muestra detalles y permite tomar cargas
+
+#### Admin Components (src/components/admin/)
+1. **ModuleManagement.tsx**
+   - Administra módulos/funcionalidades del sistema
+   - Permite activar/desactivar características
+
+2. **UserManagement.tsx**
+   - Gestión de usuarios del sistema
+   - Permite asignar roles y bloquear usuarios
+
+#### Otros Componentes
+1. **CargoMap.tsx**
+   - Mapa interactivo para seleccionar origen/destino
+   - Calcula distancia entre puntos
+
+2. **CargoLocationFields.tsx**
+   - Campos para ingresar ubicaciones de origen/destino
+   - Implementa geocodificación para convertir direcciones en coordenadas
+
+3. **CargoDetailsFields.tsx**
+   - Campos para detalles de la carga (tipo, cantidad, tarifa)
+   - Implementa formateo de moneda
+
+### Hooks (src/hooks/)
+
+1. **useCargoSubmission.ts**
+   - Hook para enviar datos de carga a Supabase
+   - Gestiona la autenticación y validación
+
+2. **use-toast.ts**
+   - Hook para mostrar notificaciones
+
+3. **use-mobile.tsx**
+   - Hook para detectar dispositivos móviles
+
+### Utilidades (src/utils/)
+
+1. **geocoding.ts**
+   - Servicios para convertir direcciones en coordenadas
+   - Integra con Google Maps API
+
+### Tipos (src/types/)
+
+1. **cargo.ts**
+   - Definiciones de tipos para cargas
+   - Esquemas de validación con Zod
+
+2. **mapa-cargas.ts**
+   - Tipos para el mapa de cargas
+   - Interfaces para filtros y selección
+
+### Integración con Supabase (src/integrations/supabase/)
+
+1. **client.ts**
+   - Cliente de Supabase
+   - Configuración de conexión
+
+2. **types.ts**
+   - Tipos generados para la base de datos
+   - Define estructura de tablas y relaciones
+
+## ESTRUCTURA DE LA BASE DE DATOS
+
+### Tablas Principales
+
+1. **profiles**
+   - Almacena información de usuarios
+   - Columnas: id, email, full_name, avatar_url, is_admin, is_blocked, blocked_reason, avg_ratings, total_reviews, created_at, updated_at
+   - Relacionada con: user_roles, cargas, reviews, ubicaciones_favoritas
+
+2. **cargas**
+   - Almacena información de cargas publicadas
+   - Columnas: id, origen, origen_detalle, origen_provincia, origen_ciudad, origen_lat, origen_lng, destino, destino_detalle, destino_provincia, destino_ciudad, destino_lat, destino_lng, tipo_carga, tipo_camion, cantidad_cargas, tarifa, fecha_carga_desde, fecha_carga_hasta, observaciones, estado, usuario_id, created_at, updated_at
+   - Relacionada con: profiles, reviews
+
+3. **user_roles**
+   - Define roles de usuarios
+   - Columnas: id, user_id, role, created_at
+   - Relacionada con: profiles
+
+4. **ubicaciones_favoritas**
+   - Almacena ubicaciones favoritas de usuarios
+   - Columnas: id, usuario_id, direccion, tipo, lat, lng, created_at, updated_at
+   - Relacionada con: profiles
+
+5. **reviews**
+   - Almacena reseñas entre usuarios
+   - Columnas: id, reviewer_id, reviewed_id, carga_id, reviewer_type, overall_rating, punctuality_rating, equipment_rating, respect_rating, comments, created_at, updated_at
+   - Relacionada con: profiles, cargas
+
+6. **app_modules**
+   - Módulos/funcionalidades del sistema
+   - Columnas: id, name, description, is_active, created_at, updated_at
+
+7. **review_category_settings**
+   - Configuración de categorías de reseñas
+   - Columnas: id, category, is_active, created_at, updated_at
+
+### Funciones de Base de Datos
+
+1. **update_profile_ratings()**
+   - Actualiza promedios de calificaciones en perfiles
+
+2. **is_admin(user_id uuid)**
+   - Verifica si un usuario tiene rol de administrador
+
+3. **handle_updated_at()**
+   - Actualiza timestamp de actualización
+
+### Políticas de Seguridad (RLS)
+
+El sistema utiliza Row Level Security para garantizar que los usuarios solo accedan a datos autorizados.
+
+## FLUJOS PRINCIPALES
+
+1. **Publicación de Carga**
+   - Usuario se autentica
+   - Accede a PublicarCarga
+   - Completa formulario con origen, destino, fechas, tipo de carga, etc.
+   - Sistema guarda en base de datos y actualiza listado
+
+2. **Búsqueda y Toma de Cargas**
+   - Usuario puede buscar cargas en ListadoCargas o MapaCargas
+   - Puede filtrar por ubicación, tipo, fecha
+   - Al encontrar carga adecuada, puede tomarla
+   - Sistema actualiza estado de la carga
+
+3. **Administración**
+   - Administrador accede a panel Admin
+   - Puede gestionar usuarios (bloquear, asignar roles)
+   - Puede configurar módulos del sistema
+
+4. **Gestión de Perfil y Reseñas**
+   - Usuarios pueden ver y editar su perfil
+   - Pueden recibir y dar reseñas después de completar envíos
+   - El sistema actualiza automáticamente calificaciones promedio
+
+## NOTAS TÉCNICAS IMPORTANTES
+
+1. La autenticación se maneja completamente a través de Supabase Auth
+2. Las cargas utilizan geocodificación para convertir direcciones en coordenadas
+3. La seguridad a nivel de fila en Supabase garantiza que los usuarios solo vean datos a los que tienen acceso
+4. El rol de administrador se verifica mediante la función RPC is_admin() en Supabase
+5. Los componentes UI utilizan shadcn/ui que se basa en Tailwind CSS
+6. La validación de formularios utiliza Zod en combinación con React Hook Form
