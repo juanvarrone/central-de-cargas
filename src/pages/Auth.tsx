@@ -280,7 +280,10 @@ const Auth = () => {
                     type="button"
                     variant="ghost"
                     className="w-full"
-                    onClick={() => setIsSignUp(!isSignUp)}
+                    onClick={() => {
+                      setIsSignUp(!isSignUp);
+                      form.reset();
+                    }}
                     disabled={loading}
                   >
                     {isSignUp
