@@ -217,19 +217,14 @@ const Auth = () => {
               </div>
             </div>
 
-                        <FormProvider {...form}>
-              <form 
-                onSubmit={form.handleSubmit(onSubmit, (errors) => {
-                  console.log("Validation errors:", errors);
-                })} 
-                className="space-y-4"
-              >
+            <FormProvider {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email perro</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input placeholder="tu@email.com" {...field} />
                       </FormControl>
@@ -273,7 +268,6 @@ const Auth = () => {
                     type="submit" 
                     className="w-full" 
                     disabled={loading}
-                    onClick={() => console.log("Button clicked")}
                   >
                     {loading
                       ? "Cargando..."
