@@ -17,6 +17,7 @@ const AdminPage = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -29,7 +30,7 @@ const AdminPage = () => {
       
       if (!session) {
         console.log("No session found, redirecting to auth");
-        navigate("/auth");
+        navigate("/auth", { state: { from: "/admin" } });
         return;
       }
 
@@ -55,18 +56,20 @@ const AdminPage = () => {
       }
       
       setIsAdmin(true);
+      setSessionChecked(true);
       setLoading(false);
     } catch (error: any) {
       console.error("Admin access check error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Error al verificar permisos de administrador",
         variant: "destructive",
       });
       navigate("/");
     }
   };
 
+  // Show loading state while checking session and admin status
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -75,8 +78,9 @@ const AdminPage = () => {
     );
   }
 
-  if (!isAdmin) {
-    return null; // Additional safety check
+  // Extra safety check - shouldn't render anything if not admin
+  if (!isAdmin || !sessionChecked) {
+    return null;
   }
 
   return (

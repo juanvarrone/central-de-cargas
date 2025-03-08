@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { User as UserIcon, Menu, LogOut, Truck, Bell } from "lucide-react";
+import { User as UserIcon, Menu, LogOut, Truck, Bell, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { User } from "@supabase/supabase-js";
@@ -14,17 +14,31 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
+        
+        if (user) {
+          // Check if user is admin
+          const { data: isAdminData, error: isAdminError } = await supabase
+            .rpc('is_admin', { user_id: user.id });
+            
+          if (!isAdminError && isAdminData) {
+            setIsAdmin(true);
+          }
+        }
       } catch (error) {
         console.error("Error fetching user:", error);
       } finally {
@@ -35,8 +49,22 @@ const Index = () => {
     fetchUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setUser(session?.user || null);
+        
+        if (session?.user) {
+          // Check if user is admin
+          const { data: isAdminData, error: isAdminError } = await supabase
+            .rpc('is_admin', { user_id: session.user.id });
+            
+          if (!isAdminError && isAdminData) {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        } else {
+          setIsAdmin(false);
+        }
       }
     );
 
@@ -52,9 +80,18 @@ const Index = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente",
+      });
       navigate('/auth');
     } catch (error) {
       console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al cerrar sesión",
+        variant: "destructive",
+      });
     }
   };
 
@@ -88,6 +125,16 @@ const Index = () => {
                       Mis Alertas
                     </Link>
                   </DropdownMenuItem>
+                  
+                  {isAdmin && (
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link to="/admin" className="flex items-center">
+                        <Settings size={16} className="mr-2" />
+                        Panel de Administración
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
                     <LogOut size={16} className="mr-2" />
@@ -96,7 +143,11 @@ const Index = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button asChild variant="outline">
+              <Button 
+                asChild 
+                variant="outline"
+                className="hover:bg-primary hover:text-white transition-colors"
+              >
                 <Link to="/auth">Iniciar sesión</Link>
               </Button>
             )
