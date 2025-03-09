@@ -36,6 +36,87 @@ export type Database = {
         }
         Relationships: []
       }
+      camiones_disponibles: {
+        Row: {
+          capacidad: string
+          created_at: string
+          destino: string
+          destino_ciudad: string | null
+          destino_detalle: string | null
+          destino_lat: number | null
+          destino_lng: number | null
+          destino_provincia: string | null
+          estado: string
+          fecha_disponible_desde: string
+          fecha_disponible_hasta: string | null
+          id: string
+          observaciones: string | null
+          origen: string
+          origen_ciudad: string | null
+          origen_detalle: string | null
+          origen_lat: number | null
+          origen_lng: number | null
+          origen_provincia: string | null
+          radio_km: number | null
+          refrigerado: boolean | null
+          tipo_camion: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          capacidad: string
+          created_at?: string
+          destino: string
+          destino_ciudad?: string | null
+          destino_detalle?: string | null
+          destino_lat?: number | null
+          destino_lng?: number | null
+          destino_provincia?: string | null
+          estado?: string
+          fecha_disponible_desde: string
+          fecha_disponible_hasta?: string | null
+          id?: string
+          observaciones?: string | null
+          origen: string
+          origen_ciudad?: string | null
+          origen_detalle?: string | null
+          origen_lat?: number | null
+          origen_lng?: number | null
+          origen_provincia?: string | null
+          radio_km?: number | null
+          refrigerado?: boolean | null
+          tipo_camion: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          capacidad?: string
+          created_at?: string
+          destino?: string
+          destino_ciudad?: string | null
+          destino_detalle?: string | null
+          destino_lat?: number | null
+          destino_lng?: number | null
+          destino_provincia?: string | null
+          estado?: string
+          fecha_disponible_desde?: string
+          fecha_disponible_hasta?: string | null
+          id?: string
+          observaciones?: string | null
+          origen?: string
+          origen_ciudad?: string | null
+          origen_detalle?: string | null
+          origen_lat?: number | null
+          origen_lng?: number | null
+          origen_provincia?: string | null
+          radio_km?: number | null
+          refrigerado?: boolean | null
+          tipo_camion?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       cargas: {
         Row: {
           cantidad_cargas: number

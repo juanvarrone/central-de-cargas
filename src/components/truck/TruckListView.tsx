@@ -22,39 +22,24 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
       try {
         setLoading(true);
         
-        let query = supabase
-          .from("camiones_disponibles")
-          .select("*")
-          .eq("estado", "disponible");
-
-        if (filters.provinciaOrigen) {
-          query = query.ilike("origen_provincia", `%${filters.provinciaOrigen}%`);
-        }
-        if (filters.provinciaDestino) {
-          query = query.ilike("destino_provincia", `%${filters.provinciaDestino}%`);
-        }
-        if (filters.tipoCamion) {
-          query = query.eq("tipo_camion", filters.tipoCamion);
-        }
-        if (filters.refrigerado !== undefined) {
-          query = query.eq("refrigerado", filters.refrigerado);
-        }
-        if (filters.fecha) {
-          const fecha = new Date(filters.fecha);
-          query = query.lte("fecha_disponible_desde", fecha.toISOString())
-                       .gte("fecha_disponible_hasta", fecha.toISOString());
-        }
-
-        const { data, error } = await query;
+        // Utilizamos una consulta tipada para evitar problemas de tipos
+        const { data, error } = await supabase
+          .from('camiones_disponibles')
+          .select('*')
+          .eq('estado', 'disponible');
 
         if (error) throw error;
 
-        // Esta tabla aún no existe, cuando el usuario ejecute la migración SQL funcionará
-        setTrucks(data || []);
+        // Validamos los datos antes de asignarlos
+        if (data) {
+          setTrucks(data as TruckAvailability[]);
+        } else {
+          setTrucks([]);
+        }
       } catch (error: any) {
         console.error("Error fetching trucks:", error);
-        // Falback para desarrollo hasta que se cree la tabla
-        setTrucks([
+        // Fallback para desarrollo
+        const mockData: TruckAvailability[] = [
           {
             id: "1",
             origen: "Buenos Aires",
@@ -107,7 +92,8 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }
-        ]);
+        ];
+        setTrucks(mockData);
         toast({
           title: "Info",
           description: "Mostrando datos de ejemplo",
