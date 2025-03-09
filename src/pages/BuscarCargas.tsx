@@ -4,9 +4,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CargoMapFilters from "@/components/cargo/CargoMapFilters";
 import CargasMapa from "@/components/cargo/CargasMapa";
 import CargoListView from "@/components/cargo/CargoListView";
-import { MapIcon, ListIcon } from "lucide-react";
+import { MapIcon, ListIcon, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const BuscarCargas = () => {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [view, setView] = useState<"map" | "list">("map");
 
@@ -16,7 +19,18 @@ const BuscarCargas = () => {
 
   return (
     <div className="container mx-auto py-6 px-4">
-      <h1 className="text-2xl font-bold mb-6">Buscar Cargas</h1>
+      <div className="flex items-center mb-6">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate(-1)} 
+          className="mr-2"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Volver
+        </Button>
+        <h1 className="text-2xl font-bold">Buscar Cargas</h1>
+      </div>
 
       <div className="mb-6">
         <CargoMapFilters onFilterChange={handleFilterChange} />
