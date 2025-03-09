@@ -4,8 +4,9 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import PublicarCarga from "./pages/PublicarCarga";
-import ListadoCargas from "./pages/ListadoCargas";
-import MapaCargas from "./pages/MapaCargas";
+import BuscarCargas from "./pages/BuscarCargas";
+import PublicarCamion from "./pages/PublicarCamion";
+import BuscarCamiones from "./pages/BuscarCamiones";
 import ConfigurarAlertas from "./pages/ConfigurarAlertas";
 import PoliticasPrivacidad from "./pages/PoliticasPrivacidad";
 import TerminosCondiciones from "./pages/TerminosCondiciones";
@@ -19,8 +20,9 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/publicar-carga" element={<PublicarCarga />} />
-        <Route path="/listado-cargas" element={<ListadoCargas />} />
-        <Route path="/mapa-cargas" element={<MapaCargas />} />
+        <Route path="/buscar-cargas" element={<BuscarCargas />} />
+        <Route path="/publicar-camion" element={<PublicarCamion />} />
+        <Route path="/buscar-camiones" element={<BuscarCamiones />} />
         <Route path="/configurar-alertas" element={<ConfigurarAlertas />} />
         <Route path="/politicas-privacidad" element={<PoliticasPrivacidad />} />
         <Route path="/terminos-condiciones" element={<TerminosCondiciones />} />
