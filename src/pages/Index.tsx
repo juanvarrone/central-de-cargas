@@ -170,25 +170,25 @@ const Index = () => {
                 Publicar Carga
               </Button>
               <Button
-                onClick={() => handleNavigate("/listado-cargas")}
+                onClick={() => handleNavigate("/buscar-cargas")}
                 className="w-full h-16 text-lg"
                 variant="outline"
               >
                 Buscar Cargas
               </Button>
               <Button
-                onClick={() => handleNavigate("/mapa-cargas")}
+                onClick={() => handleNavigate("/publicar-camion")}
                 className="w-full h-16 text-lg"
                 variant="outline"
               >
-                Ver Mapa de Cargas
+                Publicar Camión
               </Button>
               <Button
-                onClick={() => handleNavigate("/configurar-alertas")}
+                onClick={() => handleNavigate("/buscar-camiones")}
                 className="w-full h-16 text-lg"
                 variant="outline"
               >
-                Configurar Alertas
+                Buscar Camiones
               </Button>
             </div>
           </CardContent>
@@ -198,14 +198,14 @@ const Index = () => {
           <p className="mb-2">Versión 1.0.0</p>
           <div className="space-x-4">
             <Link 
-              to="/terminos-y-condiciones" 
+              to="/terminos-condiciones" 
               className="text-gray-600 hover:text-gray-900 underline"
             >
               Términos y Condiciones
             </Link>
             <span>•</span>
             <Link 
-              to="/politicas-de-privacidad" 
+              to="/politicas-privacidad" 
               className="text-gray-600 hover:text-gray-900 underline"
             >
               Políticas de Privacidad

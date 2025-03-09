@@ -102,8 +102,12 @@ const PublicarCamion = () => {
               
               <CargoLocationFields
                 form={form}
-                origenPrefix="origen"
-                destinoPrefix="destino"
+                onOrigenChange={(value) => {
+                  console.log("Origen changed:", value);
+                }}
+                onDestinoChange={(value) => {
+                  console.log("Destino changed:", value);
+                }}
               />
             </div>
 
@@ -118,8 +122,7 @@ const PublicarCamion = () => {
                 <FormLabel>Fechas de Disponibilidad</FormLabel>
                 
                 <CargoDateTypeField 
-                  value={dateType}
-                  onChange={handleDateTypeChange}
+                  form={form}
                 />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

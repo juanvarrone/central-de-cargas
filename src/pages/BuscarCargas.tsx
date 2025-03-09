@@ -1,17 +1,16 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CargoFilters } from "@/types/mapa-cargas";
 import CargoMapFilters from "@/components/cargo/CargoMapFilters";
 import CargasMapa from "@/components/cargo/CargasMapa";
 import CargoListView from "@/components/cargo/CargoListView";
 import { MapIcon, ListIcon } from "lucide-react";
 
 const BuscarCargas = () => {
-  const [filters, setFilters] = useState<CargoFilters>({});
+  const [filters, setFilters] = useState<Record<string, any>>({});
   const [view, setView] = useState<"map" | "list">("map");
 
-  const handleFilterChange = (newFilters: CargoFilters) => {
+  const handleFilterChange = (newFilters: Record<string, any>) => {
     setFilters(newFilters);
   };
 
