@@ -7,19 +7,20 @@ import CargoListView from "@/components/cargo/CargoListView";
 import { MapIcon, ListIcon, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Card } from "@/components/ui/card";
 
 const BuscarCargas = () => {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Record<string, any>>({});
-  const [view, setView] = useState<"map" | "list">("map");
+  const [view, setView] = useState<"map" | "list">("list"); // Changed default to list
 
   const handleFilterChange = (newFilters: Record<string, any>) => {
     setFilters(newFilters);
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex items-center mb-6">
+    <div className="container mx-auto py-4 px-4">
+      <div className="flex items-center mb-4">
         <Button 
           variant="ghost" 
           size="sm" 
@@ -32,32 +33,34 @@ const BuscarCargas = () => {
         <h1 className="text-2xl font-bold">Buscar Cargas</h1>
       </div>
 
-      <div className="mb-6">
-        <CargoMapFilters onFilterChange={handleFilterChange} />
+      <div className="mb-4">
+        <Card className="p-4">
+          <CargoMapFilters onFilterChange={handleFilterChange} />
+        </Card>
       </div>
 
       <Tabs value={view} onValueChange={(v) => setView(v as "map" | "list")} className="w-full">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end mb-3">
           <TabsList>
-            <TabsTrigger value="map" className="flex items-center gap-2">
-              <MapIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Mapa</span>
-            </TabsTrigger>
             <TabsTrigger value="list" className="flex items-center gap-2">
               <ListIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Lista</span>
             </TabsTrigger>
+            <TabsTrigger value="map" className="flex items-center gap-2">
+              <MapIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Mapa</span>
+            </TabsTrigger>
           </TabsList>
         </div>
         
-        <TabsContent value="map" className="w-full mt-2">
+        <TabsContent value="list" className="w-full mt-0">
+          <CargoListView filters={filters} />
+        </TabsContent>
+        
+        <TabsContent value="map" className="w-full mt-0">
           <div className="h-[60vh] w-full rounded-md overflow-hidden border">
             <CargasMapa filters={filters} />
           </div>
-        </TabsContent>
-        
-        <TabsContent value="list" className="w-full mt-2">
-          <CargoListView filters={filters} />
         </TabsContent>
       </Tabs>
     </div>

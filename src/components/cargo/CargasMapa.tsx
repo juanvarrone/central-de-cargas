@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { GoogleMap, InfoWindow, LoadScript, Marker, Libraries } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, LoadScript, Marker, Libraries, MarkerF } from "@react-google-maps/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CargoMapInfoWindow from "@/components/cargo/CargoMapInfoWindow";
@@ -72,7 +72,6 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
         if (error) throw error;
 
         console.log("Cargas fetched:", data);
-        // Cast data to Carga[] to ensure type compatibility
         setCargas(data as unknown as Carga[]);
       } catch (error: any) {
         console.error("Error fetching cargas:", error);
@@ -106,6 +105,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
       strokeWeight: 1,
       strokeColor: isOrigin ? "#166534" : "#991b1b",
       scale: 2,
+      anchor: new google.maps.Point(12, 17), // Fix marker position
     },
   });
 
@@ -129,7 +129,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
         {cargas.map((carga) => (
           <div key={carga.id}>
             {carga.origen_lat && carga.origen_lng && (
-              <Marker
+              <MarkerF
                 position={{
                   lat: carga.origen_lat,
                   lng: carga.origen_lng,
@@ -141,7 +141,7 @@ const CargasMapa = ({ filters }: CargasMapaProps) => {
               />
             )}
             {carga.destino_lat && carga.destino_lng && (
-              <Marker
+              <MarkerF
                 position={{
                   lat: carga.destino_lat,
                   lng: carga.destino_lng,

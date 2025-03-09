@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Truck } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const provinciasArgentina = [
   "Buenos Aires",
@@ -49,19 +49,19 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
   };
 
   return (
-    <div className="space-y-6 h-full">
-      <CardHeader className="px-0">
-        <CardTitle>Filtros de búsqueda</CardTitle>
+    <div className="h-full">
+      <CardHeader className="px-0 pb-2">
+        <CardTitle className="text-lg">Filtros de búsqueda</CardTitle>
         <CardDescription>
           Filtra las cargas según tus preferencias
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-0">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
+      <CardContent className="px-0 py-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <Label className="flex items-center gap-2 mb-1">
               <MapPin className="text-green-500 h-4 w-4" />
-              Provincia de origen
+              Origen
             </Label>
             <Select
               onValueChange={(value) =>
@@ -69,7 +69,7 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona una provincia" />
+                <SelectValue placeholder="Provincia" />
               </SelectTrigger>
               <SelectContent>
                 {provinciasArgentina.map((provincia) => (
@@ -80,10 +80,10 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
+          <div>
+            <Label className="flex items-center gap-2 mb-1">
               <MapPin className="text-red-500 h-4 w-4" />
-              Provincia de destino
+              Destino
             </Label>
             <Select
               onValueChange={(value) =>
@@ -91,7 +91,7 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona una provincia" />
+                <SelectValue placeholder="Provincia" />
               </SelectTrigger>
               <SelectContent>
                 {provinciasArgentina.map((provincia) => (
@@ -102,10 +102,10 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
+          <div>
+            <Label className="flex items-center gap-2 mb-1">
               <Truck className="h-4 w-4" />
-              Tipo de camión
+              Camión
             </Label>
             <Select
               onValueChange={(value) =>
@@ -113,7 +113,7 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona tipo de camión" />
+                <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="semi">Semi</SelectItem>
@@ -124,9 +124,10 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
           </div>
         </div>
       </CardContent>
-      <div className="mt-auto pt-4 border-t">
+      <div className="pt-2 border-t">
         <Button 
           variant="outline" 
+          size="sm"
           className="w-full" 
           onClick={resetFilters}
         >
