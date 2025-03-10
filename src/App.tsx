@@ -12,6 +12,7 @@ import ConfigurarAlertas from "./pages/ConfigurarAlertas";
 import PoliticasPrivacidad from "./pages/PoliticasPrivacidad";
 import TerminosCondiciones from "./pages/TerminosCondiciones";
 import AdminPage from "./pages/Admin";
+import MisCargas from "./pages/MisCargas";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Route path="/politicas-privacidad" element={<PoliticasPrivacidad />} />
         <Route path="/terminos-condiciones" element={<TerminosCondiciones />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/mis-cargas" element={<MisCargas />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
