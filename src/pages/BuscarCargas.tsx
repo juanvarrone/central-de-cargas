@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 const BuscarCargas = () => {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Record<string, any>>({});
-  const [view, setView] = useState<"map" | "list">("list"); // Changed default to list
+  const [view, setView] = useState<"map" | "list">("list");
 
   const handleFilterChange = (newFilters: Record<string, any>) => {
     setFilters(newFilters);
@@ -33,11 +33,9 @@ const BuscarCargas = () => {
         <h1 className="text-2xl font-bold">Buscar Cargas</h1>
       </div>
 
-      <div className="mb-4">
-        <Card className="p-4">
-          <CargoMapFilters onFilterChange={handleFilterChange} />
-        </Card>
-      </div>
+      <Card className="p-4 mb-4">
+        <CargoMapFilters onFilterChange={handleFilterChange} />
+      </Card>
 
       <Tabs value={view} onValueChange={(v) => setView(v as "map" | "list")} className="w-full">
         <div className="flex justify-end mb-3">
