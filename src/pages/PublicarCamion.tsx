@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import CargoDateTypeField from "@/components/cargo/CargoDateTypeField";
@@ -61,7 +60,7 @@ const PublicarCamion = () => {
       origen_lng: 0,
       destino_lat: 0,
       destino_lng: 0,
-      // Removing these fields as requested
+      // These were removed from schema validation but still needed for the API
       origen: "",
       origen_detalle: "",
       destino: "",
@@ -395,7 +394,11 @@ const PublicarCamion = () => {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting || !selectedCamion}>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !selectedCamion}
+              className="px-6 py-2 text-base"
+            >
               {isSubmitting ? "Publicando..." : "Publicar Disponibilidad"}
             </Button>
           </div>

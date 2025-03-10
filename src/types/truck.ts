@@ -2,14 +2,14 @@
 import { z } from "zod";
 
 export const camionSchema = z.object({
-  origen: z.string().min(2, "El origen es requerido"),
-  origen_detalle: z.string().min(2, "El detalle del origen es requerido"),
+  origen: z.string().optional(),
+  origen_detalle: z.string().optional(),
   origen_provincia: z.string().min(2, "La provincia de origen es requerida"),
-  origen_ciudad: z.string().min(2, "La ciudad de origen es requerida"),
-  destino: z.string().min(2, "El destino es requerido"),
-  destino_detalle: z.string().min(2, "El detalle del destino es requerido"),
+  origen_ciudad: z.string().optional(),
+  destino: z.string().optional(),
+  destino_detalle: z.string().optional(),
   destino_provincia: z.string().min(2, "La provincia de destino es requerida"),
-  destino_ciudad: z.string().min(2, "La ciudad de destino es requerida"),
+  destino_ciudad: z.string().optional(),
   tipo_fecha: z.enum(["exacta", "rango"]),
   fecha_disponible_desde: z.string().min(1, "La fecha de disponibilidad es requerida"),
   fecha_disponible_hasta: z.string().optional(),

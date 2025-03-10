@@ -12,6 +12,7 @@ export interface Truck {
   foto_chasis: string | null;
   foto_acoplado: string | null;
   created_at: string;
+  user_id: string;
 }
 
 export const useTrucks = () => {
@@ -40,16 +41,20 @@ export const useTrucks = () => {
         
         setUser(userData.user);
         
+        console.log("Fetching trucks for user:", userData.user.id);
+        
         // Fetch trucks for this user
         const { data, error: trucksError } = await supabase
           .from('trucks')
           .select('*')
+          .eq('user_id', userData.user.id)
           .order('created_at', { ascending: false });
         
         if (trucksError) {
           throw trucksError;
         }
         
+        console.log("Trucks data:", data);
         setTrucks(data || []);
       } catch (err: any) {
         console.error('Error fetching trucks:', err);

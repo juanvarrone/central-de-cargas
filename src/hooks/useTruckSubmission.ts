@@ -13,40 +13,53 @@ export const useTruckSubmission = () => {
       throw new Error("Usuario no autenticado");
     }
 
-    // Added error handling and more detailed error messages
+    // Added detailed console logs for debugging
+    console.log("Submitting truck availability with data:", data);
+    console.log("User ID:", userData.user.id);
+    
     try {
-      console.log("Submitting truck availability with user ID:", userData.user.id);
+      // Validate required fields before submission
+      if (!data.origen_provincia || !data.destino_provincia || !data.fecha_disponible_desde) {
+        throw new Error("Faltan campos requeridos");
+      }
       
+      // Format data properly
+      const submissionData = {
+        origen: data.origen || `${data.origen_provincia}, ${data.origen_ciudad || ''}`.trim(),
+        origen_detalle: data.origen_detalle || null,
+        origen_provincia: data.origen_provincia,
+        origen_ciudad: data.origen_ciudad || null,
+        destino: data.destino || `${data.destino_provincia}, ${data.destino_ciudad || ''}`.trim(),
+        destino_detalle: data.destino_detalle || null,
+        destino_provincia: data.destino_provincia,
+        destino_ciudad: data.destino_ciudad || null,
+        fecha_disponible_desde: new Date(data.fecha_disponible_desde).toISOString(),
+        fecha_disponible_hasta: data.fecha_disponible_hasta ? new Date(data.fecha_disponible_hasta).toISOString() : null,
+        tipo_camion: data.tipo_camion,
+        capacidad: data.capacidad,
+        refrigerado: data.refrigerado,
+        radio_km: data.radio_km,
+        observaciones: data.observaciones || null,
+        origen_lat: data.origen_lat || 0,
+        origen_lng: data.origen_lng || 0,
+        destino_lat: data.destino_lat || 0,
+        destino_lng: data.destino_lng || 0,
+        estado: "disponible",
+        usuario_id: userData.user.id
+      };
+      
+      console.log("Final submission data:", submissionData);
+
       const { error } = await supabase
         .from("camiones_disponibles")
-        .insert({
-          origen: data.origen,
-          origen_detalle: data.origen_detalle,
-          origen_provincia: data.origen_provincia,
-          origen_ciudad: data.origen_ciudad,
-          destino: data.destino,
-          destino_detalle: data.destino_detalle,
-          destino_provincia: data.destino_provincia,
-          destino_ciudad: data.destino_ciudad,
-          fecha_disponible_desde: new Date(data.fecha_disponible_desde).toISOString(),
-          fecha_disponible_hasta: data.fecha_disponible_hasta ? new Date(data.fecha_disponible_hasta).toISOString() : null,
-          tipo_camion: data.tipo_camion,
-          capacidad: data.capacidad,
-          refrigerado: data.refrigerado,
-          radio_km: data.radio_km,
-          observaciones: data.observaciones || null,
-          origen_lat: data.origen_lat,
-          origen_lng: data.origen_lng,
-          destino_lat: data.destino_lat,
-          destino_lng: data.destino_lng,
-          estado: "disponible",
-          usuario_id: userData.user.id
-        });
+        .insert(submissionData);
 
       if (error) {
         console.error("Error submitting truck availability:", error);
         throw new Error(`Error al publicar disponibilidad: ${error.message}`);
       }
+      
+      console.log("Truck availability submitted successfully");
     } catch (error: any) {
       console.error("Error in submitTruck:", error);
       throw error;
