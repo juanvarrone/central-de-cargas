@@ -18,6 +18,22 @@ export const useTruckSubmission = () => {
     console.log("User ID:", userData.user.id);
     
     try {
+      // Check if user has a valid phone number
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('phone_number')
+        .eq('id', userData.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        throw new Error("Error al verificar el perfil del usuario");
+      }
+      
+      if (!profileData.phone_number) {
+        throw new Error("Debe agregar un número de teléfono válido con WhatsApp en su perfil");
+      }
+      
       // Validate required fields before submission
       if (!data.origen_provincia || !data.destino_provincia || !data.fecha_disponible_desde) {
         throw new Error("Faltan campos requeridos");

@@ -21,10 +21,13 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useTruckSubmission } from "@/hooks/useTruckSubmission";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Truck } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plus, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import TruckCard from "@/components/truck/TruckCard";
 import { useTrucks, Truck as TruckType } from "@/hooks/useTrucks";
+import { usePhoneValidation } from "@/hooks/usePhoneValidation";
+import PhoneNumberForm from "@/components/truck/PhoneNumberForm";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const PublicarCamion = () => {
   const navigate = useNavigate();
@@ -34,6 +37,8 @@ const PublicarCamion = () => {
   const [dateType, setDateType] = useState<"exacta" | "rango">("exacta");
   const [selectedCamion, setSelectedCamion] = useState<string>("");
   const { trucks, isLoading, error, user } = useTrucks();
+  const { hasValidPhone, phoneNumber, isLoading: isPhoneLoading, updatePhoneNumber } = usePhoneValidation();
+  
   const [provincias] = useState([
     "Buenos Aires", "Ciudad Autónoma de Buenos Aires", "Catamarca", "Chaco", "Chubut", 
     "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", 
@@ -108,11 +113,36 @@ const PublicarCamion = () => {
     }
   };
 
+  const handlePhoneSubmit = async (phoneNumber: string) => {
+    try {
+      await updatePhoneNumber(phoneNumber);
+      toast({
+        title: "Teléfono actualizado",
+        description: "Su número de teléfono se ha guardado correctamente",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al guardar número de teléfono",
+        variant: "destructive",
+      });
+    }
+  };
+
   const onSubmit = async (data: TruckFormData) => {
     if (!selectedCamion) {
       toast({
         title: "Error",
         description: "Debe seleccionar un camión",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!hasValidPhone) {
+      toast({
+        title: "Error",
+        description: "Debe agregar un número de teléfono válido con WhatsApp",
         variant: "destructive",
       });
       return;
@@ -143,6 +173,9 @@ const PublicarCamion = () => {
     }
   };
 
+  const showPhoneForm = !isPhoneLoading && !hasValidPhone;
+  const showTruckForm = !isPhoneLoading && hasValidPhone;
+
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex items-center space-x-2 mb-6">
@@ -159,180 +192,177 @@ const PublicarCamion = () => {
         <h1 className="text-2xl font-bold">Publicar Disponibilidad de Camión</h1>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Localizaciones */}
-            <div className="space-y-6">
-              <h2 className="text-lg font-medium">Ruta</h2>
-              <Separator />
-              
+      {isPhoneLoading ? (
+        <div className="py-12 text-center">Cargando información de usuario...</div>
+      ) : showPhoneForm ? (
+        <div className="max-w-md mx-auto">
+          <PhoneNumberForm onSubmit={handlePhoneSubmit} isLoading={isSubmitting} />
+        </div>
+      ) : showTruckForm && (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Localizaciones */}
               <div className="space-y-6">
+                <h2 className="text-lg font-medium">Ruta</h2>
+                <Separator />
+                
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="origen_provincia"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Provincia de origen</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="origen_provincia"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Provincia de origen</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccione provincia" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {provincias.map((provincia) => (
+                                  <SelectItem key={provincia} value={provincia}>
+                                    {provincia}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="origen_ciudad"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ciudad de origen</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccione provincia" />
-                              </SelectTrigger>
+                              <Input 
+                                {...field}
+                                placeholder="Ciudad de origen (opcional)"
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {provincias.map((provincia) => (
-                                <SelectItem key={provincia} value={provincia}>
-                                  {provincia}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     
-                    <FormField
-                      control={form.control}
-                      name="origen_ciudad"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Ciudad de origen</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field}
-                              placeholder="Ciudad de origen (opcional)"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="destino_provincia"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Provincia de destino</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="destino_provincia"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Provincia de destino</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccione provincia" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {provincias.map((provincia) => (
+                                  <SelectItem key={provincia} value={provincia}>
+                                    {provincia}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="destino_ciudad"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ciudad de destino</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccione provincia" />
-                              </SelectTrigger>
+                              <Input 
+                                {...field}
+                                placeholder="Ciudad de destino (opcional)"
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {provincias.map((provincia) => (
-                                <SelectItem key={provincia} value={provincia}>
-                                  {provincia}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="destino_ciudad"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Ciudad de destino</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field}
-                              placeholder="Ciudad de destino (opcional)"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Detalles */}
-            <div className="space-y-6">
-              <h2 className="text-lg font-medium">Seleccionar camión</h2>
-              <Separator />
-              
-              <div className="space-y-4">
-                <FormItem>
-                  <FormLabel>Mis camiones</FormLabel>
-                  <div className="grid grid-cols-1 gap-4 mb-4 max-h-80 overflow-y-auto">
-                    {isLoading ? (
-                      <div className="py-4 text-center">Cargando camiones...</div>
-                    ) : error ? (
-                      <div className="py-4 text-center text-destructive">{error}</div>
-                    ) : trucks.length === 0 ? (
-                      <div className="py-4 text-center">No tiene camiones registrados</div>
-                    ) : (
-                      trucks.map((truck) => (
-                        <TruckCard
-                          key={truck.id}
-                          truck={truck}
-                          onSelect={handleSelectCamion}
-                          isSelected={selectedCamion === truck.id}
-                        />
-                      ))
-                    )}
-                  </div>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full flex items-center justify-center"
-                    onClick={handleAddNewCamion}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Agregar nuevo camión
-                  </Button>
-                </FormItem>
+              {/* Detalles */}
+              <div className="space-y-6">
+                <h2 className="text-lg font-medium">Seleccionar camión</h2>
+                <Separator />
                 
                 <div className="space-y-4">
-                  <FormLabel>Fechas de Disponibilidad</FormLabel>
-                  
-                  <CargoDateTypeField 
-                    form={form}
-                  />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="fecha_disponible_desde"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {dateType === "exacta" ? "Fecha Disponible" : "Desde"}
-                          </FormLabel>
-                          <FormControl>
-                            <DatePicker
-                              date={field.value ? new Date(field.value) : undefined}
-                              onChange={(date) => 
-                                field.onChange(date ? date.toISOString() : "")
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                  <FormItem>
+                    <FormLabel>Mis camiones</FormLabel>
+                    <div className="grid grid-cols-1 gap-4 mb-4 max-h-80 overflow-y-auto">
+                      {isLoading ? (
+                        <div className="py-4 text-center">Cargando camiones...</div>
+                      ) : error ? (
+                        <div className="py-4 text-center text-destructive">{error}</div>
+                      ) : trucks.length === 0 ? (
+                        <div className="py-4 text-center">No tiene camiones registrados</div>
+                      ) : (
+                        trucks.map((truck) => (
+                          <TruckCard
+                            key={truck.id}
+                            truck={truck}
+                            onSelect={handleSelectCamion}
+                            isSelected={selectedCamion === truck.id}
+                          />
+                        ))
                       )}
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full flex items-center justify-center"
+                      onClick={handleAddNewCamion}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar nuevo camión
+                    </Button>
+                  </FormItem>
+                  
+                  {!selectedCamion && (
+                    <Alert className="bg-amber-50 text-amber-800 border-amber-200">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Seleccionar camión</AlertTitle>
+                      <AlertDescription>
+                        Es necesario seleccionar un camión para continuar
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <div className="space-y-4">
+                    <FormLabel>Fechas de Disponibilidad</FormLabel>
+                    
+                    <CargoDateTypeField 
+                      form={form}
                     />
                     
-                    {dateType === "rango" && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="fecha_disponible_hasta"
+                        name="fecha_disponible_desde"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Hasta</FormLabel>
+                            <FormLabel>
+                              {dateType === "exacta" ? "Fecha Disponible" : "Desde"}
+                            </FormLabel>
                             <FormControl>
                               <DatePicker
                                 date={field.value ? new Date(field.value) : undefined}
@@ -345,65 +375,86 @@ const PublicarCamion = () => {
                           </FormItem>
                         )}
                       />
-                    )}
+                      
+                      {dateType === "rango" && (
+                        <FormField
+                          control={form.control}
+                          name="fecha_disponible_hasta"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hasta</FormLabel>
+                              <FormControl>
+                                <DatePicker
+                                  date={field.value ? new Date(field.value) : undefined}
+                                  onChange={(date) => 
+                                    field.onChange(date ? date.toISOString() : "")
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <FormField
-                  control={form.control}
-                  name="radio_km"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Radio máximo (km)</FormLabel>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="range"
-                          min="0"
-                          max="500"
-                          step="10"
-                          value={field.value}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          className="w-full"
-                        />
-                        <span className="w-12 text-center">{field.value}km</span>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="observaciones"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Observaciones</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Detalles adicionales sobre el servicio ofrecido"
-                          className="resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="radio_km"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Radio máximo (km)</FormLabel>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="range"
+                            min="0"
+                            max="500"
+                            step="10"
+                            value={field.value}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            className="w-full"
+                          />
+                          <span className="w-12 text-center">{field.value}km</span>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="observaciones"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Observaciones</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Detalles adicionales sobre el servicio ofrecido"
+                            className="resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex justify-end">
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || !selectedCamion}
-              className="px-6 py-2 text-base"
-            >
-              {isSubmitting ? "Publicando..." : "Publicar Disponibilidad"}
-            </Button>
-          </div>
-        </form>
-      </Form>
+            <div className="flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || !selectedCamion || !hasValidPhone}
+                className="px-6 py-2 text-base"
+              >
+                {isSubmitting ? "Publicando..." : "Publicar Disponibilidad"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      )}
     </div>
   );
 };

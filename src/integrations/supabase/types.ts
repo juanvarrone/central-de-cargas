@@ -220,6 +220,7 @@ export type Database = {
           id: string
           is_admin: boolean | null
           is_blocked: boolean | null
+          phone_number: string | null
           total_reviews: number | null
           updated_at: string
         }
@@ -236,6 +237,7 @@ export type Database = {
           id: string
           is_admin?: boolean | null
           is_blocked?: boolean | null
+          phone_number?: string | null
           total_reviews?: number | null
           updated_at?: string
         }
@@ -252,6 +254,7 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           is_blocked?: boolean | null
+          phone_number?: string | null
           total_reviews?: number | null
           updated_at?: string
         }
@@ -457,6 +460,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_valid_phone: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: {
           user_id: string
