@@ -348,6 +348,48 @@ export type Database = {
           },
         ]
       }
+      trucks: {
+        Row: {
+          capacidad: string
+          created_at: string
+          foto_acoplado: string | null
+          foto_chasis: string | null
+          id: string
+          patente_acoplado: string | null
+          patente_chasis: string
+          refrigerado: boolean | null
+          tipo_camion: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          capacidad: string
+          created_at?: string
+          foto_acoplado?: string | null
+          foto_chasis?: string | null
+          id?: string
+          patente_acoplado?: string | null
+          patente_chasis: string
+          refrigerado?: boolean | null
+          tipo_camion: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          capacidad?: string
+          created_at?: string
+          foto_acoplado?: string | null
+          foto_chasis?: string | null
+          id?: string
+          patente_acoplado?: string | null
+          patente_chasis?: string
+          refrigerado?: boolean | null
+          tipo_camion?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ubicaciones_favoritas: {
         Row: {
           created_at: string

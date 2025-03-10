@@ -24,15 +24,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-
-interface MyCamion {
-  id: string;
-  nombre: string;
-  tipo_camion: string;
-  capacidad: string;
-  refrigerado: boolean;
-}
+import TruckCard from "@/components/truck/TruckCard";
+import { useTrucks, Truck as TruckType } from "@/hooks/useTrucks";
 
 const PublicarCamion = () => {
   const navigate = useNavigate();
@@ -41,7 +34,7 @@ const PublicarCamion = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dateType, setDateType] = useState<"exacta" | "rango">("exacta");
   const [selectedCamion, setSelectedCamion] = useState<string>("");
-  const [misCamiones, setMisCamiones] = useState<MyCamion[]>([]);
+  const { trucks, isLoading, error, user } = useTrucks();
   const [provincias] = useState([
     "Buenos Aires", "Ciudad Autónoma de Buenos Aires", "Catamarca", "Chaco", "Chubut", 
     "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", 
@@ -77,23 +70,62 @@ const PublicarCamion = () => {
   });
 
   useEffect(() => {
-    // Simulate fetching user's trucks
-    // This should be replaced with actual supabase fetch
-    const fetchMisCamiones = async () => {
-      // Replace with actual fetch from supabase
-      // For now, using placeholder data
-      setMisCamiones([
-        { id: '1', nombre: 'Mi camión 1', tipo_camion: 'semi', capacidad: '30', refrigerado: true },
-        { id: '2', nombre: 'Mi camión 2', tipo_camion: 'chasis', capacidad: '15', refrigerado: false },
-      ]);
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data?.user) {
+        toast({
+          title: "Acceso restringido",
+          description: "Debe iniciar sesión para publicar un camión",
+          variant: "destructive",
+        });
+        navigate("/auth");
+      }
     };
+    
+    checkAuth();
+  }, [navigate, toast]);
 
-    fetchMisCamiones();
-  }, []);
+  const handleSelectCamion = (camionId: string) => {
+    setSelectedCamion(camionId);
+    const selectedTruck = trucks.find(c => c.id === camionId);
+    
+    if (selectedTruck) {
+      form.setValue('tipo_camion', selectedTruck.tipo_camion);
+      form.setValue('capacidad', selectedTruck.capacidad);
+      form.setValue('refrigerado', selectedTruck.refrigerado);
+    }
+  };
+
+  const handleAddNewCamion = () => {
+    navigate("/agregar-camion");
+  };
+
+  const handleDateTypeChange = (type: "exacta" | "rango") => {
+    setDateType(type);
+    form.setValue("tipo_fecha", type);
+    if (type === "exacta") {
+      form.setValue("fecha_disponible_hasta", "");
+    }
+  };
 
   const onSubmit = async (data: TruckFormData) => {
+    if (!selectedCamion) {
+      toast({
+        title: "Error",
+        description: "Debe seleccionar un camión",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
+      
+      // Set origin and destination from province and city
+      data.origen = `${data.origen_provincia}, ${data.origen_ciudad || ''}`.trim();
+      data.destino = `${data.destino_provincia}, ${data.destino_ciudad || ''}`.trim();
+      
       await submitTruck(data);
       toast({
         title: "Éxito",
@@ -109,33 +141,6 @@ const PublicarCamion = () => {
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleSelectCamion = (camionId: string) => {
-    setSelectedCamion(camionId);
-    const selectedTruck = misCamiones.find(c => c.id === camionId);
-    
-    if (selectedTruck) {
-      form.setValue('tipo_camion', selectedTruck.tipo_camion);
-      form.setValue('capacidad', selectedTruck.capacidad);
-      form.setValue('refrigerado', selectedTruck.refrigerado);
-    }
-  };
-
-  const handleAddNewCamion = () => {
-    // Redirect to a new form for adding trucks
-    toast({
-      title: "Información",
-      description: "Esta funcionalidad estará disponible próximamente",
-    });
-  };
-
-  const handleDateTypeChange = (type: "exacta" | "rango") => {
-    setDateType(type);
-    form.setValue("tipo_fecha", type);
-    if (type === "exacta") {
-      form.setValue("fecha_disponible_hasta", "");
     }
   };
 
@@ -264,29 +269,23 @@ const PublicarCamion = () => {
               <div className="space-y-4">
                 <FormItem>
                   <FormLabel>Mis camiones</FormLabel>
-                  <div className="grid grid-cols-1 gap-4 mb-4">
-                    {misCamiones.map((camion) => (
-                      <Card 
-                        key={camion.id}
-                        className={`cursor-pointer transition-colors ${selectedCamion === camion.id ? 'border-primary bg-primary/5' : ''}`}
-                        onClick={() => handleSelectCamion(camion.id)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <h3 className="font-medium">{camion.nombre}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {camion.tipo_camion} - {camion.capacidad} ton.
-                                {camion.refrigerado && " - Refrigerado"}
-                              </p>
-                            </div>
-                            {selectedCamion === camion.id && (
-                              <div className="h-3 w-3 rounded-full bg-primary"></div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div className="grid grid-cols-1 gap-4 mb-4 max-h-80 overflow-y-auto">
+                    {isLoading ? (
+                      <div className="py-4 text-center">Cargando camiones...</div>
+                    ) : error ? (
+                      <div className="py-4 text-center text-destructive">{error}</div>
+                    ) : trucks.length === 0 ? (
+                      <div className="py-4 text-center">No tiene camiones registrados</div>
+                    ) : (
+                      trucks.map((truck) => (
+                        <TruckCard
+                          key={truck.id}
+                          truck={truck}
+                          onSelect={handleSelectCamion}
+                          isSelected={selectedCamion === truck.id}
+                        />
+                      ))
+                    )}
                   </div>
                   <Button 
                     type="button" 
@@ -396,7 +395,7 @@ const PublicarCamion = () => {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !selectedCamion}>
               {isSubmitting ? "Publicando..." : "Publicar Disponibilidad"}
             </Button>
           </div>

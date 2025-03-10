@@ -6,6 +6,7 @@ import NotFound from "./pages/NotFound";
 import PublicarCarga from "./pages/PublicarCarga";
 import BuscarCargas from "./pages/BuscarCargas";
 import PublicarCamion from "./pages/PublicarCamion";
+import AgregarCamion from "./pages/AgregarCamion";
 import BuscarCamiones from "./pages/BuscarCamiones";
 import ConfigurarAlertas from "./pages/ConfigurarAlertas";
 import PoliticasPrivacidad from "./pages/PoliticasPrivacidad";
@@ -22,6 +23,7 @@ function App() {
         <Route path="/publicar-carga" element={<PublicarCarga />} />
         <Route path="/buscar-cargas" element={<BuscarCargas />} />
         <Route path="/publicar-camion" element={<PublicarCamion />} />
+        <Route path="/agregar-camion" element={<AgregarCamion />} />
         <Route path="/buscar-camiones" element={<BuscarCamiones />} />
         <Route path="/configurar-alertas" element={<ConfigurarAlertas />} />
         <Route path="/politicas-privacidad" element={<PoliticasPrivacidad />} />
