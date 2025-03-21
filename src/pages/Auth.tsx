@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -8,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 
@@ -26,6 +25,7 @@ const Auth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams(); // Para capturar parámetros del callback
   const redirectAfterLogin = location.state?.from || "/";
   const formData = location.state?.formData || null;
 
@@ -56,7 +56,57 @@ const Auth = () => {
       }
     };
     checkSession();
-  }, [navigate, redirectAfterLogin, formData]);
+
+    // Manejar callback de OAuth
+    const handleOAuthCallback = async () => {
+      const error = searchParams.get("error");
+      const code = searchParams.get("code");
+      if (error) {
+        toast({
+          title: "Error en autenticación",
+          description: error,
+          variant: "destructive",
+        });
+      } else if (code) {
+        console.log("OAuth code received, processing...");
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("Error getting session after OAuth:", sessionError);
+          toast({
+            title: "Error",
+            description: sessionError.message,
+            variant: "destructive",
+          });
+        } else if (session) {
+          console.log("Session established, redirecting to:", redirectAfterLogin);
+          if (formData && redirectAfterLogin === '/publicar-carga') {
+            navigate(redirectAfterLogin, { state: { formData } });
+          } else {
+            navigate(redirectAfterLogin);
+          }
+        }
+      }
+    };
+    handleOAuthCallback();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event);
+      if (event === "SIGNED_IN" && session) {
+        console.log("User signed in, redirecting to:", redirectAfterLogin);
+        if (formData && redirectAfterLogin === '/publicar-carga') {
+          navigate(redirectAfterLogin, { state: { formData } });
+        } else {
+          navigate(redirectAfterLogin);
+        }
+      } else if (event === "SIGNED_OUT") {
+        console.log("User signed out");
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate, redirectAfterLogin, formData, searchParams]);
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     try {
@@ -65,13 +115,15 @@ const Auth = () => {
         provider: provider,
         options: {
           redirectTo: `${window.location.origin}/auth`,
+          scopes: 'email profile',
         },
       });
       if (error) throw error;
     } catch (error: any) {
+      console.error("OAuth error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Error al iniciar sesión con " + provider,
         variant: "destructive",
       });
     } finally {
@@ -104,7 +156,6 @@ const Auth = () => {
             title: "Registro exitoso",
             description: "Por favor, revisa tu email para confirmar tu cuenta.",
           });
-          // After signup, don't navigate - wait for email confirmation
         }
       } else {
         console.log("Logging in with:", values.email);
@@ -125,7 +176,6 @@ const Auth = () => {
           description: "Bienvenido de vuelta.",
         });
         
-        // Immediately redirect after successful login
         if (formData && redirectAfterLogin === '/publicar-carga') {
           navigate(redirectAfterLogin, { state: { formData } });
         } else {
