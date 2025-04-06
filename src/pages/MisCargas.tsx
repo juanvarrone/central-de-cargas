@@ -2,11 +2,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Edit, Trash2, Eye } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Carga {
   id: string;
@@ -22,6 +33,7 @@ interface Carga {
 const MisCargas = () => {
   const [cargas, setCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cargaToCancel, setCargaToCancel] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -58,7 +70,17 @@ const MisCargas = () => {
         
       if (error) throw error;
       
-      setCargas(data || []);
+      // Get postulation count for each carga
+      const cargasWithPostulaciones = await Promise.all(
+        (data || []).map(async (carga) => {
+          // In a real app, this would query a postulaciones table
+          // For now, we'll use a placeholder random number between 0 and 5
+          const postulaciones = Math.floor(Math.random() * 6);
+          return { ...carga, postulaciones };
+        })
+      );
+      
+      setCargas(cargasWithPostulaciones);
     } catch (error: any) {
       console.error("Error fetching cargas:", error);
       toast({
@@ -69,6 +91,50 @@ const MisCargas = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const cancelarCarga = async (cargaId: string) => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from("cargas")
+        .update({ estado: "cancelada" })
+        .eq("id", cargaId);
+      
+      if (error) throw error;
+      
+      // Update the UI
+      setCargas((prevCargas) =>
+        prevCargas.map((carga) =>
+          carga.id === cargaId ? { ...carga, estado: "cancelada" } : carga
+        )
+      );
+      
+      toast({
+        title: "Carga cancelada",
+        description: "La carga ha sido cancelada exitosamente",
+      });
+      
+    } catch (error: any) {
+      console.error("Error canceling carga:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo cancelar la carga",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setCargaToCancel(null);
+    }
+  };
+
+  const handleEditClick = (cargaId: string) => {
+    navigate(`/editar-carga/${cargaId}`);
+  };
+
+  const handleViewClick = (cargaId: string) => {
+    navigate(`/ver-carga/${cargaId}`);
   };
 
   const getEstadoBadgeColor = (estado: string) => {
@@ -154,20 +220,54 @@ const MisCargas = () => {
                   
                   <div className="flex flex-wrap gap-2 md:flex-col md:items-end">
                     <div className="w-full md:w-auto flex gap-2 justify-end">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to={`/ver-carga/${carga.id}`}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          Ver
-                        </Link>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleViewClick(carga.id)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleEditClick(carga.id)}
+                        disabled={carga.estado === "cancelada" || carga.estado === "completada"}
+                      >
                         <Edit className="h-4 w-4 mr-1" />
                         Editar
                       </Button>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Cancelar
-                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={carga.estado === "cancelada" || carga.estado === "completada"}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Cancelar
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción no se puede deshacer. Cancelar la carga la marcará como no disponible para los transportistas.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => cancelarCarga(carga.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              Sí, cancelar carga
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                     
                     {typeof carga.postulaciones === 'number' && (

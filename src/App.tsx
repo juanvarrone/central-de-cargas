@@ -13,6 +13,8 @@ import PoliticasPrivacidad from "./pages/PoliticasPrivacidad";
 import TerminosCondiciones from "./pages/TerminosCondiciones";
 import AdminPage from "./pages/Admin";
 import MisCargas from "./pages/MisCargas";
+import VerCarga from "./pages/VerCarga";
+import EditarCarga from "./pages/EditarCarga";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -31,6 +33,8 @@ function App() {
         <Route path="/terminos-condiciones" element={<TerminosCondiciones />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/mis-cargas" element={<MisCargas />} />
+        <Route path="/ver-carga/:id" element={<VerCarga />} />
+        <Route path="/editar-carga/:id" element={<EditarCarga />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
