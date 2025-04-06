@@ -16,11 +16,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Separator } from "@/components/ui/separator";
 
+interface BankInfo {
+  bankName: string;
+  accountName: string;
+  cbu: string;
+  alias: string;
+}
+
+interface AppModule {
+  id: string;
+  name: string;
+  is_active: boolean;
+  description: string;
+  created_at: string;
+  updated_at: string;
+  settings?: {
+    bankName?: string;
+    accountName?: string;
+    cbu?: string;
+    alias?: string;
+  };
+}
+
 const Premium = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [bankInfo, setBankInfo] = useState({
+  const [bankInfo, setBankInfo] = useState<BankInfo>({
     bankName: "",
     accountName: "",
     cbu: "",
@@ -40,12 +62,14 @@ const Premium = () => {
 
         if (error) throw error;
 
-        if (data?.settings) {
+        const moduleData = data as AppModule;
+        
+        if (moduleData?.settings) {
           setBankInfo({
-            bankName: data.settings.bankName || "",
-            accountName: data.settings.accountName || "",
-            cbu: data.settings.cbu || "",
-            alias: data.settings.alias || "",
+            bankName: moduleData.settings.bankName || "",
+            accountName: moduleData.settings.accountName || "",
+            cbu: moduleData.settings.cbu || "",
+            alias: moduleData.settings.alias || "",
           });
         }
       } catch (error) {

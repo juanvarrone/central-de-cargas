@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,6 +11,15 @@ export interface UserProfile {
   user_type: 'dador' | 'camionero' | null;
   subscription_tier: 'base' | 'premium' | null;
   subscription_ends_at: string | null;
+  avg_punctuality_rating?: number | null;
+  avg_equipment_rating?: number | null;
+  avg_respect_rating?: number | null;
+  avg_overall_rating?: number | null;
+  total_reviews?: number | null;
+  blocked_reason?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  is_admin?: boolean | null;
 }
 
 export interface UseUserProfileResult {
@@ -56,7 +64,13 @@ export const useUserProfile = (): UseUserProfileResult => {
           throw profileError;
         }
         
-        setProfile(profileData as UserProfile);
+        // Cast and set profile data with default values for required fields
+        setProfile({
+          ...(profileData as any),
+          user_type: profileData.user_type || null,
+          subscription_tier: profileData.subscription_tier || 'base',
+          subscription_ends_at: profileData.subscription_ends_at || null
+        });
       } catch (err: any) {
         console.error("Error fetching profile:", err);
         setError(err.message || "Error al cargar el perfil");
@@ -106,7 +120,13 @@ export const useUserProfile = (): UseUserProfileResult => {
         throw fetchError;
       }
       
-      setProfile(updatedProfile as UserProfile);
+      // Update profile state with the refreshed data
+      setProfile({
+        ...(updatedProfile as any),
+        user_type: updatedProfile.user_type || profile.user_type,
+        subscription_tier: updatedProfile.subscription_tier || profile.subscription_tier,
+        subscription_ends_at: updatedProfile.subscription_ends_at || profile.subscription_ends_at
+      });
     } catch (err: any) {
       console.error("Error updating profile:", err);
       setError(err.message || "Error al actualizar el perfil");
