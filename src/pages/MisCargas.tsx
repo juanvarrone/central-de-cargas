@@ -1,183 +1,185 @@
 
 import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, MapPin, Calendar, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { ArrowLeft, Edit, Trash2, Eye } from "lucide-react";
+
+interface Carga {
+  id: string;
+  tipo_carga: string;
+  origen: string;
+  destino: string;
+  fecha_carga_desde: string;
+  estado: string;
+  created_at: string;
+  postulaciones?: number;
+}
 
 const MisCargas = () => {
-  const [cargas, setCargas] = useState<any[]>([]);
+  const [cargas, setCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchMisCargas = async () => {
-      try {
-        setLoading(true);
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        
-        if (userError || !userData.user) {
-          throw new Error("No hay usuario autenticado");
-        }
-        
-        const { data, error } = await supabase
-          .from("cargas")
-          .select("*")
-          .eq("usuario_id", userData.user.id)
-          .order("created_at", { ascending: false });
-          
-        if (error) throw error;
-        
-        setCargas(data || []);
-      } catch (error: any) {
-        console.error("Error al obtener cargas:", error);
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data?.user) {
         toast({
-          title: "Error",
-          description: "No se pudieron cargar tus cargas",
+          title: "Acceso restringido",
+          description: "Debe iniciar sesión para ver sus cargas",
           variant: "destructive",
         });
-      } finally {
-        setLoading(false);
+        navigate("/auth", { state: { from: "/mis-cargas" } });
+        return;
       }
+      fetchCargas();
     };
-    
-    fetchMisCargas();
-  }, [toast]);
-  
-  const formatFecha = (fechaStr: string) => {
-    const fecha = new Date(fechaStr);
-    return fecha.toLocaleDateString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+
+    checkAuth();
+  }, [navigate, toast]);
+
+  const fetchCargas = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from("cargas")
+        .select("*")
+        .eq("usuario_id", user.id)
+        .order("created_at", { ascending: false });
+        
+      if (error) throw error;
+      
+      setCargas(data || []);
+    } catch (error: any) {
+      console.error("Error fetching cargas:", error);
+      toast({
+        title: "Error",
+        description: "Hubo un problema al cargar sus cargas",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getEstadoBadgeColor = (estado: string) => {
+    switch (estado.toLowerCase()) {
+      case 'disponible':
+        return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'pendiente':
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      case 'completada':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'cancelada':
+        return 'bg-red-100 text-red-800 hover:bg-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-AR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
-      <h1 className="text-2xl font-bold mb-6">Mis Cargas Publicadas</h1>
-      
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-sm text-gray-500">
-          {cargas.length === 0 ? 'No has publicado cargas' : 
-            `Mostrando ${cargas.length} carga${cargas.length !== 1 ? 's' : ''}`}
-        </div>
-        <Link to="/publicar-carga">
-          <Button>Publicar nueva carga</Button>
-        </Link>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex items-center space-x-2 mb-6">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate(-1)} 
+          className="mr-2"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Volver
+        </Button>
+        <h1 className="text-2xl font-bold">Mis Cargas</h1>
       </div>
-      
+
+      <div className="flex justify-between items-center mb-6">
+        <p className="text-muted-foreground">
+          Listado de cargas que has publicado
+        </p>
+        <Button onClick={() => navigate("/publicar-carga")}>
+          Publicar nueva carga
+        </Button>
+      </div>
+
       {loading ? (
-        <div className="text-center py-8">Cargando tus cargas...</div>
+        <div className="py-12 text-center">Cargando sus cargas...</div>
+      ) : cargas.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="mb-4">No has publicado ninguna carga todavía.</p>
+            <Button onClick={() => navigate("/publicar-carga")}>
+              Publicar primera carga
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="space-y-4">
-          {cargas.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p>No has publicado ninguna carga aún.</p>
-                <div className="mt-4">
-                  <Link to="/publicar-carga">
-                    <Button>Publicar tu primera carga</Button>
-                  </Link>
+        <div className="grid gap-4">
+          {cargas.map((carga) => (
+            <Card key={carga.id}>
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{carga.tipo_carga}</Badge>
+                      <Badge className={getEstadoBadgeColor(carga.estado)}>
+                        {carga.estado}
+                      </Badge>
+                    </div>
+                    <h3 className="font-medium text-lg">
+                      {carga.origen} → {carga.destino}
+                    </h3>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Fecha de carga: {formatDate(carga.fecha_carga_desde)}</p>
+                      <p>Publicado: {formatDate(carga.created_at)}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 md:flex-col md:items-end">
+                    <div className="w-full md:w-auto flex gap-2 justify-end">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/ver-carga/${carga.id}`}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Cancelar
+                      </Button>
+                    </div>
+                    
+                    {typeof carga.postulaciones === 'number' && (
+                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 ml-auto mt-2 md:mt-0">
+                        {carga.postulaciones} Postulaciones
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          ) : (
-            cargas.map((carga) => (
-              <Card key={carga.id} className="overflow-hidden">
-                <CardHeader className="bg-gray-50 pb-2">
-                  <CardTitle className="text-lg flex justify-between">
-                    <span className="flex items-center gap-1">
-                      <Truck className="h-5 w-5 text-primary" />
-                      {carga.tipo_camion}
-                    </span>
-                    <span className={`text-sm px-2 py-1 rounded ${
-                      carga.estado === 'disponible' ? 'bg-green-100 text-green-800' :
-                      carga.estado === 'en_curso' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {carga.estado === 'disponible' ? 'Disponible' : 
-                       carga.estado === 'en_curso' ? 'En curso' : 
-                       carga.estado === 'completado' ? 'Completado' : 'Cancelado'}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-5 w-5 text-green-600 mt-0.5" />
-                        <div>
-                          <div className="font-medium">Origen</div>
-                          <div>{carga.origen}</div>
-                          <div className="text-sm text-gray-500">
-                            {carga.origen_ciudad && carga.origen_provincia
-                              ? `${carga.origen_ciudad}, ${carga.origen_provincia}`
-                              : "Sin detalles de ubicación"}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-5 w-5 text-red-600 mt-0.5" />
-                        <div>
-                          <div className="font-medium">Destino</div>
-                          <div>{carga.destino}</div>
-                          <div className="text-sm text-gray-500">
-                            {carga.destino_ciudad && carga.destino_provincia
-                              ? `${carga.destino_ciudad}, ${carga.destino_provincia}`
-                              : "Sin detalles de ubicación"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
-                        <div>
-                          <div className="font-medium">Fecha de carga</div>
-                          <div>
-                            {formatFecha(carga.fecha_carga_desde)}
-                            {carga.fecha_carga_hasta && (
-                              <> al {formatFecha(carga.fecha_carga_hasta)}</>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <DollarSign className="h-5 w-5 text-amber-600 mt-0.5" />
-                        <div>
-                          <div className="font-medium">Tarifa</div>
-                          <div className="text-lg font-semibold">
-                            ${new Intl.NumberFormat("es-AR").format(carga.tarifa)}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Cantidad: {carga.cantidad_cargas} {carga.cantidad_cargas > 1 ? 'cargas' : 'carga'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {carga.observaciones && (
-                    <div className="mt-4 text-sm bg-gray-50 p-3 rounded">
-                      <p className="font-medium mb-1">Observaciones:</p>
-                      <p>{carga.observaciones}</p>
-                    </div>
-                  )}
-                  
-                  <div className="mt-4 flex justify-end gap-2">
-                    <Button size="sm" variant="outline">Editar</Button>
-                    <Button size="sm" variant="destructive">Cancelar carga</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+          ))}
         </div>
       )}
     </div>
