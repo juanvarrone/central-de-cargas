@@ -18,7 +18,7 @@ import EditarCarga from "./pages/EditarCarga";
 import Profile from "./pages/Profile";
 import Premium from "./pages/Premium";
 import { Toaster } from "@/components/ui/toaster";
-
+import Layout from "@/components/Layout";
 function App() {
   return (
     <Router>
