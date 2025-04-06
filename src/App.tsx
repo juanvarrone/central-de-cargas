@@ -15,6 +15,8 @@ import AdminPage from "./pages/Admin";
 import MisCargas from "./pages/MisCargas";
 import VerCarga from "./pages/VerCarga";
 import EditarCarga from "./pages/EditarCarga";
+import Profile from "./pages/Profile";
+import Premium from "./pages/Premium";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -35,6 +37,8 @@ function App() {
         <Route path="/mis-cargas" element={<MisCargas />} />
         <Route path="/ver-carga/:id" element={<VerCarga />} />
         <Route path="/editar-carga/:id" element={<EditarCarga />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/premium" element={<Premium />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />

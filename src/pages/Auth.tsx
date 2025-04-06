@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -10,11 +11,20 @@ import { useForm, FormProvider } from "react-hook-form";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+const phoneRegex = /^(\+\d{1,3}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
 
 const authSchema = z.object({
   email: z.string().email("Ingresa un email válido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   fullName: z.string().min(2, "Ingresa tu nombre completo").optional(),
+  phoneNumber: z.string()
+    .refine(val => !val || phoneRegex.test(val), {
+      message: "Formato de teléfono inválido. Ej: (123) 456-7890"
+    })
+    .optional(),
+  userType: z.enum(["dador", "camionero"]).optional(),
 });
 
 type AuthFormValues = z.infer<typeof authSchema>;
@@ -35,6 +45,8 @@ const Auth = () => {
       email: "",
       password: "",
       fullName: "",
+      phoneNumber: "",
+      userType: undefined,
     },
   });
 
@@ -106,7 +118,7 @@ const Auth = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, redirectAfterLogin, formData, searchParams]);
+  }, [navigate, redirectAfterLogin, formData, searchParams, toast]);
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     try {
@@ -143,6 +155,8 @@ const Auth = () => {
           options: {
             data: {
               full_name: values.fullName,
+              phone_number: values.phoneNumber,
+              user_type: values.userType,
             },
           },
         });
@@ -152,6 +166,21 @@ const Auth = () => {
         console.log("Sign up data:", data);
 
         if (data?.user?.id) {
+          // Update the phone_number in the profile table
+          if (values.phoneNumber) {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .update({ 
+                phone_number: values.phoneNumber,
+                user_type: values.userType 
+              })
+              .eq('id', data.user.id);
+              
+            if (profileError) {
+              console.error("Error updating profile:", profileError);
+            }
+          }
+
           toast({
             title: "Registro exitoso",
             description: "Por favor, revisa tu email para confirmar tu cuenta.",
@@ -298,26 +327,77 @@ const Auth = () => {
                 />
 
                 {isSignUp && (
-                  <FormField
-                    control={form.control}
-                    name="fullName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre completo</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre completo</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número de teléfono</FormLabel>
+                          <FormControl>
+                            <Input placeholder="(123) 456-7890" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="userType"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <FormLabel>Tipo de usuario</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className="flex flex-col space-y-1"
+                            >
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="dador" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Perfil Dador de Cargas
+                                </FormLabel>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="camionero" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Perfil Camionero
+                                </FormLabel>
+                              </FormItem>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
                 )}
 
                 <div className="space-y-4">
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={loading}
+                    disabled={loading || (isSignUp && !form.getValues("userType"))}
                   >
                     {loading
                       ? "Cargando..."

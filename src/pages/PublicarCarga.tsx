@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const PublicarCarga = () => {
   const [loading, setLoading] = useState(false);
@@ -31,6 +32,7 @@ const PublicarCarga = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { submitCargo } = useCargoSubmission();
+  const { profile, isLoading: profileLoading } = useUserProfile();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -79,6 +81,16 @@ const PublicarCarga = () => {
       return;
     }
 
+    // Check if the user has the right profile type
+    if (profile && profile.user_type === 'camionero') {
+      toast({
+        title: "Acceso restringido",
+        description: "Como perfil Camionero, no puedes publicar cargas. Esta funcionalidad es solo para Dadores de Cargas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       await submitCargo(data);
@@ -86,7 +98,7 @@ const PublicarCarga = () => {
         title: "Carga publicada",
         description: "Tu carga ha sido publicada exitosamente",
       });
-      navigate("/listado-cargas");
+      navigate("/mis-cargas");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -107,7 +119,7 @@ const PublicarCarga = () => {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <p>Cargando...</p>

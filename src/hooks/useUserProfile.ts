@@ -9,6 +9,9 @@ export interface UserProfile {
   phone_number: string | null;
   is_blocked: boolean | null;
   avatar_url: string | null;
+  user_type: 'dador' | 'camionero' | null;
+  subscription_tier: 'base' | 'premium' | null;
+  subscription_ends_at: string | null;
 }
 
 export interface UseUserProfileResult {
@@ -16,6 +19,7 @@ export interface UseUserProfileResult {
   isLoading: boolean;
   error: string | null;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  uploadProfileImage: (file: File) => Promise<string | null>;
 }
 
 export const useUserProfile = (): UseUserProfileResult => {
@@ -112,5 +116,47 @@ export const useUserProfile = (): UseUserProfileResult => {
     }
   };
 
-  return { profile, isLoading, error, updateProfile };
+  // Add function to upload profile image
+  const uploadProfileImage = async (file: File): Promise<string | null> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (!profile) {
+        throw new Error("No hay perfil de usuario para actualizar");
+      }
+      
+      const fileExt = file.name.split('.').pop();
+      const filePath = `profile_images/${profile.id}-${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      const { data: publicURL } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+      
+      if (!publicURL) {
+        throw new Error("No se pudo obtener la URL de la imagen");
+      }
+      
+      // Update profile with new avatar URL
+      await updateProfile({ avatar_url: publicURL.publicUrl });
+      
+      return publicURL.publicUrl;
+    } catch (err: any) {
+      console.error("Error uploading image:", err);
+      setError(err.message || "Error al subir la imagen");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { profile, isLoading, error, updateProfile, uploadProfileImage };
 };
