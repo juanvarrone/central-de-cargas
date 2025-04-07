@@ -1,12 +1,7 @@
-// src/components/Layout.tsx
-import { Outlet } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Link } from "react-router-dom";
 import { User as UserIcon, Menu, LogOut, Truck, Bell, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
-import { User } from "@supabase/supabase-js";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -14,61 +9,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
-const Layout = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+const Layout = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-
-        if (user) {
-          const { data: isAdminData, error: isAdminError } = await supabase
-            .rpc('is_admin', { user_id: user.id });
-
-          if (!isAdminError && isAdminData) {
-            setIsAdmin(true);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user || null);
-
-        if (session?.user) {
-          const { data: isAdminData, error: isAdminError } = await supabase
-            .rpc('is_admin', { user_id: session.user.id });
-
-          if (!isAdminError && isAdminData) {
-            setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
-          }
-        } else {
-          setIsAdmin(false);
-        }
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  const { user, isAdmin, isLoading } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -95,7 +42,7 @@ const Layout = () => {
           <Link to="/" className="text-xl font-bold text-primary">
             Central de Cargas
           </Link>
-          {!loading && (
+          {!isLoading && (
             user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -146,7 +93,7 @@ const Layout = () => {
             )
           )}
         </div>
-        <Outlet />
+        {children}
       </div>
     </div>
   );

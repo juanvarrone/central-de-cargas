@@ -67,7 +67,7 @@ export const useUserProfile = (): UseUserProfileResult => {
         
         // Cast and set profile data with default values for required fields
         setProfile({
-          ...(profileData as any),
+          ...(profileData as UserProfile),
           user_type: profileData.user_type || null,
           subscription_tier: profileData.subscription_tier || 'base',
           subscription_ends_at: profileData.subscription_ends_at || null
@@ -123,7 +123,7 @@ export const useUserProfile = (): UseUserProfileResult => {
       
       // Update profile state with the refreshed data
       setProfile({
-        ...(updatedProfile as any),
+        ...(updatedProfile as UserProfile),
         user_type: updatedProfile.user_type || profile.user_type,
         subscription_tier: updatedProfile.subscription_tier || profile.subscription_tier,
         subscription_ends_at: updatedProfile.subscription_ends_at || profile.subscription_ends_at
