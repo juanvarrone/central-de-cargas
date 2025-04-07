@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { format } from "date-fns";
 
 type Profile = {
   id: string;
@@ -21,6 +22,9 @@ type Profile = {
   full_name: string | null;
   is_blocked: boolean;
   blocked_reason: string | null;
+  user_type: "dador" | "camionero" | null;
+  subscription_tier: "base" | "premium" | null;
+  subscription_ends_at: string | null;
   role?: "admin" | "user";
 };
 
@@ -181,6 +185,45 @@ const UserManagement = () => {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: async ({
+      userId,
+      data,
+    }: {
+      userId: string;
+      data: Partial<Profile>;
+    }) => {
+      console.log("Updating user profile:", { userId, data });
+      const { data: updatedData, error } = await supabase
+        .from("profiles")
+        .update(data)
+        .eq("id", userId)
+        .select();
+
+      if (error) {
+        console.error("Error updating user profile:", error);
+        throw error;
+      }
+      
+      console.log("User profile updated:", updatedData);
+      return updatedData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast({
+        title: "Perfil actualizado",
+        description: "El perfil del usuario ha sido actualizado",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleBlockReasonChange = (userId: string, reason: string) => {
     setBlockReasons(prev => ({
       ...prev,
@@ -211,67 +254,132 @@ const UserManagement = () => {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded gap-4"
+                className="flex flex-col p-4 border rounded gap-4"
               >
-                <div className="space-y-1">
-                  <h3 className="font-medium">
-                    {user.full_name || "Sin nombre"}
-                  </h3>
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                  {user.is_blocked && (
-                    <p className="text-sm text-red-600">
-                      Razón del bloqueo: {user.blocked_reason}
-                    </p>
-                  )}
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Select
-                    value={user.role}
-                    onValueChange={(value: "admin" | "user") =>
-                      updateRoleMutation.mutate({ userId: user.id, role: value })
-                    }
-                  >
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Seleccionar rol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">Usuario</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <h3 className="font-medium">
+                      {user.full_name || "Sin nombre"}
+                    </h3>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                    {user.is_blocked && (
+                      <p className="text-sm text-red-600">
+                        Razón del bloqueo: {user.blocked_reason}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Select
+                      value={user.role}
+                      onValueChange={(value: "admin" | "user") =>
+                        updateRoleMutation.mutate({ userId: user.id, role: value })
+                      }
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Seleccionar rol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">Usuario</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={user.is_blocked}
-                      onCheckedChange={(checked) => {
-                        if (checked && !blockReasons[user.id]) {
-                          toast({
-                            title: "Error",
-                            description: "Debe proporcionar una razón para bloquear al usuario",
-                            variant: "destructive",
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={user.is_blocked}
+                        onCheckedChange={(checked) => {
+                          if (checked && !blockReasons[user.id]) {
+                            toast({
+                              title: "Error",
+                              description: "Debe proporcionar una razón para bloquear al usuario",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          toggleBlockMutation.mutate({
+                            userId: user.id,
+                            isBlocked: checked,
+                            reason: blockReasons[user.id],
                           });
-                          return;
-                        }
-                        toggleBlockMutation.mutate({
+                        }}
+                      />
+                      <span className="text-sm">
+                        {user.is_blocked ? "Bloqueado" : "Activo"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2 border-t pt-4">
+                  {!user.is_blocked && (
+                    <div>
+                      <label className="text-sm text-gray-700 mb-1 block">Razón del bloqueo</label>
+                      <Input
+                        placeholder="Razón del bloqueo"
+                        value={blockReasons[user.id] || ""}
+                        onChange={(e) => handleBlockReasonChange(user.id, e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-sm text-gray-700 mb-1 block">Tipo de usuario</label>
+                    <Select
+                      value={user.user_type || ""}
+                      onValueChange={(value: "dador" | "camionero" | "") =>
+                        updateProfileMutation.mutate({
                           userId: user.id,
-                          isBlocked: checked,
-                          reason: blockReasons[user.id],
-                        });
-                      }}
-                    />
-                    <span className="text-sm">
-                      {user.is_blocked ? "Bloqueado" : "Activo"}
-                    </span>
+                          data: { user_type: value || null }
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Sin asignar</SelectItem>
+                        <SelectItem value="dador">Dador de Cargas</SelectItem>
+                        <SelectItem value="camionero">Camionero</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {!user.is_blocked && (
-                    <Input
-                      placeholder="Razón del bloqueo"
-                      value={blockReasons[user.id] || ""}
-                      onChange={(e) => handleBlockReasonChange(user.id, e.target.value)}
-                      className="w-full sm:w-auto"
-                    />
+                  <div>
+                    <label className="text-sm text-gray-700 mb-1 block">Plan de suscripción</label>
+                    <Select
+                      value={user.subscription_tier || "base"}
+                      onValueChange={(value: "base" | "premium") =>
+                        updateProfileMutation.mutate({
+                          userId: user.id,
+                          data: { subscription_tier: value }
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="base">Base</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {user.subscription_tier === "premium" && (
+                    <div>
+                      <label className="text-sm text-gray-700 mb-1 block">Fecha de expiración</label>
+                      <Input
+                        type="date"
+                        value={user.subscription_ends_at ? format(new Date(user.subscription_ends_at), "yyyy-MM-dd") : ""}
+                        onChange={(e) => 
+                          updateProfileMutation.mutate({
+                            userId: user.id,
+                            data: { subscription_ends_at: e.target.value ? new Date(e.target.value).toISOString() : null }
+                          })
+                        }
+                      />
+                    </div>
                   )}
                 </div>
               </div>

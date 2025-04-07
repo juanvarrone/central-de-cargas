@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -17,8 +18,8 @@ import EditarCarga from "./pages/EditarCarga";
 import Profile from "./pages/Profile";
 import Premium from "./pages/Premium";
 import { Toaster } from "@/components/ui/toaster";
-import Layout from "@/components/Layout";
-import { AuthProvider } from "./context/AuthContext"; // Import the AuthProvider
+import Layout from "@/components/layout";
+import { AuthProvider } from "@/context/AuthContext"; // Updated import path
 
 function App() {
   return (

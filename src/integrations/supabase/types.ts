@@ -221,8 +221,11 @@ export type Database = {
           is_admin: boolean | null
           is_blocked: boolean | null
           phone_number: string | null
+          subscription_ends_at: string | null
+          subscription_tier: string | null
           total_reviews: number | null
           updated_at: string
+          user_type: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -238,8 +241,11 @@ export type Database = {
           is_admin?: boolean | null
           is_blocked?: boolean | null
           phone_number?: string | null
+          subscription_ends_at?: string | null
+          subscription_tier?: string | null
           total_reviews?: number | null
           updated_at?: string
+          user_type?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -255,8 +261,11 @@ export type Database = {
           is_admin?: boolean | null
           is_blocked?: boolean | null
           phone_number?: string | null
+          subscription_ends_at?: string | null
+          subscription_tier?: string | null
           total_reviews?: number | null
           updated_at?: string
+          user_type?: string | null
         }
         Relationships: []
       }
