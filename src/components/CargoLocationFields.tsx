@@ -33,6 +33,10 @@ const CargoLocationFields = ({
         const place = autocomplete.getPlace();
         
         if (place.formatted_address) {
+          // Update the form value with the formatted address
+          form.setValue(fieldType, place.formatted_address);
+          
+          // Call the change handler with the formatted address
           onPlaceSelect(place.formatted_address);
           
           // Extract province and city from address components
