@@ -68,8 +68,8 @@ export const useUserProfile = (): UseUserProfileResult => {
         // Cast and set profile data with default values for required fields
         setProfile({
           ...(profileData as UserProfile),
-          user_type: profileData.user_type || null,
-          subscription_tier: profileData.subscription_tier || 'base',
+          user_type: profileData.user_type as 'dador' | 'camionero' | null,
+          subscription_tier: profileData.subscription_tier as 'base' | 'premium' | null || 'base',
           subscription_ends_at: profileData.subscription_ends_at || null
         });
       } catch (err: any) {
@@ -124,8 +124,8 @@ export const useUserProfile = (): UseUserProfileResult => {
       // Update profile state with the refreshed data
       setProfile({
         ...(updatedProfile as UserProfile),
-        user_type: updatedProfile.user_type || profile.user_type,
-        subscription_tier: updatedProfile.subscription_tier || profile.subscription_tier,
+        user_type: updatedProfile.user_type as 'dador' | 'camionero' | null || profile.user_type,
+        subscription_tier: updatedProfile.subscription_tier as 'base' | 'premium' | null || profile.subscription_tier,
         subscription_ends_at: updatedProfile.subscription_ends_at || profile.subscription_ends_at
       });
     } catch (err: any) {

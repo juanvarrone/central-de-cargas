@@ -130,9 +130,11 @@ export const useAuth = () => {
   };
 
   const onSubmit = async (values: AuthFormValues) => {
+    console.log("Auth form submitted with values:", values);
     setLoading(true);
     try {
       if (isSignUp) {
+        console.log("Attempting signup with:", values.email);
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
@@ -169,6 +171,7 @@ export const useAuth = () => {
           });
         }
       } else {
+        console.log("Attempting login with:", values.email);
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: values.email,
           password: values.password,
@@ -178,6 +181,7 @@ export const useAuth = () => {
           throw signInError;
         }
         
+        console.log("Login successful, redirecting to:", redirectAfterLogin);
         toast({
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de vuelta.",

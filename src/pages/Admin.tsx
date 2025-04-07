@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,76 +11,79 @@ import {
 import ModuleManagement from "@/components/admin/ModuleManagement";
 import UserManagement from "@/components/admin/UserManagement";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const AdminPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const { user, isAdmin, isLoading } = useAuth();
 
   useEffect(() => {
-    checkAdminAccess();
-  }, []);
+    const checkAdminAccess = async () => {
+      try {
+        console.log("Checking admin access...");
+        
+        // Wait for auth context to load
+        if (isLoading) {
+          console.log("Auth context is still loading");
+          return;
+        }
+        
+        if (!user) {
+          console.log("No user found, redirecting to auth");
+          toast({
+            title: "Acceso denegado",
+            description: "Debe iniciar sesión para acceder al panel de administración",
+            variant: "destructive",
+          });
+          navigate("/auth", { state: { from: "/admin" } });
+          return;
+        }
 
-  const checkAdminAccess = async () => {
-    try {
-      console.log("Checking admin access...");
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        console.log("No session found, redirecting to auth");
-        navigate("/auth", { state: { from: "/admin" } });
-        return;
-      }
-
-      console.log("Session found, checking admin status for user:", session.user.id);
-      const { data, error } = await supabase
-        .rpc('is_admin', { user_id: session.user.id });
-
-      if (error) {
-        console.error("Error checking admin status:", error);
-        throw error;
-      }
-
-      console.log("Admin status check result:", data);
-      
-      if (!data) {
+        console.log("User found, checking admin status:", user.id);
+        
+        if (!isAdmin) {
+          toast({
+            title: "Acceso denegado",
+            description: "No tienes permisos de administrador",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+        
+        setLoading(false);
+      } catch (error: any) {
+        console.error("Admin access check error:", error);
         toast({
-          title: "Acceso denegado",
-          description: "No tienes permisos de administrador",
+          title: "Error",
+          description: error.message || "Error al verificar permisos de administrador",
           variant: "destructive",
         });
         navigate("/");
-        return;
       }
-      
-      setIsAdmin(true);
-      setSessionChecked(true);
-      setLoading(false);
-    } catch (error: any) {
-      console.error("Admin access check error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Error al verificar permisos de administrador",
-        variant: "destructive",
-      });
-      navigate("/");
-    }
-  };
+    };
+    
+    checkAdminAccess();
+  }, [navigate, toast, user, isAdmin, isLoading]);
 
   // Show loading state while checking session and admin status
-  if (loading) {
+  if (loading || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[70vh]">
         <div className="text-lg">Cargando...</div>
       </div>
     );
   }
 
-  // Extra safety check - shouldn't render anything if not admin
-  if (!isAdmin || !sessionChecked) {
-    return null;
+  // Extra safety check - shouldn't render anything if not admin or not logged in
+  if (!isAdmin || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-lg text-red-500">No tienes permisos para acceder a esta página</div>
+      </div>
+    );
   }
 
   return (
