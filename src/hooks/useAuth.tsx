@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +48,7 @@ export const useAuth = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
+          console.log("Active session found, redirecting to:", redirectAfterLogin);
           if (formData && redirectAfterLogin === '/publicar-carga') {
             navigate(redirectAfterLogin, { state: { formData } });
           } else {
@@ -92,7 +92,9 @@ export const useAuth = () => {
     handleOAuthCallback();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event);
       if (event === "SIGNED_IN" && session) {
+        console.log("User signed in, redirecting to:", redirectAfterLogin);
         if (formData && redirectAfterLogin === '/publicar-carga') {
           navigate(redirectAfterLogin, { state: { formData } });
         } else {
@@ -129,7 +131,7 @@ export const useAuth = () => {
     }
   };
 
-  const onSubmit = async (values: AuthFormValues) => {
+  const onSubmit = form.handleSubmit(async (values: AuthFormValues) => {
     console.log("Auth form submitted with values:", values);
     setLoading(true);
     
@@ -207,7 +209,7 @@ export const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
@@ -219,7 +221,7 @@ export const useAuth = () => {
     isSignUp,
     loading,
     handleSocialLogin,
-    onSubmit: form.handleSubmit(onSubmit),
+    onSubmit,
     toggleMode
   };
 };

@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Tabs,
   TabsContent,
@@ -12,6 +11,7 @@ import ModuleManagement from "@/components/admin/ModuleManagement";
 import UserManagement from "@/components/admin/UserManagement";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { Loader2 } from "lucide-react";
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const AdminPage = () => {
           return;
         }
 
-        console.log("User found, checking admin status:", user.id);
+        console.log("User found, checking admin status:", user.id, "isAdmin:", isAdmin);
         
         if (!isAdmin) {
           toast({
@@ -72,7 +72,10 @@ const AdminPage = () => {
   if (loading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="text-lg">Cargando...</div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="text-lg">Cargando panel de administración...</div>
+        </div>
       </div>
     );
   }
