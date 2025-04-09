@@ -132,6 +132,7 @@ export const useAuth = () => {
   const onSubmit = async (values: AuthFormValues) => {
     console.log("Auth form submitted with values:", values);
     setLoading(true);
+    
     try {
       if (isSignUp) {
         console.log("Attempting signup with:", values.email);
@@ -187,11 +188,14 @@ export const useAuth = () => {
           description: "Bienvenido de vuelta.",
         });
         
-        if (formData && redirectAfterLogin === '/publicar-carga') {
-          navigate(redirectAfterLogin, { state: { formData } });
-        } else {
-          navigate(redirectAfterLogin);
-        }
+        // Add a delay before navigation to ensure state updates
+        setTimeout(() => {
+          if (formData && redirectAfterLogin === '/publicar-carga') {
+            navigate(redirectAfterLogin, { state: { formData } });
+          } else {
+            navigate(redirectAfterLogin);
+          }
+        }, 100);
       }
     } catch (error: any) {
       console.error("Auth error:", error);

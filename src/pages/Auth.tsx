@@ -11,6 +11,8 @@ import { useAuth } from "@/hooks/useAuth";
 const Auth = () => {
   const { form, isSignUp, loading, handleSocialLogin, onSubmit, toggleMode } = useAuth();
 
+  console.log("Auth page rendered, isSignUp:", isSignUp);
+
   return (
     <AuthContainer
       title={isSignUp ? "Crear cuenta" : "Iniciar sesión"}
