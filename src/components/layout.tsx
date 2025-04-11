@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { User as UserIcon, Menu, LogOut, Truck, Bell, Settings } from "lucide-react";
+import { User as UserIcon, Menu, LogOut, Truck, Bell, Settings, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   DropdownMenu, 
@@ -65,6 +65,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <Link to="/mis-alertas" className="flex items-center">
                       <Bell size={16} className="mr-2" />
                       Mis Alertas
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link to="/premium" className="flex items-center">
+                      <CreditCard size={16} className="mr-2" />
+                      Plan Premium
                     </Link>
                   </DropdownMenuItem>
                   

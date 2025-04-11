@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -137,7 +136,6 @@ export const useUserProfile = (): UseUserProfileResult => {
     }
   };
 
-  // Add function to upload profile image
   const uploadProfileImage = async (file: File): Promise<string | null> => {
     try {
       setIsLoading(true);
