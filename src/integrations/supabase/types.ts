@@ -443,6 +443,48 @@ export type Database = {
           },
         ]
       }
+      user_alerts: {
+        Row: {
+          created_at: string
+          date_from: string | null
+          date_to: string | null
+          id: string
+          locations: string[]
+          name: string
+          notify_available_trucks: boolean
+          notify_new_loads: boolean
+          radius_km: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          locations: string[]
+          name: string
+          notify_available_trucks?: boolean
+          notify_new_loads?: boolean
+          radius_km?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          locations?: string[]
+          name?: string
+          notify_available_trucks?: boolean
+          notify_new_loads?: boolean
+          radius_km?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

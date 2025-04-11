@@ -62,7 +62,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link to="/mis-alertas" className="flex items-center">
+                    <Link to="/configurar-alertas" className="flex items-center">
                       <Bell size={16} className="mr-2" />
                       Mis Alertas
                     </Link>
