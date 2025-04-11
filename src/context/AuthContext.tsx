@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.log("Auth state changed:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
@@ -62,20 +62,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const checkAdminStatus = async (userId: string) => {
     try {
       console.log("Checking admin status for user:", userId);
-      const { data, error } = await supabase
+      
+      // First, directly check the user_roles table
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error checking admin status:", error);
+      if (!roleError && roleData && roleData.role === 'admin') {
+        console.log("Admin role found in user_roles table:", roleData);
+        setIsAdmin(true);
+        return;
+      }
+      
+      // If no role found or there was an error, check profiles table as fallback
+      console.log("No admin role found in user_roles or error occurred. Checking profiles table.");
+      
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (profileError) {
+        console.error("Error checking profiles table for admin status:", profileError);
         setIsAdmin(false);
         return;
       }
-
-      console.log("Admin check result:", data);
-      setIsAdmin(data?.role === 'admin');
+      
+      console.log("Profile admin check result:", profileData);
+      setIsAdmin(!!profileData?.is_admin);
+      
     } catch (error) {
       console.error("Error checking admin status:", error);
       setIsAdmin(false);

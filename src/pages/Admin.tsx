@@ -24,6 +24,7 @@ const AdminPage = () => {
       try {
         console.log("Checking admin access...");
         console.log("User:", user?.id);
+        console.log("User email:", user?.email);
         console.log("isAdmin:", isAdmin);
         console.log("isLoading:", isLoading);
         
@@ -45,6 +46,8 @@ const AdminPage = () => {
         }
 
         if (!isAdmin) {
+          // Log more details when admin access is denied
+          console.log("Admin access denied for user:", user.email);
           toast({
             title: "Acceso denegado",
             description: "No tienes permisos de administrador",
@@ -54,6 +57,8 @@ const AdminPage = () => {
           return;
         }
         
+        // If we got here, user is admin
+        console.log("Admin access granted for user:", user.email);
         setLoading(false);
       } catch (error: any) {
         console.error("Admin access check error:", error);
