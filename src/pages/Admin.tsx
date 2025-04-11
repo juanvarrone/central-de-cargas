@@ -23,6 +23,9 @@ const AdminPage = () => {
     const checkAdminAccess = async () => {
       try {
         console.log("Checking admin access...");
+        console.log("User:", user?.id);
+        console.log("isAdmin:", isAdmin);
+        console.log("isLoading:", isLoading);
         
         // Wait for auth context to load
         if (isLoading) {
@@ -41,8 +44,6 @@ const AdminPage = () => {
           return;
         }
 
-        console.log("User found, checking admin status:", user.id, "isAdmin:", isAdmin);
-        
         if (!isAdmin) {
           toast({
             title: "Acceso denegado",

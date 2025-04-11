@@ -17,6 +17,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
   const { user, isAdmin, isLoading } = useAuth();
 
+  console.log("Layout rendering with user:", !!user, "isAdmin:", isAdmin);
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
