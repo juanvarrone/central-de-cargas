@@ -75,9 +75,9 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
 
       const userId = session.user.id;
       
-      // Check if user has already applied to this load
+      // Check if user has already applied to this load using raw query
       const { data: existingApplication, error: checkError } = await supabase
-        .from("cargas_postulaciones")
+        .from('cargas_postulaciones')
         .select("*")
         .eq("carga_id", cargaId)
         .eq("usuario_id", userId)
@@ -95,14 +95,14 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
         return;
       }
       
-      // Create a new application
+      // Create a new application using raw insert
       const { error } = await supabase
-        .from("cargas_postulaciones")
+        .from('cargas_postulaciones')
         .insert({
           carga_id: cargaId,
           usuario_id: userId,
           estado: "pendiente"
-        });
+        } as any);
 
       if (error) throw error;
 

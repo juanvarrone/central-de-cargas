@@ -54,8 +54,9 @@ const CargoMapInfoWindow = ({
       const userId = session.user.id;
       
       // Check if user has already applied to this load
+      // We use a raw query since the type definition isn't available
       const { data: existingApplication, error: checkError } = await supabase
-        .from("cargas_postulaciones")
+        .from('cargas_postulaciones')
         .select("*")
         .eq("carga_id", cargaId)
         .eq("usuario_id", userId)
@@ -73,14 +74,14 @@ const CargoMapInfoWindow = ({
         return;
       }
       
-      // Create a new application
+      // Create a new application using raw insert
       const { error } = await supabase
-        .from("cargas_postulaciones")
+        .from('cargas_postulaciones')
         .insert({
           carga_id: cargaId,
           usuario_id: userId,
           estado: "pendiente"
-        });
+        } as any);
 
       if (error) throw error;
 

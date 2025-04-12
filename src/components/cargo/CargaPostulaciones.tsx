@@ -45,7 +45,7 @@ const CargaPostulaciones = ({ cargaId }: CargaPostulacionesProps) => {
       try {
         setLoading(true);
         const { data, error } = await supabase
-          .from("cargas_postulaciones")
+          .from('cargas_postulaciones')
           .select(`
             *,
             usuario:usuario_id (
@@ -58,7 +58,7 @@ const CargaPostulaciones = ({ cargaId }: CargaPostulacionesProps) => {
           .eq("carga_id", cargaId);
 
         if (error) throw error;
-        setPostulaciones(data as Postulacion[]);
+        setPostulaciones(data as unknown as Postulacion[]);
       } catch (error: any) {
         console.error("Error fetching postulaciones:", error);
         toast({
@@ -77,7 +77,7 @@ const CargaPostulaciones = ({ cargaId }: CargaPostulacionesProps) => {
   const handleUpdateEstado = async (id: string, estado: "aceptada" | "rechazada") => {
     try {
       const { error } = await supabase
-        .from("cargas_postulaciones")
+        .from('cargas_postulaciones')
         .update({ estado })
         .eq("id", id);
 

@@ -64,7 +64,7 @@ const MisPostulaciones = () => {
 
         setLoading(true);
         const { data, error } = await supabase
-          .from("cargas_postulaciones")
+          .from('cargas_postulaciones')
           .select(`
             *,
             carga:carga_id (
@@ -81,7 +81,7 @@ const MisPostulaciones = () => {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setPostulaciones(data as Postulacion[]);
+        setPostulaciones(data as unknown as Postulacion[]);
       } catch (error: any) {
         console.error("Error fetching postulaciones:", error);
         toast({
@@ -100,7 +100,7 @@ const MisPostulaciones = () => {
   const handleUpdateEstado = async (id: string, estado: "pausada" | "cancelada") => {
     try {
       const { error } = await supabase
-        .from("cargas_postulaciones")
+        .from('cargas_postulaciones')
         .update({ estado })
         .eq("id", id);
 

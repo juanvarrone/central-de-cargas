@@ -206,6 +206,41 @@ export type Database = {
           },
         ]
       }
+      cargas_postulaciones: {
+        Row: {
+          carga_id: string
+          created_at: string
+          estado: string
+          id: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          carga_id: string
+          created_at?: string
+          estado?: string
+          id?: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          carga_id?: string
+          created_at?: string
+          estado?: string
+          id?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargas_postulaciones_carga_id_fkey"
+            columns: ["carga_id"]
+            isOneToOne: false
+            referencedRelation: "cargas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
