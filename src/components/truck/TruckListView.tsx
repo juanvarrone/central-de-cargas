@@ -1,113 +1,148 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ThermometerSnowflake, Calendar, Ruler } from "lucide-react";
+import { Truck, Calendar, MapPin, Phone, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { TruckAvailability, TruckFilters } from "@/types/truck";
-import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale";
+import { TruckFilters } from "@/types/truck"; 
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 interface TruckListViewProps {
   filters: TruckFilters;
 }
 
+interface TruckData {
+  id: string;
+  origen: string;
+  destino: string;
+  origen_provincia?: string;
+  destino_provincia?: string;
+  origen_ciudad?: string;
+  destino_ciudad?: string;
+  tipo_camion: string;
+  capacidad: string;
+  fecha_disponible_desde: string;
+  fecha_disponible_hasta?: string;
+  refrigerado: boolean;
+  usuario_id: string;
+  usuario?: {
+    full_name?: string;
+    phone_number?: string;
+  };
+}
+
 const TruckListView = ({ filters }: TruckListViewProps) => {
-  const [trucks, setTrucks] = useState<TruckAvailability[]>([]);
+  const [trucks, setTrucks] = useState<TruckData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [selectedTruck, setSelectedTruck] = useState<TruckData | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchTrucks = async () => {
-      try {
-        setLoading(true);
-        
-        // Utilizamos una consulta tipada para evitar problemas de tipos
-        const { data, error } = await supabase
-          .from('camiones_disponibles')
-          .select('*')
-          .eq('estado', 'disponible');
-
-        if (error) throw error;
-
-        // Validamos los datos antes de asignarlos
-        if (data) {
-          setTrucks(data as TruckAvailability[]);
-        } else {
-          setTrucks([]);
-        }
-      } catch (error: any) {
-        console.error("Error fetching trucks:", error);
-        // Fallback para desarrollo
-        const mockData: TruckAvailability[] = [
-          {
-            id: "1",
-            origen: "Buenos Aires",
-            origen_detalle: "Puerto de Buenos Aires",
-            origen_provincia: "Buenos Aires",
-            origen_ciudad: "CABA",
-            origen_lat: -34.6037,
-            origen_lng: -58.3816,
-            destino: "Córdoba",
-            destino_detalle: "Terminal de cargas",
-            destino_provincia: "Córdoba",
-            destino_ciudad: "Córdoba",
-            destino_lat: -31.4201,
-            destino_lng: -64.1888,
-            fecha_disponible_desde: new Date().toISOString(),
-            fecha_disponible_hasta: new Date(Date.now() + 86400000 * 5).toISOString(),
-            tipo_camion: "semi",
-            capacidad: "30",
-            refrigerado: false,
-            radio_km: 50,
-            observaciones: "Disponible para cargas generales",
-            estado: "disponible",
-            usuario_id: "1",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: "2",
-            origen: "Mendoza",
-            origen_detalle: "Zona industrial",
-            origen_provincia: "Mendoza",
-            origen_ciudad: "Mendoza",
-            origen_lat: -32.8908,
-            origen_lng: -68.8272,
-            destino: "Buenos Aires",
-            destino_detalle: "Mercado Central",
-            destino_provincia: "Buenos Aires",
-            destino_ciudad: "CABA",
-            destino_lat: -34.6037,
-            destino_lng: -58.3816,
-            fecha_disponible_desde: new Date().toISOString(),
-            fecha_disponible_hasta: new Date(Date.now() + 86400000 * 3).toISOString(),
-            tipo_camion: "acoplado",
-            capacidad: "25",
-            refrigerado: true,
-            radio_km: 100,
-            observaciones: "Equipo con frío para cargas perecederas",
-            estado: "disponible",
-            usuario_id: "2",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }
-        ];
-        setTrucks(mockData);
-        toast({
-          title: "Info",
-          description: "Mostrando datos de ejemplo",
-        });
-      } finally {
-        setLoading(false);
-      }
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsLoggedIn(!!data.session);
     };
+    checkAuth();
 
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
     fetchTrucks();
-  }, [filters, toast]);
+  }, [filters]);
+
+  const fetchTrucks = async () => {
+    try {
+      setLoading(true);
+      
+      let query = supabase
+        .from("camiones_disponibles")
+        .select(`
+          *,
+          usuario:usuario_id (
+            usuario:profiles (
+              full_name,
+              phone_number
+            )
+          )
+        `)
+        .eq("estado", "disponible");
+
+      if (filters.tipoCamion) {
+        query = query.eq("tipo_camion", filters.tipoCamion);
+      }
+
+      if (filters.refrigerado !== undefined) {
+        query = query.eq("refrigerado", filters.refrigerado);
+      }
+
+      // Add other filters as needed
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+
+      // Process data to match the expected structure
+      const processedData = data?.map(item => {
+        const userData = item.usuario?.usuario?.[0] || {};
+        
+        return {
+          ...item,
+          usuario: {
+            full_name: userData.full_name,
+            phone_number: userData.phone_number
+          }
+        };
+      });
+      
+      setTrucks(processedData || []);
+    } catch (error: any) {
+      console.error("Error fetching trucks:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los camiones disponibles",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleContact = (truck: TruckData) => {
+    if (!isLoggedIn) {
+      setLoginDialogOpen(true);
+    } else {
+      setSelectedTruck(truck);
+      setContactDialogOpen(true);
+    }
+  };
+
+  const handleLoginRedirect = () => {
+    navigate("/auth", { state: { from: "/buscar-camiones" } });
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (e) {
+      return "Fecha no válida";
+    }
+  };
 
   if (loading) {
-    return <div className="text-center py-8">Cargando...</div>;
+    return <div className="text-center py-8">Cargando camiones disponibles...</div>;
   }
 
   if (trucks.length === 0) {
@@ -120,7 +155,6 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold">Camiones Disponibles ({trucks.length})</h2>
       <div className="grid grid-cols-1 gap-4">
         {trucks.map((truck) => (
           <div key={truck.id} className="border rounded-md p-4 bg-white">
@@ -149,32 +183,88 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
                 </p>
               </div>
               
-              <div className="flex flex-col gap-1 text-sm">
+              <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <Calendar size={14} className="text-gray-500" />
-                  <span>Disponible {formatDistanceToNow(new Date(truck.fecha_disponible_desde), { 
-                    addSuffix: true, locale: es 
-                  })}</span>
+                  <Truck size={16} className="text-primary" />
+                  <span>{truck.tipo_camion}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Ruler size={14} className="text-gray-500" />
-                  <span>Radio: {truck.radio_km}km</span>
+                  <Calendar size={16} className="text-gray-500" />
+                  <span className="text-sm text-gray-600">{formatDate(truck.fecha_disponible_desde)}</span>
                 </div>
                 {truck.refrigerado && (
-                  <div className="flex items-center gap-2 text-blue-600">
-                    <ThermometerSnowflake size={14} />
-                    <span>Refrigerado</span>
-                  </div>
+                  <Badge className="w-fit mt-1 bg-blue-100 text-blue-800 hover:bg-blue-200">
+                    Refrigerado
+                  </Badge>
                 )}
               </div>
               
-              <div>
-                <Button size="sm">Contactar</Button>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => handleContact(truck)}
+                >
+                  Contactar
+                </Button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Contact Dialog */}
+      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Información de contacto</DialogTitle>
+          </DialogHeader>
+          {selectedTruck && (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 border-b pb-2">
+                <Truck className="h-5 w-5 text-gray-500" />
+                <div>
+                  <p className="font-medium">{selectedTruck.tipo_camion}</p>
+                  <p className="text-sm text-gray-500">Capacidad: {selectedTruck.capacidad}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-gray-500" />
+                <span>
+                  {selectedTruck.usuario?.full_name || "Nombre no disponible"}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Phone className="h-5 w-5 text-gray-500" />
+                <span>
+                  {selectedTruck.usuario?.phone_number || "Teléfono no disponible"}
+                </span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Login Dialog */}
+      <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Iniciar sesión requerido</DialogTitle>
+            <DialogDescription>
+              Para ver la información de contacto, primero debes iniciar sesión.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={() => setLoginDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleLoginRedirect}>
+              Iniciar sesión
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

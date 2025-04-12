@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import CargaPostulaciones from "@/components/cargo/CargaPostulaciones";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Carga {
   id: string;
@@ -20,6 +21,7 @@ interface Carga {
   estado: string;
   created_at: string;
   tarifa: number;
+  tarifa_aproximada: boolean;
   tipo_camion: string;
   cantidad_cargas: number;
   observaciones: string | null;
@@ -36,6 +38,7 @@ const VerCarga = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile } = useUserProfile();
+  const [revisarTarifa, setRevisarTarifa] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -161,7 +164,8 @@ const VerCarga = () => {
         .insert({
           carga_id: id,
           usuario_id: userId,
-          estado: "pendiente"
+          estado: "pendiente",
+          revisar_tarifa: revisarTarifa
         } as any);
 
       if (error) throw error;
@@ -282,7 +286,15 @@ const VerCarga = () => {
             <div>
               <h3 className="font-medium text-lg mb-4">Tarifa</h3>
               <div>
-                <p className="text-xl font-bold">{formatCurrency(carga.tarifa)}</p>
+                <p className="text-xl font-bold">
+                  {formatCurrency(carga.tarifa)}
+                  {carga.tarifa_aproximada && (
+                    <span className="ml-2 text-sm font-normal text-gray-500">(aproximada, a definir)</span>
+                  )}
+                  {!carga.tarifa_aproximada && (
+                    <span className="ml-2 text-sm font-normal text-gray-500">(tarifa fija)</span>
+                  )}
+                </p>
                 <p className="text-sm text-muted-foreground">Precio total</p>
               </div>
 
@@ -305,12 +317,26 @@ const VerCarga = () => {
 
       <div className="flex justify-between mt-6">
         {!isOwner && profile?.user_type === "camionero" && carga.estado === "disponible" && (
-          <Button 
-            onClick={handlePostularse}
-            className="ml-auto"
-          >
-            Postularme a esta carga
-          </Button>
+          <div className="ml-auto flex flex-col items-end gap-2">
+            <div className="flex items-center space-x-2 mb-2">
+              <Checkbox 
+                id="revisar-tarifa" 
+                checked={revisarTarifa} 
+                onCheckedChange={(checked) => setRevisarTarifa(checked === true)}
+              />
+              <label 
+                htmlFor="revisar-tarifa" 
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Quiero revisar la tarifa con el dador
+              </label>
+            </div>
+            <Button 
+              onClick={handlePostularse}
+            >
+              Postularme a esta carga
+            </Button>
+          </div>
         )}
         
         {isOwner ? (

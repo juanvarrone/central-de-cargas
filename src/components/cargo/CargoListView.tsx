@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Carga, Filters } from "@/types/mapa-cargas";
 import { useNavigate } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface CargoListViewProps {
   filters: Filters;
@@ -16,6 +18,9 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [revisarTarifa, setRevisarTarifa] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [currentCargaId, setCurrentCargaId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCargas = async () => {
@@ -64,12 +69,8 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        toast({
-          title: "Inicia sesión",
-          description: "Debes iniciar sesión para postularte a esta carga",
-          variant: "destructive",
-        });
-        navigate("/auth", { state: { from: "/buscar-cargas" } });
+        setCurrentCargaId(cargaId);
+        setShowLoginDialog(true);
         return;
       }
 
@@ -101,7 +102,8 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
         .insert({
           carga_id: cargaId,
           usuario_id: userId,
-          estado: "pendiente"
+          estado: "pendiente",
+          revisar_tarifa: revisarTarifa
         } as any);
 
       if (error) throw error;
@@ -117,6 +119,14 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
         description: "No se pudo procesar tu postulación",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleLoginRedirect = () => {
+    if (currentCargaId) {
+      navigate("/auth", { state: { from: `/ver-carga/${currentCargaId}` } });
+    } else {
+      navigate("/auth", { state: { from: "/buscar-cargas" } });
     }
   };
 
@@ -169,6 +179,9 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
                 </div>
                 <div className="text-sm font-semibold">
                   ${new Intl.NumberFormat("es-AR").format(carga.tarifa)}
+                  {carga.tarifa_aproximada && (
+                    <span className="ml-1 text-xs text-gray-500">(aprox.)</span>
+                  )}
                 </div>
               </div>
               
@@ -176,14 +189,49 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
                 <Button size="sm" variant="outline" onClick={() => navigate(`/ver-carga/${carga.id}`)}>
                   Ver detalle
                 </Button>
-                <Button size="sm" onClick={() => handlePostularse(carga.id)}>
-                  Postularse
-                </Button>
+                <div className="flex flex-col">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Checkbox 
+                      id={`revisar-tarifa-${carga.id}`}
+                      checked={revisarTarifa} 
+                      onCheckedChange={(checked) => setRevisarTarifa(checked === true)}
+                      className="w-3 h-3"
+                    />
+                    <label 
+                      htmlFor={`revisar-tarifa-${carga.id}`}
+                      className="text-xs leading-none"
+                    >
+                      Revisar tarifa
+                    </label>
+                  </div>
+                  <Button size="sm" onClick={() => handlePostularse(carga.id)}>
+                    Postularse
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Iniciar sesión requerido</DialogTitle>
+            <DialogDescription>
+              Para postularte a esta carga, primero debes iniciar sesión.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={() => setShowLoginDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleLoginRedirect}>
+              Iniciar sesión
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

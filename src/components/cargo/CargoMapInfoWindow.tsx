@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState } from "react";
 
 interface CargoMapInfoWindowProps {
   cargaId: string;
@@ -16,6 +18,7 @@ interface CargoMapInfoWindowProps {
   fechaCargaDesde: string;
   fechaCargaHasta?: string | null;
   tarifa: number;
+  tarifaAproximada?: boolean;
   observaciones?: string | null;
   onClose: () => void;
 }
@@ -32,10 +35,12 @@ const CargoMapInfoWindow = ({
   fechaCargaDesde,
   fechaCargaHasta,
   tarifa,
+  tarifaAproximada = false,
   observaciones,
   onClose,
 }: CargoMapInfoWindowProps) => {
   const { toast } = useToast();
+  const [revisarTarifa, setRevisarTarifa] = useState(false);
 
   const handlePostularse = async () => {
     try {
@@ -80,7 +85,8 @@ const CargoMapInfoWindow = ({
         .insert({
           carga_id: cargaId,
           usuario_id: userId,
-          estado: "pendiente"
+          estado: "pendiente",
+          revisar_tarifa: revisarTarifa
         } as any);
 
       if (error) throw error;
@@ -117,8 +123,25 @@ const CargoMapInfoWindow = ({
         {fechaCargaHasta && (
           <p><strong>Hasta:</strong> {new Date(fechaCargaHasta).toLocaleDateString()}</p>
         )}
-        <p><strong>Tarifa:</strong> ${tarifa.toLocaleString()}</p>
+        <p>
+          <strong>Tarifa:</strong> ${tarifa.toLocaleString()}
+          {tarifaAproximada && <span className="ml-1 text-xs text-gray-500">(aproximada)</span>}
+        </p>
         {observaciones && <p><strong>Observaciones:</strong> {observaciones}</p>}
+        
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox 
+            id="revisar-tarifa" 
+            checked={revisarTarifa} 
+            onCheckedChange={(checked) => setRevisarTarifa(checked === true)}
+          />
+          <label 
+            htmlFor="revisar-tarifa" 
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Quiero revisar la tarifa con el dador
+          </label>
+        </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
         <Button variant="outline" onClick={onClose}>
