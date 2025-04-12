@@ -37,24 +37,63 @@ const CargoMapInfoWindow = ({
 }: CargoMapInfoWindowProps) => {
   const { toast } = useToast();
 
-  const handleTomarCarga = async () => {
+  const handlePostularse = async () => {
     try {
+      // Check if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Inicia sesión",
+          description: "Debes iniciar sesión para postularte a esta carga",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const userId = session.user.id;
+      
+      // Check if user has already applied to this load
+      const { data: existingApplication, error: checkError } = await supabase
+        .from("cargas_postulaciones")
+        .select("*")
+        .eq("carga_id", cargaId)
+        .eq("usuario_id", userId)
+        .single();
+      
+      if (checkError && checkError.code !== "PGRST116") {
+        throw checkError;
+      }
+      
+      if (existingApplication) {
+        toast({
+          title: "Ya te has postulado",
+          description: "Ya te has postulado a esta carga anteriormente",
+        });
+        return;
+      }
+      
+      // Create a new application
       const { error } = await supabase
-        .from("cargas")
-        .update({ estado: "tomada" })
-        .eq("id", cargaId);
+        .from("cargas_postulaciones")
+        .insert({
+          carga_id: cargaId,
+          usuario_id: userId,
+          estado: "pendiente"
+        });
 
       if (error) throw error;
 
       toast({
-        title: "Carga tomada",
-        description: "La carga ha sido tomada exitosamente",
+        title: "Postulación exitosa",
+        description: "Te has postulado a la carga exitosamente",
       });
       onClose();
     } catch (error: any) {
+      console.error("Error al postularse:", error);
       toast({
         title: "Error",
-        description: "No se pudo tomar la carga",
+        description: "No se pudo procesar tu postulación",
         variant: "destructive",
       });
     }
@@ -84,8 +123,8 @@ const CargoMapInfoWindow = ({
         <Button variant="outline" onClick={onClose}>
           Cerrar
         </Button>
-        <Button onClick={handleTomarCarga}>
-          Tomar carga
+        <Button onClick={handlePostularse}>
+          Postularse
         </Button>
       </CardFooter>
     </Card>

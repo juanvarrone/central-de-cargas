@@ -5,6 +5,7 @@ import { Truck, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Carga, Filters } from "@/types/mapa-cargas";
+import { useNavigate } from "react-router-dom";
 
 interface CargoListViewProps {
   filters: Filters;
@@ -14,6 +15,7 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
   const [cargas, setCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCargas = async () => {
@@ -55,6 +57,68 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
 
     fetchCargas();
   }, [filters, toast]);
+
+  const handlePostularse = async (cargaId: string) => {
+    try {
+      // Check if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Inicia sesión",
+          description: "Debes iniciar sesión para postularte a esta carga",
+          variant: "destructive",
+        });
+        navigate("/auth", { state: { from: "/buscar-cargas" } });
+        return;
+      }
+
+      const userId = session.user.id;
+      
+      // Check if user has already applied to this load
+      const { data: existingApplication, error: checkError } = await supabase
+        .from("cargas_postulaciones")
+        .select("*")
+        .eq("carga_id", cargaId)
+        .eq("usuario_id", userId)
+        .single();
+      
+      if (checkError && checkError.code !== "PGRST116") {
+        throw checkError;
+      }
+      
+      if (existingApplication) {
+        toast({
+          title: "Ya te has postulado",
+          description: "Ya te has postulado a esta carga anteriormente",
+        });
+        return;
+      }
+      
+      // Create a new application
+      const { error } = await supabase
+        .from("cargas_postulaciones")
+        .insert({
+          carga_id: cargaId,
+          usuario_id: userId,
+          estado: "pendiente"
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Postulación exitosa",
+        description: "Te has postulado a la carga exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error al postularse:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar tu postulación",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading) {
     return <div className="text-center py-8">Cargando...</div>;
@@ -108,8 +172,13 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
                 </div>
               </div>
               
-              <div>
-                <Button size="sm">Ver detalle</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => navigate(`/ver-carga/${carga.id}`)}>
+                  Ver detalle
+                </Button>
+                <Button size="sm" onClick={() => handlePostularse(carga.id)}>
+                  Postularse
+                </Button>
               </div>
             </div>
           </div>

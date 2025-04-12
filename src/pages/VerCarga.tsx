@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import CargaPostulaciones from "@/components/cargo/CargaPostulaciones";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface Carga {
   id: string;
@@ -23,14 +25,17 @@ interface Carga {
   observaciones: string | null;
   origen_detalle: string | null;
   destino_detalle: string | null;
+  usuario_id: string;
 }
 
 const VerCarga = () => {
   const { id } = useParams();
   const [carga, setCarga] = useState<Carga | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile } = useUserProfile();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -44,13 +49,13 @@ const VerCarga = () => {
         navigate("/auth", { state: { from: `/ver-carga/${id}` } });
         return;
       }
-      fetchCarga();
+      fetchCarga(data.user.id);
     };
 
     checkAuth();
   }, [id, navigate, toast]);
 
-  const fetchCarga = async () => {
+  const fetchCarga = async (userId: string) => {
     if (!id) return;
 
     try {
@@ -64,6 +69,7 @@ const VerCarga = () => {
       if (error) throw error;
       
       setCarga(data);
+      setIsOwner(data.usuario_id === userId);
     } catch (error: any) {
       console.error("Error fetching carga:", error);
       toast({
@@ -100,12 +106,77 @@ const VerCarga = () => {
         return 'bg-green-100 text-green-800 hover:bg-green-200';
       case 'pendiente':
         return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      case 'asignada':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
       case 'completada':
         return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
       case 'cancelada':
         return 'bg-red-100 text-red-800 hover:bg-red-200';
       default:
         return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+    }
+  };
+
+  const handlePostularse = async () => {
+    try {
+      // Check if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Inicia sesión",
+          description: "Debes iniciar sesión para postularte a esta carga",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!id) return;
+      
+      const userId = session.user.id;
+      
+      // Check if user has already applied to this load
+      const { data: existingApplication, error: checkError } = await supabase
+        .from("cargas_postulaciones")
+        .select("*")
+        .eq("carga_id", id)
+        .eq("usuario_id", userId)
+        .single();
+      
+      if (checkError && checkError.code !== "PGRST116") {
+        throw checkError;
+      }
+      
+      if (existingApplication) {
+        toast({
+          title: "Ya te has postulado",
+          description: "Ya te has postulado a esta carga anteriormente",
+        });
+        return;
+      }
+      
+      // Create a new application
+      const { error } = await supabase
+        .from("cargas_postulaciones")
+        .insert({
+          carga_id: id,
+          usuario_id: userId,
+          estado: "pendiente"
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Postulación exitosa",
+        description: "Te has postulado a la carga exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error al postularse:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar tu postulación",
+        variant: "destructive",
+      });
     }
   };
 
@@ -132,11 +203,11 @@ const VerCarga = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => navigate("/mis-cargas")} 
+          onClick={() => navigate(-1)} 
           className="mr-2"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Volver a mis cargas
+          Volver
         </Button>
         <h1 className="text-2xl font-bold">Detalles de la Carga</h1>
       </div>
@@ -223,19 +294,42 @@ const VerCarga = () => {
               )}
             </div>
           </div>
+
+          {isOwner && (
+            <div className="mt-8">
+              <CargaPostulaciones cargaId={carga.id} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <div className="flex justify-between mt-6">
-        <Button variant="outline" onClick={() => navigate("/mis-cargas")}>
-          Volver a mis cargas
-        </Button>
-        
-        {carga.estado !== "cancelada" && carga.estado !== "completada" && (
+        {!isOwner && profile?.user_type === "camionero" && carga.estado === "disponible" && (
           <Button 
-            onClick={() => navigate(`/editar-carga/${carga.id}`)}
+            onClick={handlePostularse}
+            className="ml-auto"
           >
-            Editar esta carga
+            Postularme a esta carga
+          </Button>
+        )}
+        
+        {isOwner ? (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/mis-cargas")}>
+              Volver a mis cargas
+            </Button>
+            
+            {carga.estado !== "cancelada" && carga.estado !== "completada" && (
+              <Button 
+                onClick={() => navigate(`/editar-carga/${carga.id}`)}
+              >
+                Editar esta carga
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            Volver
           </Button>
         )}
       </div>
