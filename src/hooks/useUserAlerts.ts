@@ -1,160 +1,112 @@
-
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useUserProfile } from '@/hooks/useUserProfile';
 
 export interface UserAlert {
-  id?: string;
-  user_id?: string;
+  id: string;
+  user_id: string;
   name: string;
   locations: string[];
+  radius_km: number;
   date_from: string | null;
   date_to: string | null;
-  radius_km: number;
   notify_new_loads: boolean;
   notify_available_trucks: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useUserAlerts = () => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const { profile } = useUserProfile();
+  const [alerts, setAlerts] = useState<UserAlert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Fetch the user's alerts
-  const { 
-    data: alerts, 
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ['user-alerts'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_alerts')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as UserAlert[];
-    },
-    enabled: !!supabase.auth.getSession()
-  });
+  const fetchAlerts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("User not authenticated");
+      }
 
-  // Create a new alert
-  const createAlert = useMutation({
-    mutationFn: async (alert: Omit<UserAlert, 'id' | 'user_id'>) => {
-      setIsCreating(true);
       const { data, error } = await supabase
-        .from('user_alerts')
-        .insert([alert])
-        .select();
-      
+        .from("user_alerts")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
-      return data[0];
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-alerts'] });
-      toast({
-        title: "Alerta creada",
-        description: "Tu alerta ha sido creada exitosamente",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo crear la alerta",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsCreating(false);
+      setAlerts(data as UserAlert[]);
+    } catch (error: any) {
+      setError(error);
+      console.error("Error fetching alerts:", error);
+    } finally {
+      setLoading(false);
     }
-  });
+  };
 
-  // Update an existing alert
-  const updateAlert = useMutation({
-    mutationFn: async ({ id, ...alert }: UserAlert) => {
-      setIsEditing(true);
-      const { data, error } = await supabase
-        .from('user_alerts')
-        .update(alert)
-        .eq('id', id)
-        .select();
-      
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
+
+  const insertAlert = async (alert: Omit<UserAlert, "id" | "user_id">) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("User not authenticated");
+      }
+
+      const { error } = await supabase.from("user_alerts").insert({
+        ...alert,
+        user_id: session.user.id
+      });
+
       if (error) throw error;
-      return data[0];
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-alerts'] });
-      toast({
-        title: "Alerta actualizada",
-        description: "Tu alerta ha sido actualizada exitosamente",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar la alerta",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsEditing(false);
+      
+      await fetchAlerts();
+    } catch (error) {
+      console.error("Error inserting alert:", error);
+      throw error;
     }
-  });
+  };
 
-  // Delete an alert
-  const deleteAlert = useMutation({
-    mutationFn: async (id: string) => {
-      setIsDeleting(true);
+  const updateAlert = async (id: string, updates: Partial<UserAlert>) => {
+    try {
       const { error } = await supabase
-        .from('user_alerts')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-alerts'] });
-      toast({
-        title: "Alerta eliminada",
-        description: "La alerta ha sido eliminada exitosamente",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar la alerta",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsDeleting(false);
-    }
-  });
+        .from("user_alerts")
+        .update(updates)
+        .eq("id", id);
 
-  // Check if user is camionero or dador
-  const isCamionero = profile?.user_type === 'camionero';
-  const isDador = profile?.user_type === 'dador';
+      if (error) throw error;
+      await fetchAlerts();
+    } catch (error) {
+      console.error("Error updating alert:", error);
+      throw error;
+    }
+  };
+
+  const deleteAlert = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("user_alerts")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      await fetchAlerts();
+    } catch (error) {
+      console.error("Error deleting alert:", error);
+      throw error;
+    }
+  };
 
   return {
     alerts,
-    isLoading,
+    loading,
     error,
-    isCreating,
-    isEditing,
-    isDeleting,
-    createAlert,
+    fetchAlerts,
+    insertAlert,
     updateAlert,
     deleteAlert,
-    refetch,
-    isCamionero,
-    isDador
   };
 };

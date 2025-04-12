@@ -1,29 +1,29 @@
-
 export interface Carga {
   id: string;
   origen: string;
-  origen_detalle: string | null;
-  origen_provincia: string | null;
-  origen_ciudad: string | null;
-  origen_lat: number | null;
-  origen_lng: number | null;
+  origen_ciudad?: string;
+  origen_provincia?: string;
+  origen_detalle?: string;
+  origen_lat?: number;
+  origen_lng?: number;
   destino: string;
-  destino_detalle: string | null;
-  destino_provincia: string | null;
-  destino_ciudad: string | null;
-  destino_lat: number | null;
-  destino_lng: number | null;
+  destino_ciudad?: string;
+  destino_provincia?: string;
+  destino_detalle?: string;
+  destino_lat?: number;
+  destino_lng?: number;
   tipo_carga: string;
   tipo_camion: string;
-  cantidad_cargas: number;
-  tarifa: number;
-  fecha_carga_desde: string;
-  fecha_carga_hasta: string | null;
-  observaciones: string | null;
   estado: string;
-  usuario_id: string;
+  tarifa: number;
+  tarifa_aproximada?: boolean;
+  fecha_carga_desde: string;
+  fecha_carga_hasta?: string | null;
+  cantidad_cargas: number;
+  observaciones?: string | null;
   created_at: string;
   updated_at: string;
+  usuario_id: string;
 }
 
 export interface SelectedCarga {

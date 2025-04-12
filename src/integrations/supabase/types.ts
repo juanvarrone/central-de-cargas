@@ -139,6 +139,7 @@ export type Database = {
           origen_lng: number | null
           origen_provincia: string | null
           tarifa: number
+          tarifa_aproximada: boolean | null
           tipo_camion: string
           tipo_carga: string
           updated_at: string
@@ -165,6 +166,7 @@ export type Database = {
           origen_lng?: number | null
           origen_provincia?: string | null
           tarifa: number
+          tarifa_aproximada?: boolean | null
           tipo_camion: string
           tipo_carga: string
           updated_at?: string
@@ -191,6 +193,7 @@ export type Database = {
           origen_lng?: number | null
           origen_provincia?: string | null
           tarifa?: number
+          tarifa_aproximada?: boolean | null
           tipo_camion?: string
           tipo_carga?: string
           updated_at?: string
@@ -212,6 +215,7 @@ export type Database = {
           created_at: string
           estado: string
           id: string
+          revisar_tarifa: boolean | null
           updated_at: string
           usuario_id: string
         }
@@ -220,6 +224,7 @@ export type Database = {
           created_at?: string
           estado?: string
           id?: string
+          revisar_tarifa?: boolean | null
           updated_at?: string
           usuario_id: string
         }
@@ -228,6 +233,7 @@ export type Database = {
           created_at?: string
           estado?: string
           id?: string
+          revisar_tarifa?: boolean | null
           updated_at?: string
           usuario_id?: string
         }

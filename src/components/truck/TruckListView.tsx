@@ -1,143 +1,143 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Truck, Calendar, MapPin, Phone, User } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { TruckFilters } from "@/types/truck"; 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { Truck, MapPin, Calendar, Star, Phone } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import TruckContactModal from "./TruckContactModal";
 
 interface TruckListViewProps {
-  filters: TruckFilters;
+  filters: any;
 }
 
-interface TruckData {
+interface AvailableTruck {
   id: string;
   origen: string;
+  origen_provincia: string;
+  origen_ciudad: string;
   destino: string;
-  origen_provincia?: string;
-  destino_provincia?: string;
-  origen_ciudad?: string;
-  destino_ciudad?: string;
+  destino_provincia: string;
+  destino_ciudad: string;
   tipo_camion: string;
   capacidad: string;
   fecha_disponible_desde: string;
-  fecha_disponible_hasta?: string;
+  fecha_disponible_hasta: string | null;
   refrigerado: boolean;
   usuario_id: string;
   usuario?: {
-    full_name?: string;
-    phone_number?: string;
+    full_name: string | null;
+    phone_number: string | null;
+    id: string;
   };
 }
 
 const TruckListView = ({ filters }: TruckListViewProps) => {
-  const [trucks, setTrucks] = useState<TruckData[]>([]);
+  const [trucks, setTrucks] = useState<AvailableTruck[]>([]);
   const [loading, setLoading] = useState(true);
-  const [contactDialogOpen, setContactDialogOpen] = useState(false);
-  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [selectedTruck, setSelectedTruck] = useState<TruckData | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [selectedTruckUserId, setSelectedTruckUserId] = useState<string | null>(null);
+  const [selectedTruckUserData, setSelectedTruckUserData] = useState<{
+    full_name: string | null;
+    phone_number: string | null;
+    user_id: string;
+  } | null>(null);
+  const [loginRequired, setLoginRequired] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsLoggedIn(!!data.session);
-    };
-    checkAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsLoggedIn(!!session);
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    fetchTrucks();
-  }, [filters]);
-
-  const fetchTrucks = async () => {
-    try {
-      setLoading(true);
-      
-      let query = supabase
-        .from("camiones_disponibles")
-        .select(`
-          *,
-          usuario:usuario_id (
-            usuario:profiles (
+    const fetchTrucks = async () => {
+      try {
+        setLoading(true);
+        
+        let query = supabase
+          .from("camiones_disponibles")
+          .select(`
+            *,
+            usuario:usuario_id (
+              id,
               full_name,
               phone_number
             )
-          )
-        `)
-        .eq("estado", "disponible");
-
-      if (filters.tipoCamion) {
-        query = query.eq("tipo_camion", filters.tipoCamion);
-      }
-
-      if (filters.refrigerado !== undefined) {
-        query = query.eq("refrigerado", filters.refrigerado);
-      }
-
-      // Add other filters as needed
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-
-      // Process data to match the expected structure
-      const processedData = data?.map(item => {
-        const userData = item.usuario?.usuario?.[0] || {};
+          `)
+          .eq("estado", "disponible");
         
-        return {
-          ...item,
-          usuario: {
-            full_name: userData.full_name,
-            phone_number: userData.phone_number
-          }
-        };
-      });
+        // Add filters
+        if (filters.provinciaOrigen) {
+          query = query.ilike("origen_provincia", `%${filters.provinciaOrigen}%`);
+        }
+        if (filters.provinciaDestino) {
+          query = query.ilike("destino_provincia", `%${filters.provinciaDestino}%`);
+        }
+        if (filters.tipoCamion) {
+          query = query.eq("tipo_camion", filters.tipoCamion);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        
+        setTrucks(data as AvailableTruck[]);
+      } catch (error: any) {
+        console.error("Error fetching trucks:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los camiones disponibles",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrucks();
+  }, [filters, toast]);
+
+  const handleContactClick = async (truck: AvailableTruck) => {
+    try {
+      // Check if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
       
-      setTrucks(processedData || []);
-    } catch (error: any) {
-      console.error("Error fetching trucks:", error);
+      if (!session) {
+        setLoginRequired(true);
+        setShowContactModal(true);
+        return;
+      }
+
+      setSelectedTruckUserId(truck.usuario_id);
+      
+      if (truck.usuario) {
+        setSelectedTruckUserData({
+          full_name: truck.usuario.full_name,
+          phone_number: truck.usuario.phone_number,
+          user_id: truck.usuario.id
+        });
+      } else {
+        // Fetch user data if not available
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, phone_number, id")
+          .eq("id", truck.usuario_id)
+          .single();
+          
+        if (error) throw error;
+        
+        setSelectedTruckUserData({
+          full_name: data.full_name,
+          phone_number: data.phone_number,
+          user_id: data.id
+        });
+      }
+      
+      setLoginRequired(false);
+      setShowContactModal(true);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los camiones disponibles",
+        description: "No se pudo obtener la información de contacto",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleContact = (truck: TruckData) => {
-    if (!isLoggedIn) {
-      setLoginDialogOpen(true);
-    } else {
-      setSelectedTruck(truck);
-      setContactDialogOpen(true);
-    }
-  };
-
-  const handleLoginRedirect = () => {
-    navigate("/auth", { state: { from: "/buscar-camiones" } });
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch (e) {
-      return "Fecha no válida";
     }
   };
 
@@ -183,27 +183,29 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
                 </p>
               </div>
               
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <Truck size={16} className="text-primary" />
                   <span>{truck.tipo_camion}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar size={16} className="text-gray-500" />
-                  <span className="text-sm text-gray-600">{formatDate(truck.fecha_disponible_desde)}</span>
+                  <span className="text-sm">
+                    {new Date(truck.fecha_disponible_desde).toLocaleDateString()}
+                  </span>
                 </div>
-                {truck.refrigerado && (
-                  <Badge className="w-fit mt-1 bg-blue-100 text-blue-800 hover:bg-blue-200">
-                    Refrigerado
-                  </Badge>
-                )}
+                <div>
+                  {truck.refrigerado && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                      Refrigerado
+                    </Badge>
+                  )}
+                </div>
               </div>
               
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => handleContact(truck)}
-                >
+              <div>
+                <Button onClick={() => handleContactClick(truck)} className="w-full">
+                  <Phone size={16} className="mr-2" />
                   Contactar
                 </Button>
               </div>
@@ -212,59 +214,12 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
         ))}
       </div>
 
-      {/* Contact Dialog */}
-      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Información de contacto</DialogTitle>
-          </DialogHeader>
-          {selectedTruck && (
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-2 border-b pb-2">
-                <Truck className="h-5 w-5 text-gray-500" />
-                <div>
-                  <p className="font-medium">{selectedTruck.tipo_camion}</p>
-                  <p className="text-sm text-gray-500">Capacidad: {selectedTruck.capacidad}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-gray-500" />
-                <span>
-                  {selectedTruck.usuario?.full_name || "Nombre no disponible"}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Phone className="h-5 w-5 text-gray-500" />
-                <span>
-                  {selectedTruck.usuario?.phone_number || "Teléfono no disponible"}
-                </span>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Login Dialog */}
-      <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Iniciar sesión requerido</DialogTitle>
-            <DialogDescription>
-              Para ver la información de contacto, primero debes iniciar sesión.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end space-x-2 mt-4">
-            <Button variant="outline" onClick={() => setLoginDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleLoginRedirect}>
-              Iniciar sesión
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TruckContactModal
+        open={showContactModal}
+        onOpenChange={setShowContactModal}
+        userData={selectedTruckUserData}
+        loginRequired={loginRequired}
+      />
     </div>
   );
 };

@@ -87,7 +87,7 @@ const CargoMapInfoWindow = ({
           usuario_id: userId,
           estado: "pendiente",
           revisar_tarifa: revisarTarifa
-        } as any);
+        });
 
       if (error) throw error;
 

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, User, Phone, Star } from "lucide-react";
+import { CheckCircle2, XCircle, User, Phone, Star, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type Postulacion = {
@@ -20,6 +20,7 @@ type Postulacion = {
   carga_id: string;
   usuario_id: string;
   estado: "pendiente" | "aceptada" | "rechazada" | "pausada" | "cancelada";
+  revisar_tarifa: boolean;
   created_at: string;
   updated_at: string;
   usuario: {
@@ -136,6 +137,7 @@ const CargaPostulaciones = ({ cargaId }: CargaPostulacionesProps) => {
             <TableHead>Contacto</TableHead>
             <TableHead>Calificación</TableHead>
             <TableHead>Estado</TableHead>
+            <TableHead>Revisión</TableHead>
             <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -181,6 +183,14 @@ const CargaPostulaciones = ({ cargaId }: CargaPostulacionesProps) => {
                 >
                   {postulacion.estado.charAt(0).toUpperCase() + postulacion.estado.slice(1)}
                 </Badge>
+              </TableCell>
+              <TableCell>
+                {postulacion.revisar_tarifa && (
+                  <div className="flex items-center gap-1 text-amber-600">
+                    <AlertCircle size={16} />
+                    <span className="text-sm">Revisar tarifa</span>
+                  </div>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
