@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Edit, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Eye, CheckCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,12 @@ interface Carga {
   estado: string;
   created_at: string;
   postulaciones?: number;
+  postulacion_asignada_id?: string | null;
+  transportista?: {
+    full_name: string;
+    phone_number: string;
+    id: string;
+  } | null;
 }
 
 const MisCargas = () => {
@@ -62,25 +68,55 @@ const MisCargas = () => {
       
       if (!user) return;
       
-      const { data, error } = await supabase
+      // Get cargas with postulaciones count
+      const { data: cargasData, error } = await supabase
         .from("cargas")
-        .select("*")
+        .select("*, postulaciones:cargas_postulaciones(count)")
         .eq("usuario_id", user.id)
         .order("created_at", { ascending: false });
         
       if (error) throw error;
       
-      // Get postulation count for each carga
-      const cargasWithPostulaciones = await Promise.all(
-        (data || []).map(async (carga) => {
-          // In a real app, this would query a postulaciones table
-          // For now, we'll use a placeholder random number between 0 and 5
-          const postulaciones = Math.floor(Math.random() * 6);
-          return { ...carga, postulaciones };
+      // Transform the data to extract the count
+      const cargasWithCounts = (cargasData || []).map((carga: any) => ({
+        ...carga,
+        postulaciones: carga.postulaciones?.[0]?.count || 0
+      }));
+      
+      // For cargas with assigned postulaciones, fetch the transportista details
+      const cargasWithTransportistas = await Promise.all(
+        cargasWithCounts.map(async (carga: Carga) => {
+          if (carga.postulacion_asignada_id) {
+            try {
+              // First get the user_id from the postulacion
+              const { data: postulacion, error: postulacionError } = await supabase
+                .from("cargas_postulaciones")
+                .select("usuario_id")
+                .eq("id", carga.postulacion_asignada_id)
+                .single();
+                
+              if (postulacionError) throw postulacionError;
+              
+              // Then get the transportista details
+              const { data: transportista, error: profileError } = await supabase
+                .from("profiles")
+                .select("full_name, phone_number, id")
+                .eq("id", postulacion.usuario_id)
+                .single();
+                
+              if (profileError) throw profileError;
+              
+              return { ...carga, transportista };
+            } catch (error) {
+              console.error("Error fetching transportista:", error);
+              return carga;
+            }
+          }
+          return carga;
         })
       );
       
-      setCargas(cargasWithPostulaciones);
+      setCargas(cargasWithTransportistas);
     } catch (error: any) {
       console.error("Error fetching cargas:", error);
       toast({
@@ -143,6 +179,8 @@ const MisCargas = () => {
         return 'bg-green-100 text-green-800 hover:bg-green-200';
       case 'pendiente':
         return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      case 'asignada':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
       case 'completada':
         return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
       case 'cancelada':
@@ -206,7 +244,7 @@ const MisCargas = () => {
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{carga.tipo_carga}</Badge>
                       <Badge className={getEstadoBadgeColor(carga.estado)}>
-                        {carga.estado}
+                        {carga.estado.charAt(0).toUpperCase() + carga.estado.slice(1)}
                       </Badge>
                     </div>
                     <h3 className="font-medium text-lg">
@@ -215,6 +253,14 @@ const MisCargas = () => {
                     <div className="text-sm text-muted-foreground">
                       <p>Fecha de carga: {formatDate(carga.fecha_carga_desde)}</p>
                       <p>Publicado: {formatDate(carga.created_at)}</p>
+                      
+                      {/* Mostrar información del transportista asignado si existe */}
+                      {carga.transportista && carga.estado === "asignada" && (
+                        <div className="mt-2 flex items-center gap-2 text-primary">
+                          <CheckCircle size={16} className="fill-green-500 text-white" />
+                          <span>Asignada a: <strong>{carga.transportista.full_name}</strong></span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -232,7 +278,7 @@ const MisCargas = () => {
                         variant="outline" 
                         size="sm" 
                         onClick={() => handleEditClick(carga.id)}
-                        disabled={carga.estado === "cancelada" || carga.estado === "completada"}
+                        disabled={carga.estado === "cancelada" || carga.estado === "completada" || carga.estado === "asignada"}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Editar

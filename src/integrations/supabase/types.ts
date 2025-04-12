@@ -128,6 +128,7 @@ export type Database = {
           destino_lng: number | null
           destino_provincia: string | null
           estado: string
+          fecha_asignacion: string | null
           fecha_carga_desde: string
           fecha_carga_hasta: string | null
           id: string
@@ -138,6 +139,7 @@ export type Database = {
           origen_lat: number | null
           origen_lng: number | null
           origen_provincia: string | null
+          postulacion_asignada_id: string | null
           tarifa: number
           tarifa_aproximada: boolean | null
           tipo_camion: string
@@ -155,6 +157,7 @@ export type Database = {
           destino_lng?: number | null
           destino_provincia?: string | null
           estado?: string
+          fecha_asignacion?: string | null
           fecha_carga_desde: string
           fecha_carga_hasta?: string | null
           id?: string
@@ -165,6 +168,7 @@ export type Database = {
           origen_lat?: number | null
           origen_lng?: number | null
           origen_provincia?: string | null
+          postulacion_asignada_id?: string | null
           tarifa: number
           tarifa_aproximada?: boolean | null
           tipo_camion: string
@@ -182,6 +186,7 @@ export type Database = {
           destino_lng?: number | null
           destino_provincia?: string | null
           estado?: string
+          fecha_asignacion?: string | null
           fecha_carga_desde?: string
           fecha_carga_hasta?: string | null
           id?: string
@@ -192,6 +197,7 @@ export type Database = {
           origen_lat?: number | null
           origen_lng?: number | null
           origen_provincia?: string | null
+          postulacion_asignada_id?: string | null
           tarifa?: number
           tarifa_aproximada?: boolean | null
           tipo_camion?: string
@@ -200,6 +206,13 @@ export type Database = {
           usuario_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cargas_postulacion_asignada_id_fkey"
+            columns: ["postulacion_asignada_id"]
+            isOneToOne: false
+            referencedRelation: "cargas_postulaciones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cargas_usuario_id_fkey"
             columns: ["usuario_id"]

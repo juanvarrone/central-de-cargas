@@ -10,25 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import CargaPostulaciones from "@/components/cargo/CargaPostulaciones";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Checkbox } from "@/components/ui/checkbox";
-
-interface Carga {
-  id: string;
-  tipo_carga: string;
-  origen: string;
-  destino: string;
-  fecha_carga_desde: string;
-  fecha_carga_hasta: string | null;
-  estado: string;
-  created_at: string;
-  tarifa: number;
-  tarifa_aproximada: boolean;
-  tipo_camion: string;
-  cantidad_cargas: number;
-  observaciones: string | null;
-  origen_detalle: string | null;
-  destino_detalle: string | null;
-  usuario_id: string;
-}
+import { Carga } from "@/types/mapa-cargas";
 
 const VerCarga = () => {
   const { id } = useParams();
@@ -221,7 +203,7 @@ const VerCarga = () => {
           <div className="flex justify-between items-start">
             <CardTitle>Información General</CardTitle>
             <Badge className={getEstadoBadgeColor(carga.estado)}>
-              {carga.estado}
+              {carga.estado.charAt(0).toUpperCase() + carga.estado.slice(1)}
             </Badge>
           </div>
         </CardHeader>
@@ -280,6 +262,13 @@ const VerCarga = () => {
                   <p className="text-sm font-medium text-muted-foreground">Publicado</p>
                   <p>{formatDate(carga.created_at)}</p>
                 </div>
+                
+                {carga.fecha_asignacion && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Fecha de Asignación</p>
+                    <p>{formatDate(carga.fecha_asignacion)}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -309,7 +298,7 @@ const VerCarga = () => {
 
           {isOwner && (
             <div className="mt-8">
-              <CargaPostulaciones cargaId={carga.id} />
+              <CargaPostulaciones cargaId={carga.id} isLoading={loading} />
             </div>
           )}
         </CardContent>

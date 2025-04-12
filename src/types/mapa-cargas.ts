@@ -1,3 +1,4 @@
+
 export interface Carga {
   id: string;
   origen: string;
@@ -24,6 +25,8 @@ export interface Carga {
   created_at: string;
   updated_at: string;
   usuario_id: string;
+  postulacion_asignada_id?: string | null;
+  fecha_asignacion?: string | null;
 }
 
 export interface SelectedCarga {
