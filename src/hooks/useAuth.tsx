@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +49,23 @@ export const useAuth = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
+          // Check if profile is complete for social logins
+          if (session.user.app_metadata.provider && session.user.app_metadata.provider !== 'email') {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('phone_number, user_type')
+              .eq('id', session.user.id)
+              .single();
+            
+            // If profile is incomplete, redirect to complete profile page
+            if (!profileData?.phone_number || !profileData?.user_type) {
+              console.log("Social login user with incomplete profile, redirecting to profile completion");
+              navigate("/complete-profile");
+              return;
+            }
+          }
+          
+          // Profile is complete, redirect to intended destination
           console.log("Active session found, redirecting to:", redirectAfterLogin);
           if (formData && redirectAfterLogin === '/publicar-carga') {
             navigate(redirectAfterLogin, { state: { formData } });
@@ -81,6 +99,21 @@ export const useAuth = () => {
             variant: "destructive",
           });
         } else if (session) {
+          // Check if profile is complete
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('phone_number, user_type')
+            .eq('id', session.user.id)
+            .single();
+          
+          // If profile is incomplete, redirect to complete profile page
+          if (!profileData?.phone_number || !profileData?.user_type) {
+            console.log("Social login user with incomplete profile, redirecting to profile completion");
+            navigate("/complete-profile");
+            return;
+          }
+          
+          // Profile is complete, proceed with normal flow
           if (formData && redirectAfterLogin === '/publicar-carga') {
             navigate(redirectAfterLogin, { state: { formData } });
           } else {
@@ -94,11 +127,38 @@ export const useAuth = () => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event);
       if (event === "SIGNED_IN" && session) {
-        console.log("User signed in, redirecting to:", redirectAfterLogin);
-        if (formData && redirectAfterLogin === '/publicar-carga') {
-          navigate(redirectAfterLogin, { state: { formData } });
+        // Check if profile is complete for social logins
+        if (session.user.app_metadata.provider && session.user.app_metadata.provider !== 'email') {
+          setTimeout(async () => {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('phone_number, user_type')
+              .eq('id', session.user.id)
+              .single();
+            
+            // If profile is incomplete, redirect to complete profile page  
+            if (!profileData?.phone_number || !profileData?.user_type) {
+              console.log("Social login user with incomplete profile, redirecting to profile completion");
+              navigate("/complete-profile");
+              return;
+            }
+            
+            // Profile is complete, proceed with normal flow
+            console.log("User signed in, redirecting to:", redirectAfterLogin);
+            if (formData && redirectAfterLogin === '/publicar-carga') {
+              navigate(redirectAfterLogin, { state: { formData } });
+            } else {
+              navigate(redirectAfterLogin);
+            }
+          }, 0);
         } else {
-          navigate(redirectAfterLogin);
+          // Regular email login, proceed with normal flow
+          console.log("User signed in, redirecting to:", redirectAfterLogin);
+          if (formData && redirectAfterLogin === '/publicar-carga') {
+            navigate(redirectAfterLogin, { state: { formData } });
+          } else {
+            navigate(redirectAfterLogin);
+          }
         }
       }
     });

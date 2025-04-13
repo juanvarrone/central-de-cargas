@@ -22,6 +22,7 @@ import TerminosCondiciones from "./pages/TerminosCondiciones";
 import PoliticasPrivacidad from "./pages/PoliticasPrivacidad";
 import Premium from "./pages/Premium";
 import MisPostulaciones from "./pages/MisPostulaciones";
+import CompleteProfile from "./pages/CompleteProfile";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="/mapa-cargas" element={<MapaCargas />} />
           <Route path="/buscar-cargas" element={<BuscarCargas />} />
           <Route path="/buscar-camiones" element={<BuscarCamiones />} />
