@@ -20,6 +20,7 @@ const AdminPage = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user, session, isLoading } = useAuth();
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -43,30 +44,54 @@ const AdminPage = () => {
           return;
         }
 
+        console.log("Checking admin status for user:", user.email);
+        
+        // Collect debug information
+        const debugData: any = {
+          userId: user.id,
+          userEmail: user.email,
+          queries: []
+        };
+
         // Direct check for admin status via database query
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .maybeSingle();
+          .select('*')
+          .eq('user_id', user.id);
+        
+        debugData.queries.push({ 
+          table: 'user_roles', 
+          result: roleData,
+          error: roleError 
+        });
         
         if (roleError) {
           console.error("Error checking user roles:", roleError);
         }
         
-        if (roleData && roleData.role === 'admin') {
-          console.log("Admin role confirmed from user_roles table");
-          setIsAdmin(true);
-          setLoading(false);
-          return;
+        if (roleData && roleData.length > 0) {
+          const adminRole = roleData.find(r => r.role === 'admin');
+          if (adminRole) {
+            console.log("Admin role confirmed from user_roles table");
+            setIsAdmin(true);
+            setDebugInfo(debugData);
+            setLoading(false);
+            return;
+          }
         }
         
         // Fallback to profiles table
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('is_admin')
+          .select('*')
           .eq('id', user.id)
           .maybeSingle();
+        
+        debugData.queries.push({ 
+          table: 'profiles', 
+          result: profileData,
+          error: profileError 
+        });
         
         if (profileError) {
           console.error("Error checking profiles:", profileError);
@@ -78,6 +103,8 @@ const AdminPage = () => {
           navigate("/");
           return;
         }
+        
+        setDebugInfo(debugData);
         
         if (profileData?.is_admin) {
           console.log("Admin status confirmed from profiles table");
@@ -123,6 +150,31 @@ const AdminPage = () => {
     );
   }
 
+  // Debug mode - show what went wrong with admin check
+  if (!isAdmin && debugInfo) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <h1 className="text-3xl font-bold mb-8 text-red-600">Error de permisos de administrador</h1>
+        
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">Información de debug:</h2>
+          <pre className="bg-gray-100 p-4 rounded overflow-auto max-h-[500px]">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
+          
+          <div className="mt-4">
+            <button 
+              onClick={() => navigate('/')}
+              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition"
+            >
+              Volver al inicio
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   // Extra safety check - shouldn't render anything if not admin
   if (!isAdmin || !user) {
     return null;

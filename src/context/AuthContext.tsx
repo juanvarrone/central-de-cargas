@@ -67,13 +67,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
+        .eq('user_id', userId);
 
-      if (!roleError && roleData && roleData.role === 'admin') {
-        console.log("Admin role found in user_roles table:", roleData);
-        setIsAdmin(true);
-        return;
+      console.log("User roles check:", { roleData, roleError });
+      
+      if (!roleError && roleData && roleData.length > 0) {
+        const isUserAdmin = roleData.some(record => record.role === 'admin');
+        if (isUserAdmin) {
+          console.log("Admin role found in user_roles table");
+          setIsAdmin(true);
+          return;
+        }
       }
       
       // If no role found or there was an error, check profiles table as fallback
