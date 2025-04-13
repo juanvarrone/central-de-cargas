@@ -60,4 +60,16 @@ export interface TruckAvailability {
   usuario_id: string;
   created_at: string;
   updated_at: string;
+  usuario?: {
+    id: string;
+    full_name: string | null;
+    phone_number: string | null;
+  } | null;
+}
+
+// Adding this type for clarity
+export interface TruckUser {
+  id: string;
+  full_name: string | null;
+  phone_number: string | null;
 }

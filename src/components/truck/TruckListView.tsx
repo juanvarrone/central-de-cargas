@@ -6,34 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Truck, MapPin, Calendar, Star, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TruckContactModal from "./TruckContactModal";
+import { TruckAvailability, TruckFilters, TruckUser } from "@/types/truck";
 
 interface TruckListViewProps {
-  filters: any;
-}
-
-interface AvailableTruck {
-  id: string;
-  origen: string;
-  origen_provincia: string;
-  origen_ciudad: string;
-  destino: string;
-  destino_provincia: string;
-  destino_ciudad: string;
-  tipo_camion: string;
-  capacidad: string;
-  fecha_disponible_desde: string;
-  fecha_disponible_hasta: string | null;
-  refrigerado: boolean;
-  usuario_id: string;
-  usuario?: {
-    full_name: string | null;
-    phone_number: string | null;
-    id: string;
-  };
+  filters: TruckFilters;
 }
 
 const TruckListView = ({ filters }: TruckListViewProps) => {
-  const [trucks, setTrucks] = useState<AvailableTruck[]>([]);
+  const [trucks, setTrucks] = useState<TruckAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [showContactModal, setShowContactModal] = useState(false);
@@ -72,12 +52,21 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
         if (filters.tipoCamion) {
           query = query.eq("tipo_camion", filters.tipoCamion);
         }
+        if (filters.refrigerado !== undefined) {
+          query = query.eq("refrigerado", filters.refrigerado);
+        }
+        if (filters.fecha) {
+          // Filter by date if specified
+          query = query.gte("fecha_disponible_desde", filters.fecha);
+        }
 
         const { data, error } = await query;
 
         if (error) throw error;
         
-        setTrucks(data as AvailableTruck[]);
+        // Cast data to ensure type safety
+        const trucksData = data as TruckAvailability[];
+        setTrucks(trucksData);
       } catch (error: any) {
         console.error("Error fetching trucks:", error);
         toast({
@@ -93,7 +82,7 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
     fetchTrucks();
   }, [filters, toast]);
 
-  const handleContactClick = async (truck: AvailableTruck) => {
+  const handleContactClick = async (truck: TruckAvailability) => {
     try {
       // Check if user is logged in
       const { data: { session } } = await supabase.auth.getSession();

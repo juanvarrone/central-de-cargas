@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MapPin, Truck, Calendar } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useState } from "react";
 import { TruckFilters } from "@/types/truck";
@@ -137,7 +137,7 @@ const TruckMapFilters = ({ onFilterChange }: TruckMapFiltersProps) => {
               Fecha disponible
             </Label>
             <DatePicker 
-              onChange={(date) => onFilterChange({ fecha: date?.toISOString() })}
+              onChange={(date) => onFilterChange({ fecha: date ? date.toISOString() : undefined })}
             />
           </div>
           <div className="space-y-3">
