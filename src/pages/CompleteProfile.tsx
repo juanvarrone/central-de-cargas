@@ -202,9 +202,8 @@ const CompleteProfile = () => {
             </form>
           </Form>
         </CardContent>
-      </CardContent>
-    </Card>
-  </div>
+      </Card>
+    </div>
   );
 };
 
