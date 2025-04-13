@@ -12,21 +12,19 @@ import UserManagement from "@/components/admin/UserManagement";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const { user, isAdmin, isLoading } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, session, isLoading } = useAuth();
 
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
         console.log("Checking admin access...");
-        console.log("User:", user?.id);
-        console.log("User email:", user?.email);
-        console.log("isAdmin:", isAdmin);
-        console.log("isLoading:", isLoading);
         
         // Wait for auth context to load
         if (isLoading) {
@@ -45,21 +43,58 @@ const AdminPage = () => {
           return;
         }
 
-        if (!isAdmin) {
-          // Log more details when admin access is denied
-          console.log("Admin access denied for user:", user.email);
+        // Direct check for admin status via database query
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (roleError) {
+          console.error("Error checking user roles:", roleError);
+        }
+        
+        if (roleData && roleData.role === 'admin') {
+          console.log("Admin role confirmed from user_roles table");
+          setIsAdmin(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Fallback to profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (profileError) {
+          console.error("Error checking profiles:", profileError);
           toast({
-            title: "Acceso denegado",
-            description: "No tienes permisos de administrador",
+            title: "Error",
+            description: "Error al verificar permisos de administrador",
             variant: "destructive",
           });
           navigate("/");
           return;
         }
         
-        // If we got here, user is admin
-        console.log("Admin access granted for user:", user.email);
-        setLoading(false);
+        if (profileData?.is_admin) {
+          console.log("Admin status confirmed from profiles table");
+          setIsAdmin(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Not an admin
+        console.log("User is not an admin, redirecting");
+        toast({
+          title: "Acceso denegado",
+          description: "No tienes permisos de administrador",
+          variant: "destructive",
+        });
+        navigate("/");
+        
       } catch (error: any) {
         console.error("Admin access check error:", error);
         toast({
@@ -68,11 +103,13 @@ const AdminPage = () => {
           variant: "destructive",
         });
         navigate("/");
+      } finally {
+        setLoading(false);
       }
     };
     
     checkAdminAccess();
-  }, [navigate, toast, user, isAdmin, isLoading]);
+  }, [navigate, toast, user, isLoading]);
 
   // Show loading state while checking session and admin status
   if (loading || isLoading) {
@@ -86,13 +123,9 @@ const AdminPage = () => {
     );
   }
 
-  // Extra safety check - shouldn't render anything if not admin or not logged in
+  // Extra safety check - shouldn't render anything if not admin
   if (!isAdmin || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="text-lg text-red-500">No tienes permisos para acceder a esta página</div>
-      </div>
-    );
+    return null;
   }
 
   return (
