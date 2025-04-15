@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,7 @@ import { Truck, MapPin, Calendar, Star, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TruckContactModal from "./TruckContactModal";
 import { TruckAvailability, TruckFilters, TruckUser } from "@/types/truck";
+import { useAuth } from "@/context/AuthContext";
 
 interface TruckListViewProps {
   filters: TruckFilters;
@@ -24,6 +24,7 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
     user_id: string;
   } | null>(null);
   const [loginRequired, setLoginRequired] = useState(false);
+  const { canContactTransportistas } = useAuth();
 
   useEffect(() => {
     const fetchTrucks = async () => {
@@ -64,8 +65,8 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
 
         if (error) throw error;
         
-        // Cast data to ensure type safety
-        const trucksData = data as TruckAvailability[];
+        // Cast data to ensure type safety (needed because of Supabase typing issues)
+        const trucksData = data as unknown as TruckAvailability[];
         setTrucks(trucksData);
       } catch (error: any) {
         console.error("Error fetching trucks:", error);
@@ -90,6 +91,16 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
       if (!session) {
         setLoginRequired(true);
         setShowContactModal(true);
+        return;
+      }
+
+      // Check permissions
+      if (!canContactTransportistas) {
+        toast({
+          title: "Acceso restringido",
+          description: "No tienes permisos para contactar transportistas. Esta funcionalidad es solo para Dadores de Cargas y Administradores.",
+          variant: "destructive",
+        });
         return;
       }
 

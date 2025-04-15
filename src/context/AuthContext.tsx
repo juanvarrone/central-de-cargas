@@ -3,11 +3,18 @@ import { createContext, useState, useEffect, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+type UserType = "dador" | "camionero" | null;
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  userType: UserType;
+  canPublishCarga: boolean;
+  canPublishCamion: boolean;
+  canContactTransportistas: boolean;
+  canPostulateToCarga: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -15,6 +22,11 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   isLoading: true,
   isAdmin: false,
+  userType: null,
+  canPublishCarga: false,
+  canPublishCamion: false,
+  canContactTransportistas: false,
+  canPostulateToCarga: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -22,6 +34,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userType, setUserType] = useState<UserType>(null);
+  
+  // Derived permissions based on user role
+  const canPublishCarga = isAdmin || userType === "dador";
+  const canPublishCamion = isAdmin || userType === "camionero";
+  const canContactTransportistas = isAdmin || userType === "dador";
+  const canPostulateToCarga = isAdmin || userType === "camionero";
 
   useEffect(() => {
     // First set up the auth state listener
@@ -34,10 +53,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (currentSession?.user) {
           // Use setTimeout to avoid potential deadlocks with Supabase
           setTimeout(() => {
-            checkAdminStatus(currentSession.user.id);
+            checkUserStatus(currentSession.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setUserType(null);
         }
       }
     );
@@ -49,9 +69,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(currentSession?.user ?? null);
 
       if (currentSession?.user) {
-        checkAdminStatus(currentSession.user.id);
+        checkUserStatus(currentSession.user.id);
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => {
@@ -59,11 +80,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const checkAdminStatus = async (userId: string) => {
+  const checkUserStatus = async (userId: string) => {
     try {
-      console.log("Checking admin status for user:", userId);
+      console.log("Checking user status for user:", userId);
       
-      // First, directly check the user_roles table
+      // Get user profile with type information
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type, is_admin')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (profileError) {
+        console.error("Error checking profile:", profileError);
+      }
+      
+      console.log("Profile data:", profileData);
+      
+      // First, check admin status
+      let adminStatus = false;
+      
+      // Check user_roles table for admin role
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -75,39 +112,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const isUserAdmin = roleData.some(record => record.role === 'admin');
         if (isUserAdmin) {
           console.log("Admin role found in user_roles table");
-          setIsAdmin(true);
-          return;
+          adminStatus = true;
         }
       }
       
-      // If no role found or there was an error, check profiles table as fallback
-      console.log("No admin role found in user_roles or error occurred. Checking profiles table.");
-      
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', userId)
-        .maybeSingle();
-        
-      if (profileError) {
-        console.error("Error checking profiles table for admin status:", profileError);
-        setIsAdmin(false);
-        return;
+      // If not admin from roles, check profiles table as fallback
+      if (!adminStatus && profileData?.is_admin) {
+        console.log("Admin status found in profiles table");
+        adminStatus = true;
       }
       
-      console.log("Profile admin check result:", profileData);
-      setIsAdmin(!!profileData?.is_admin);
+      // Set state values
+      setIsAdmin(adminStatus);
+      setUserType(profileData?.user_type || null);
       
     } catch (error) {
-      console.error("Error checking admin status:", error);
-      setIsAdmin(false);
+      console.error("Error checking user status:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  console.log("AuthContext state:", { user: !!user, isAdmin, isLoading });
+  const contextValue = {
+    user, 
+    session, 
+    isLoading, 
+    isAdmin,
+    userType,
+    canPublishCarga,
+    canPublishCamion,
+    canContactTransportistas,
+    canPostulateToCarga
+  };
+
+  console.log("AuthContext state:", contextValue);
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAdmin }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

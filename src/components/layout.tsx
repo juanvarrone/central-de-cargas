@@ -1,6 +1,5 @@
-
 import { Link } from "react-router-dom";
-import { User as UserIcon, Menu, LogOut, Truck, Bell, Settings, CreditCard, MapPin, Map } from "lucide-react";
+import { User as UserIcon, Menu, LogOut, Truck, Bell, Settings, CreditCard, MapPin, Map, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   DropdownMenu, 
@@ -13,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import Logo from "./Logo";
+import UserMenu from "./UserMenu";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
@@ -55,51 +55,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <span>Mapa</span>
                   </Link>
                   
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="flex items-center gap-2">
-                        <UserIcon size={16} />
-                        <span className="hidden sm:inline">{user.email?.split('@')[0]}</span>
-                        <Menu size={16} className="ml-1" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 bg-white">
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link to="/mis-cargas" className="flex items-center">
-                          <Truck size={16} className="mr-2" />
-                          Mis Cargas
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link to="/configurar-alertas" className="flex items-center">
-                          <Bell size={16} className="mr-2" />
-                          Mis Alertas
-                        </Link>
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link to="/premium" className="flex items-center">
-                          <CreditCard size={16} className="mr-2" />
-                          Plan Premium
-                        </Link>
-                      </DropdownMenuItem>
-                      
-                      {isAdmin && (
-                        <DropdownMenuItem asChild className="cursor-pointer">
-                          <Link to="/admin" className="flex items-center">
-                            <Settings size={16} className="mr-2" />
-                            Panel de Administración
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                      
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
-                        <LogOut size={16} className="mr-2" />
-                        Cerrar sesión
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <UserMenu />
                 </div>
               ) : (
                 <Button 

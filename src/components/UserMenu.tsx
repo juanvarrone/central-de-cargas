@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,19 +18,18 @@ import {
   Star,
   FileText,
   ClipboardList,
-  Crown
+  Crown,
+  Shield
 } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
-interface UserMenuProps {
-  user: User;
-}
-
-const UserMenu = ({ user }: UserMenuProps) => {
+const UserMenu = () => {
   const navigate = useNavigate();
-  const { profile, isLoading } = useUserProfile();
+  const { profile, isLoading: profileLoading } = useUserProfile();
   const [open, setOpen] = useState(false);
+  const { user, isAdmin } = useAuth();
 
   useEffect(() => {
     // Close dropdown when navigating
@@ -54,7 +52,7 @@ const UserMenu = ({ user }: UserMenuProps) => {
     }
   };
 
-  if (isLoading) {
+  if (!user || profileLoading) {
     return (
       <Button variant="outline" size="sm" className="h-9 px-2">
         <UserIcon size={18} />
@@ -85,7 +83,8 @@ const UserMenu = ({ user }: UserMenuProps) => {
           </DropdownMenuItem>
         </Link>
 
-        {isCamionero && (
+        {/* Show these items for both admin and transportista */}
+        {(isAdmin || isCamionero) && (
           <>
             <Link to="/mis-postulaciones">
               <DropdownMenuItem className="cursor-pointer">
@@ -102,7 +101,8 @@ const UserMenu = ({ user }: UserMenuProps) => {
           </>
         )}
 
-        {isDador && (
+        {/* Show these items for both admin and dador */}
+        {(isAdmin || isDador) && (
           <Link to="/mis-cargas">
             <DropdownMenuItem className="cursor-pointer">
               <FileText size={16} className="mr-2" />
@@ -124,6 +124,15 @@ const UserMenu = ({ user }: UserMenuProps) => {
             {isPremium ? "Premium Activo" : "Obtener Premium"}
           </DropdownMenuItem>
         </Link>
+
+        {isAdmin && (
+          <Link to="/admin">
+            <DropdownMenuItem className="cursor-pointer">
+              <Shield size={16} className="mr-2" />
+              Admin Panel
+            </DropdownMenuItem>
+          </Link>
+        )}
 
         <DropdownMenuSeparator />
         
