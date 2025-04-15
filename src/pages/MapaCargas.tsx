@@ -2,144 +2,82 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu";
 import CargoMapFilters from "@/components/cargo/CargoMapFilters";
 import CargasMapa from "@/components/cargo/CargasMapa";
 import { Filters } from "@/types/mapa-cargas";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { Link, useNavigate } from "react-router-dom";
-import { User as UserIcon, Menu, LogOut, Truck, Bell, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Filter, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 const MapaCargas = () => {
   const [filters, setFilters] = useState<Filters>({});
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo verificar tu sesión. Por favor intenta nuevamente.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null);
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [toast]);
 
   const handleFilterChange = (newFilters: Filters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/auth');
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <p>Cargando...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="container mx-auto px-4 py-2">
-        <div className="flex justify-between items-center mb-4 py-2">
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate("/")}
-              className="mr-2"
-            >
-              <ArrowLeft size={20} />
-            </Button>
-            <Link to="/" className="text-xl font-bold text-primary">
-              Central de Cargas
-            </Link>
-          </div>
-          {!loading && (
-            user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <UserIcon size={16} />
-                    <span className="hidden sm:inline">{user.email?.split('@')[0]}</span>
-                    <Menu size={16} className="ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-white">
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link to="/mis-cargas" className="flex items-center">
-                      <Truck size={16} className="mr-2" />
-                      Mis Cargas
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link to="/mis-alertas" className="flex items-center">
-                      <Bell size={16} className="mr-2" />
-                      Mis Alertas
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
-                    <LogOut size={16} className="mr-2" />
-                    Cerrar sesión
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button asChild variant="outline">
-                <Link to="/auth">Iniciar sesión</Link>
-              </Button>
-            )
-          )}
+    <div className="h-[calc(100vh-10rem)] flex flex-col">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/")}
+            className="mr-2"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <MapPin className="text-secondary" />
+            Mapa de Cargas
+          </h1>
         </div>
-        <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-10rem)]">
-          <div className="w-full md:w-80 order-2 md:order-1">
-            <Card className="p-4 h-full">
+        
+        <div className="flex md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
+                <Filter size={18} />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <SheetHeader>
+                <SheetTitle>Filtros</SheetTitle>
+                <SheetDescription>
+                  Ajusta los filtros para encontrar las cargas que necesitas
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-4">
+                <CargoMapFilters onFilterChange={handleFilterChange} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
+      <div className="flex flex-1 gap-4 h-full">
+        <div className="w-80 hidden md:block">
+          <Card className="p-4 h-full overflow-auto">
+            <div className="sticky top-0">
+              <h2 className="text-lg font-medium mb-4">Filtros</h2>
               <CargoMapFilters onFilterChange={handleFilterChange} />
-            </Card>
-          </div>
-          <Card className="flex-1 relative order-1 md:order-2">
-            <CargasMapa filters={filters} />
+            </div>
           </Card>
         </div>
+        <Card className="flex-1 overflow-hidden">
+          <div className="h-full">
+            <CargasMapa filters={filters} />
+          </div>
+        </Card>
+      </div>
+      
+      <div className="mt-4 text-center text-sm text-muted-foreground">
+        Visualiza las cargas disponibles en el mapa. Utiliza los filtros para encontrar cargas específicas.
       </div>
     </div>
   );
