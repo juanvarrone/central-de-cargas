@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { User as UserIcon, Menu, LogOut, Truck, Bell, Settings, CreditCard, MapPin, Map, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +17,7 @@ import UserMenu from "./UserMenu";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, canPublishCarga, canPublishCamion } = useAuth();
 
   console.log("Layout rendering with user:", !!user, "isAdmin:", isAdmin);
 
@@ -54,6 +55,26 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <Map size={18} />
                     <span>Mapa</span>
                   </Link>
+                  
+                  {canPublishCarga && (
+                    <Link 
+                      to="/publicar-carga" 
+                      className="hidden sm:flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <CreditCard size={18} />
+                      <span>Publicar Carga</span>
+                    </Link>
+                  )}
+
+                  {canPublishCamion && (
+                    <Link 
+                      to="/publicar-camion" 
+                      className="hidden sm:flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Truck size={18} />
+                      <span>Publicar Disponibilidad</span>
+                    </Link>
+                  )}
                   
                   <UserMenu />
                 </div>

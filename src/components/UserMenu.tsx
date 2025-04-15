@@ -29,7 +29,7 @@ const UserMenu = () => {
   const navigate = useNavigate();
   const { profile, isLoading: profileLoading } = useUserProfile();
   const [open, setOpen] = useState(false);
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, userType, canPublishCamion, canPostulateToCarga } = useAuth();
 
   useEffect(() => {
     // Close dropdown when navigating
@@ -60,8 +60,8 @@ const UserMenu = () => {
     );
   }
 
-  const isCamionero = profile?.user_type === "camionero";
-  const isDador = profile?.user_type === "dador";
+  const isCamionero = userType === "camionero";
+  const isDador = userType === "dador";
   const isPremium = profile?.subscription_tier === "premium";
 
   return (
@@ -83,8 +83,8 @@ const UserMenu = () => {
           </DropdownMenuItem>
         </Link>
 
-        {/* Show these items for both admin and transportista */}
-        {(isAdmin || isCamionero) && (
+        {/* Show this item for both admin and transportista */}
+        {(isAdmin || canPublishCamion) && (
           <>
             <Link to="/mis-postulaciones">
               <DropdownMenuItem className="cursor-pointer">

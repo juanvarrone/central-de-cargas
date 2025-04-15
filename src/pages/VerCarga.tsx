@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,7 @@ import CargaPostulaciones from "@/components/cargo/CargaPostulaciones";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Carga } from "@/types/mapa-cargas";
+import { useAuth } from "@/context/AuthContext";
 
 const VerCarga = () => {
   const { id } = useParams();
@@ -21,6 +21,7 @@ const VerCarga = () => {
   const { toast } = useToast();
   const { profile } = useUserProfile();
   const [revisarTarifa, setRevisarTarifa] = useState(false);
+  const { canPostulateToCarga } = useAuth();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -104,7 +105,6 @@ const VerCarga = () => {
 
   const handlePostularse = async () => {
     try {
-      // Check if user is logged in
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -120,7 +120,6 @@ const VerCarga = () => {
       
       const userId = session.user.id;
       
-      // Check if user has already applied to this load (using raw query)
       const { data: existingApplication, error: checkError } = await supabase
         .from('cargas_postulaciones')
         .select("*")
@@ -140,7 +139,6 @@ const VerCarga = () => {
         return;
       }
       
-      // Create a new application (using raw insert)
       const { error } = await supabase
         .from('cargas_postulaciones')
         .insert({
@@ -305,7 +303,7 @@ const VerCarga = () => {
       </Card>
 
       <div className="flex justify-between mt-6">
-        {!isOwner && profile?.user_type === "camionero" && carga.estado === "disponible" && (
+        {!isOwner && canPostulateToCarga && carga.estado === "disponible" && (
           <div className="ml-auto flex flex-col items-end gap-2">
             <div className="flex items-center space-x-2 mb-2">
               <Checkbox 
