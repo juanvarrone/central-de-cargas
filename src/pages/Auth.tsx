@@ -7,14 +7,33 @@ import FormDivider from "@/components/auth/FormDivider";
 import LoginForm from "@/components/auth/LoginForm";
 import SignUpForm from "@/components/auth/SignUpForm";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const Auth = () => {
-  const { form, isSignUp, loading, handleSocialLogin, onSubmit, toggleMode } = useAuth();
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  const { form, isSignUp, loading, authError, handleSocialLogin, onSubmit, toggleMode } = useAuth();
 
   useEffect(() => {
     console.log("Auth page rendered, isSignUp:", isSignUp);
+    
+    // Test connectivity to Supabase on page load
+    const testConnection = async () => {
+      try {
+        const response = await fetch("https://yeyubdwclifbgbqivrsu.supabase.co/auth/v1/user", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleXViZHdjbGlmYmdicWl2cnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3MTU3MjcsImV4cCI6MjA1NTI5MTcyN30.mjMAZTv9efiuTluZeVUKiR8T31NHwVCgJ0e8f3RBxnc"
+          }
+        });
+        console.log("Supabase connection test result:", response.status, response.statusText);
+      } catch (error) {
+        console.error("Supabase connection test failed:", error);
+      }
+    };
+    
+    testConnection();
   }, [isSignUp]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -55,10 +74,11 @@ const Auth = () => {
               <LoginForm form={form} loading={loading} />
             )}
 
-            {debugInfo && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded">
-                {debugInfo}
-              </div>
+            {authError && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
             )}
 
             <Button

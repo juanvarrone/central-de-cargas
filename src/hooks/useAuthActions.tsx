@@ -26,6 +26,7 @@ export type AuthFormValues = z.infer<typeof authSchema>;
 export const useAuthActions = (initialIsSignUp = false) => {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,8 +44,30 @@ export const useAuthActions = (initialIsSignUp = false) => {
     },
   });
 
+  // Check CORS support using our Edge Function
+  const checkSupabaseConnection = async () => {
+    try {
+      console.log("Checking Supabase connection via Edge Function...");
+      const { data, error } = await supabase.functions.invoke('cors-headers', {
+        method: 'POST',
+        body: { test: true }
+      });
+      
+      if (error) {
+        console.error("Edge function CORS test failed:", error);
+        return false;
+      }
+      
+      console.log("Edge function CORS test result:", data);
+      return data?.status === "ok";
+    } catch (err) {
+      console.error("Failed to check Supabase connection:", err);
+      return false;
+    }
+  };
+
   // Update supabase client configuration to ensure proper CORS and cookie handling
-  const configureSupabaseClient = () => {
+  const configureSupabaseClient = async () => {
     try {
       // This is just a check to see if we can access localStorage
       // which is needed for Supabase auth persistence
@@ -52,6 +75,14 @@ export const useAuthActions = (initialIsSignUp = false) => {
       window.localStorage.setItem('test', 'test');
       window.localStorage.removeItem('test');
       console.log("Local storage is available for auth persistence");
+      
+      // Check CORS support
+      const corsSupported = await checkSupabaseConnection();
+      if (!corsSupported) {
+        console.warn("CORS check failed - login might not work properly");
+      }
+      
+      return true;
     } catch (error) {
       console.error("Local storage is not available:", error);
       toast({
@@ -59,6 +90,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
         description: "Tu navegador no permite acceso a localStorage, lo que es necesario para mantener la sesión",
         variant: "destructive",
       });
+      return false;
     }
   };
 
@@ -66,7 +98,12 @@ export const useAuthActions = (initialIsSignUp = false) => {
     try {
       console.log(`Starting ${provider} social login`);
       setLoading(true);
-      configureSupabaseClient();
+      setAuthError(null);
+      
+      const configOk = await configureSupabaseClient();
+      if (!configOk) {
+        throw new Error("No se pudo configurar el cliente para autenticación");
+      }
       
       // Log current location for debugging redirect issues
       console.log("Current location before social login:", window.location.href);
@@ -85,9 +122,10 @@ export const useAuthActions = (initialIsSignUp = false) => {
       console.log(`${provider} social login initiated, redirect URL:`, data?.url);
     } catch (error: any) {
       console.error("OAuth error:", error);
+      setAuthError(error.message || `Error al iniciar sesión con ${provider}`);
       toast({
         title: "Error de autenticación",
-        description: error.message || "Error al iniciar sesión con " + provider,
+        description: error.message || `Error al iniciar sesión con ${provider}`,
         variant: "destructive",
       });
     } finally {
@@ -98,7 +136,13 @@ export const useAuthActions = (initialIsSignUp = false) => {
   const onSubmit = form.handleSubmit(async (values: AuthFormValues) => {
     console.log("Auth form submitted with values:", values);
     setLoading(true);
-    configureSupabaseClient();
+    setAuthError(null);
+    
+    const configOk = await configureSupabaseClient();
+    if (!configOk) {
+      setLoading(false);
+      return;
+    }
     
     try {
       if (isSignUp) {
@@ -149,6 +193,10 @@ export const useAuthActions = (initialIsSignUp = false) => {
           .catch(err => `Network error: ${err.message}`);
         console.log("Network test before login:", networkTestResult);
         
+        // Test CORS with our edge function first
+        const corsCheck = await supabase.functions.invoke('cors-headers');
+        console.log("CORS edge function check result:", corsCheck);
+        
         try {
           console.log("Making login request...");
           const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -166,22 +214,27 @@ export const useAuthActions = (initialIsSignUp = false) => {
             throw signInError;
           }
           
-          console.log("Login successful, redirecting to:", redirectAfterLogin);
-          toast({
-            title: "Inicio de sesión exitoso",
-            description: "Bienvenido de vuelta.",
-          });
-          
-          // Add a delay before navigation to ensure state updates
-          setTimeout(() => {
-            if (formData && redirectAfterLogin === '/publicar-carga') {
-              navigate(redirectAfterLogin, { state: { formData } });
-            } else {
-              navigate(redirectAfterLogin);
-            }
-          }, 100);
+          if (data.session) {
+            console.log("Login successful, redirecting to:", redirectAfterLogin);
+            toast({
+              title: "Inicio de sesión exitoso",
+              description: "Bienvenido de vuelta.",
+            });
+            
+            // Add a delay before navigation to ensure state updates
+            setTimeout(() => {
+              if (formData && redirectAfterLogin === '/publicar-carga') {
+                navigate(redirectAfterLogin, { state: { formData } });
+              } else {
+                navigate(redirectAfterLogin);
+              }
+            }, 300);
+          } else {
+            throw new Error("No se pudo iniciar sesión. No se recibió sesión del servidor.");
+          }
         } catch (signInError: any) {
           console.error("Login error:", signInError);
+          setAuthError(signInError.message || "Error en la autenticación");
           
           // Check if it's a CORS error
           if (signInError.message && (
@@ -202,11 +255,11 @@ export const useAuthActions = (initialIsSignUp = false) => {
               variant: "destructive",
             });
           }
-          throw signInError;
         }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
+      setAuthError(error.message || "Error en la autenticación");
       toast({
         title: "Error de autenticación",
         description: error.message || "Error en la autenticación",
@@ -219,6 +272,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
+    setAuthError(null);
     form.reset();
   };
 
@@ -226,6 +280,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
     form,
     isSignUp,
     loading,
+    authError,
     handleSocialLogin,
     onSubmit,
     toggleMode

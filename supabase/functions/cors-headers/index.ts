@@ -6,7 +6,7 @@
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-console.log("CORS helper function is running!");
+console.log("CORS diagnostic function is running!");
 
 serve(async (req) => {
   // This is needed if you're planning to invoke your function from a browser.
@@ -15,10 +15,33 @@ serve(async (req) => {
   }
 
   try {
+    // Parse the request body if any
+    let body = {};
+    try {
+      if (req.body) {
+        const text = await req.text();
+        body = JSON.parse(text);
+      }
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+    }
+
+    // Run some basic diagnostics
+    const diagnostics = {
+      headers: Object.fromEntries(req.headers.entries()),
+      method: req.method,
+      url: req.url,
+      body
+    };
+
+    console.log("CORS diagnostics:", diagnostics);
+
     return new Response(
       JSON.stringify({
         message: "CORS check successful",
         status: "ok",
+        diagnostics,
+        timestamp: new Date().toISOString()
       }),
       {
         headers: {
@@ -29,14 +52,19 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    console.error("CORS function error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        status: "error",
+        timestamp: new Date().toISOString()
+      }),
       {
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
         },
-        status: 400,
+        status: 500,
       }
     );
   }

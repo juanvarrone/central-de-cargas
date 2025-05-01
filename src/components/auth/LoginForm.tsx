@@ -7,6 +7,7 @@ import { UseFormReturn } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 type LoginFormProps = {
   form: UseFormReturn<any>;
@@ -16,9 +17,10 @@ type LoginFormProps = {
 const LoginForm = ({ form, loading }: LoginFormProps) => {
   const [loginAttempted, setLoginAttempted] = useState(false);
   const [corsInfo, setCorsInfo] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleLoginClick = () => {
+  const handleLoginClick = async () => {
     // Log info about the login attempt
     console.log("Login button clicked", { 
       email: form.getValues("email"), 
@@ -40,8 +42,10 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
             variant: "destructive",
           });
         }
+        return networkTest === "Network connection OK";
       } catch (error) {
         console.error("Network test failed:", error);
+        return false;
       }
     };
 
@@ -59,41 +63,41 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
             variant: "destructive",
           });
         }
+        return hasCookie;
       } catch (error) {
         console.error("Cookie test error:", error);
+        return false;
       }
     };
 
     // Check for CORS issues
     const checkCorsIssues = async () => {
       try {
-        // Try a simple OPTIONS request to the supabase auth endpoint
-        const corsTest = await fetch("https://yeyubdwclifbgbqivrsu.supabase.co/auth/v1/token?grant_type=password", {
-          method: "OPTIONS",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleXViZHdjbGlmYmdicWl2cnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3MTU3MjcsImV4cCI6MjA1NTI5MTcyN30.mjMAZTv9efiuTluZeVUKiR8T31NHwVCgJ0e8f3RBxnc"
-          }
-        }).then(() => "CORS check passed")
-          .catch(err => {
-            console.error("CORS test failed:", err);
-            return "CORS issues detected";
-          });
-          
-        console.log("CORS test result:", corsTest);
+        // Try our Edge Function for CORS check
+        const { data, error } = await supabase.functions.invoke('cors-headers');
         
-        if (corsTest === "CORS issues detected") {
+        console.log("CORS edge function test result:", data, error);
+        
+        if (error) {
+          console.error("CORS test failed:", error);
           setCorsInfo("Detectamos problemas de CORS con el servidor de autenticación. Intenta usar el modo incógnito o deshabilitar extensiones del navegador.");
+          return false;
         }
+        
+        return true;
       } catch (error) {
         console.error("CORS test failed:", error);
+        setCorsInfo("Detectamos problemas de CORS con el servidor de autenticación. Intenta usar el modo incógnito o deshabilitar extensiones del navegador.");
+        return false;
       }
     };
 
     // Run checks
-    checkNetworkConnection();
-    checkCookieAccess();
-    checkCorsIssues();
+    const networkOk = await checkNetworkConnection();
+    const cookiesOk = checkCookieAccess();
+    const corsOk = await checkCorsIssues();
+    
+    setDebugInfo(`Red: ${networkOk ? "OK" : "Error"}, Cookies: ${cookiesOk ? "OK" : "Bloqueadas"}, CORS: ${corsOk ? "OK" : "Error"}`);
     setLoginAttempted(true);
   };
 
@@ -134,6 +138,12 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
             {corsInfo}
           </AlertDescription>
         </Alert>
+      )}
+
+      {debugInfo && (
+        <div className="p-3 text-xs font-mono bg-gray-100 border border-gray-200 rounded-md overflow-x-auto">
+          <p>Diagnóstico: {debugInfo}</p>
+        </div>
       )}
 
       {loginAttempted && !loading && !corsInfo && (

@@ -19,7 +19,10 @@ export const useAuth = () => {
     };
   }, []);
 
-  return authActions;
+  return {
+    ...authActions,
+    authError: authActions.authError
+  };
 };
 
 // Re-export the AuthFormValues type for convenience

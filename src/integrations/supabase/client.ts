@@ -14,6 +14,27 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     autoRefreshToken: true,
     persistSession: true, 
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    flowType: 'pkce' // Use PKCE flow for better security
+  },
+  global: {
+    fetch: (...args) => fetch(...args)
   }
 });
+
+// Log client initialization
+console.log("Supabase client initialized with URL:", SUPABASE_URL.substring(0, 30) + "...");
+
+// Test connection on load
+(async () => {
+  try {
+    const { error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("Error connecting to Supabase:", error.message);
+    } else {
+      console.log("Supabase client connection OK");
+    }
+  } catch (err) {
+    console.error("Failed to test Supabase connection:", err);
+  }
+})();
