@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UseFormReturn } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type LoginFormProps = {
   form: UseFormReturn<any>;
@@ -14,6 +15,7 @@ type LoginFormProps = {
 
 const LoginForm = ({ form, loading }: LoginFormProps) => {
   const [loginAttempted, setLoginAttempted] = useState(false);
+  const [corsInfo, setCorsInfo] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleLoginClick = () => {
@@ -22,7 +24,7 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
       email: form.getValues("email"), 
       passwordEntered: !!form.getValues("password") 
     });
-
+    
     // Check network connection before proceeding
     const checkNetworkConnection = async () => {
       try {
@@ -30,6 +32,14 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
           .then(res => res.ok ? "Network connection OK" : "Network issues detected")
           .catch(err => `Network error: ${err.message}`);
         console.log("Network test result:", networkTest);
+        
+        if (networkTest !== "Network connection OK") {
+          toast({
+            title: "Problema de conexión",
+            description: "Detectamos problemas con tu conexión a Internet. Verifica tu red.",
+            variant: "destructive",
+          });
+        }
       } catch (error) {
         console.error("Network test failed:", error);
       }
@@ -42,6 +52,7 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
         const hasCookie = document.cookie.indexOf("testcookie=") !== -1;
         console.log("Cookie test:", hasCookie ? "Cookies allowed" : "Cookies might be blocked");
         if (!hasCookie) {
+          setCorsInfo("Tu navegador podría estar bloqueando cookies necesarias para el inicio de sesión. Prueba con modo incógnito o desactiva las extensiones que bloquean cookies.");
           toast({
             title: "Advertencia de cookies",
             description: "Tu navegador podría estar bloqueando cookies necesarias para el inicio de sesión",
@@ -53,9 +64,36 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
       }
     };
 
+    // Check for CORS issues
+    const checkCorsIssues = async () => {
+      try {
+        // Try a simple OPTIONS request to the supabase auth endpoint
+        const corsTest = await fetch("https://yeyubdwclifbgbqivrsu.supabase.co/auth/v1/token?grant_type=password", {
+          method: "OPTIONS",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleXViZHdjbGlmYmdicWl2cnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3MTU3MjcsImV4cCI6MjA1NTI5MTcyN30.mjMAZTv9efiuTluZeVUKiR8T31NHwVCgJ0e8f3RBxnc"
+          }
+        }).then(() => "CORS check passed")
+          .catch(err => {
+            console.error("CORS test failed:", err);
+            return "CORS issues detected";
+          });
+          
+        console.log("CORS test result:", corsTest);
+        
+        if (corsTest === "CORS issues detected") {
+          setCorsInfo("Detectamos problemas de CORS con el servidor de autenticación. Intenta usar el modo incógnito o deshabilitar extensiones del navegador.");
+        }
+      } catch (error) {
+        console.error("CORS test failed:", error);
+      }
+    };
+
     // Run checks
     checkNetworkConnection();
     checkCookieAccess();
+    checkCorsIssues();
     setLoginAttempted(true);
   };
 
@@ -89,7 +127,16 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
         )}
       />
 
-      {loginAttempted && !loading && (
+      {loginAttempted && corsInfo && (
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <Info className="h-4 w-4 text-yellow-500" />
+          <AlertDescription className="text-sm">
+            {corsInfo}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {loginAttempted && !loading && !corsInfo && (
         <div className="flex items-center p-3 text-sm bg-yellow-50 border border-yellow-200 rounded-md">
           <AlertCircle className="w-4 h-4 mr-2 text-yellow-500" />
           <span>

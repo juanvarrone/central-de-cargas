@@ -175,10 +175,11 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
       });
       
       if (event === "SIGNED_IN" && session) {
-        // Check if profile is complete for social logins without redirecting unnecessarily
-        if (session.user.app_metadata.provider && session.user.app_metadata.provider !== 'email') {
-          setTimeout(async () => {
-            try {
+        // Use timeout to avoid potential deadlock with Supabase client
+        setTimeout(async () => {
+          try {
+            // Check if profile is complete for social logins without redirecting unnecessarily
+            if (session.user.app_metadata.provider && session.user.app_metadata.provider !== 'email') {
               console.log("Checking profile completeness for social login after sign in");
               const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
@@ -198,29 +199,21 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
                 navigate("/complete-profile");
                 return;
               }
-              
-              // Profile is already complete, proceed with normal flow
-              console.log("User signed in with complete profile, redirecting to:", redirectAfterLogin);
-              if (formData && redirectAfterLogin === '/publicar-carga') {
-                navigate(redirectAfterLogin, { state: { formData } });
-              } else {
-                navigate(redirectAfterLogin);
-              }
-            } catch (error) {
-              console.error("Error checking profile completeness:", error);
-              // If we can't verify profile, assume it's incomplete and redirect to complete it
-              navigate("/complete-profile");
             }
-          }, 300);
-        } else {
-          // Regular email login, proceed with normal flow
-          console.log("User signed in, redirecting to:", redirectAfterLogin);
-          if (formData && redirectAfterLogin === '/publicar-carga') {
-            navigate(redirectAfterLogin, { state: { formData } });
-          } else {
-            navigate(redirectAfterLogin);
+            
+            // Profile is already complete, proceed with normal flow
+            console.log("User signed in with complete profile, redirecting to:", redirectAfterLogin);
+            if (formData && redirectAfterLogin === '/publicar-carga') {
+              navigate(redirectAfterLogin, { state: { formData } });
+            } else {
+              navigate(redirectAfterLogin);
+            }
+          } catch (error) {
+            console.error("Error checking profile completeness:", error);
+            // If we can't verify profile, assume it's incomplete and redirect to complete it
+            navigate("/complete-profile");
           }
-        }
+        }, 0); // Using 0 delay to defer execution but not delay it
       }
     });
 

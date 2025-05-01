@@ -8,7 +8,6 @@ import LoginForm from "@/components/auth/LoginForm";
 import SignUpForm from "@/components/auth/SignUpForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const { form, isSignUp, loading, handleSocialLogin, onSubmit, toggleMode } = useAuth();
@@ -16,48 +15,6 @@ const Auth = () => {
 
   useEffect(() => {
     console.log("Auth page rendered, isSignUp:", isSignUp);
-    
-    // Debug the existing session on page load
-    const checkExistingSession = async () => {
-      try {
-        // Debug Supabase auth directly
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        console.log("Supabase getSession result:", { data: sessionData, error: sessionError });
-        
-        if (sessionError) {
-          setDebugInfo(`Auth error: ${sessionError.message}`);
-        }
-        
-        // Try direct API access (to debug CORS issues)
-        try {
-          const { data } = await fetch("https://yeyubdwclifbgbqivrsu.supabase.co/auth/v1/user", {
-            headers: {
-              "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleXViZHdjbGlmYmdicWl2cnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3MTU3MjcsImV4cCI6MjA1NTI5MTcyN30.mjMAZTv9efiuTluZeVUKiR8T31NHwVCgJ0e8f3RBxnc",
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            },
-            credentials: "include"
-          }).then(r => r.json());
-          console.log("Direct API session check result:", data);
-        } catch (e) {
-          console.error("Error checking direct session:", e);
-          setDebugInfo(`CORS issue detected: ${e.message}`);
-        }
-      } catch (e) {
-        console.error("Error checking session:", e);
-        setDebugInfo(`Error: ${e.message}`);
-      }
-    };
-    checkExistingSession();
-    
-    // Set up and clean up Supabase auth listener
-    const authListener = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, { user: session?.user?.email });
-    });
-    
-    return () => {
-      authListener.data.subscription.unsubscribe();
-    };
   }, [isSignUp]);
 
   const handleFormSubmit = (e: React.FormEvent) => {

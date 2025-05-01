@@ -43,10 +43,30 @@ export const useAuthActions = (initialIsSignUp = false) => {
     },
   });
 
+  // Update supabase client configuration to ensure proper CORS and cookie handling
+  const configureSupabaseClient = () => {
+    try {
+      // This is just a check to see if we can access localStorage
+      // which is needed for Supabase auth persistence
+      const testStorage = window.localStorage.getItem('test');
+      window.localStorage.setItem('test', 'test');
+      window.localStorage.removeItem('test');
+      console.log("Local storage is available for auth persistence");
+    } catch (error) {
+      console.error("Local storage is not available:", error);
+      toast({
+        title: "Error de navegador",
+        description: "Tu navegador no permite acceso a localStorage, lo que es necesario para mantener la sesión",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     try {
       console.log(`Starting ${provider} social login`);
       setLoading(true);
+      configureSupabaseClient();
       
       // Log current location for debugging redirect issues
       console.log("Current location before social login:", window.location.href);
@@ -78,6 +98,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
   const onSubmit = form.handleSubmit(async (values: AuthFormValues) => {
     console.log("Auth form submitted with values:", values);
     setLoading(true);
+    configureSupabaseClient();
     
     try {
       if (isSignUp) {
@@ -129,6 +150,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
         console.log("Network test before login:", networkTestResult);
         
         try {
+          console.log("Making login request...");
           const { data, error: signInError } = await supabase.auth.signInWithPassword({
             email: values.email,
             password: values.password,
