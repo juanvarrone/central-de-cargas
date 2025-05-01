@@ -124,7 +124,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Set state values
       setIsAdmin(adminStatus);
-      setUserType(profileData?.user_type || null);
+      if (profileData?.user_type) {
+        setUserType(profileData.user_type as UserType);
+      } else {
+        setUserType(null);
+      }
       
     } catch (error) {
       console.error("Error checking user status:", error);

@@ -55,35 +55,42 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
           variant: "destructive",
         });
       } else if (code) {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.error("Error getting session after OAuth:", sessionError);
-          toast({
-            title: "Error",
-            description: sessionError.message,
-            variant: "destructive",
-          });
-        } else if (session) {
-          // Check if profile is complete
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('phone_number, user_type')
-            .eq('id', session.user.id)
-            .single();
-          
-          // If profile is incomplete, redirect to complete profile page
-          if (!profileData?.phone_number || !profileData?.user_type) {
-            console.log("Social login user with incomplete profile, redirecting to profile completion");
-            navigate("/complete-profile");
-            return;
-          }
-          
-          // Profile is complete, proceed with normal flow
-          if (formData && redirectAfterLogin === '/publicar-carga') {
-            navigate(redirectAfterLogin, { state: { formData } });
-          } else {
-            navigate(redirectAfterLogin);
-          }
+        try {
+          // Wait a moment to ensure the session is fully established
+          setTimeout(async () => {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError) {
+              console.error("Error getting session after OAuth:", sessionError);
+              toast({
+                title: "Error",
+                description: sessionError.message,
+                variant: "destructive",
+              });
+            } else if (session) {
+              // Check if profile is complete
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('phone_number, user_type')
+                .eq('id', session.user.id)
+                .single();
+              
+              // If profile is incomplete, redirect to complete profile page
+              if (!profileData?.phone_number || !profileData?.user_type) {
+                console.log("Social login user with incomplete profile, redirecting to profile completion");
+                navigate("/complete-profile");
+                return;
+              }
+              
+              // Profile is complete, proceed with normal flow
+              if (formData && redirectAfterLogin === '/publicar-carga') {
+                navigate(redirectAfterLogin, { state: { formData } });
+              } else {
+                navigate(redirectAfterLogin);
+              }
+            }
+          }, 300); // Give a little time for session to be fully established
+        } catch (error) {
+          console.error("Error in OAuth flow:", error);
         }
       }
     };
@@ -92,35 +99,41 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
     handleOAuthCallback();
   }, [navigate, redirectAfterLogin, formData, searchParams, toast]);
 
-  // Return the setup auth state listener to be used in the Auth page
+  // Return the setup auth listener to be used in the Auth page
   const setupAuthListener = () => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event);
       if (event === "SIGNED_IN" && session) {
-        // Check if profile is complete for social logins
+        // Check if profile is complete for social logins without redirecting unnecessarily
         if (session.user.app_metadata.provider && session.user.app_metadata.provider !== 'email') {
           setTimeout(async () => {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('phone_number, user_type')
-              .eq('id', session.user.id)
-              .single();
-            
-            // If profile is incomplete, redirect to complete profile page  
-            if (!profileData?.phone_number || !profileData?.user_type) {
-              console.log("Social login user with incomplete profile, redirecting to profile completion");
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('phone_number, user_type')
+                .eq('id', session.user.id)
+                .single();
+              
+              // Only redirect to profile completion if necessary
+              if (!profileData?.phone_number || !profileData?.user_type) {
+                console.log("Social login user with incomplete profile, redirecting to profile completion");
+                navigate("/complete-profile");
+                return;
+              }
+              
+              // Profile is already complete, proceed with normal flow
+              console.log("User signed in with complete profile, redirecting to:", redirectAfterLogin);
+              if (formData && redirectAfterLogin === '/publicar-carga') {
+                navigate(redirectAfterLogin, { state: { formData } });
+              } else {
+                navigate(redirectAfterLogin);
+              }
+            } catch (error) {
+              console.error("Error checking profile completeness:", error);
+              // If we can't verify profile, assume it's incomplete and redirect to complete it
               navigate("/complete-profile");
-              return;
             }
-            
-            // Profile is complete, proceed with normal flow
-            console.log("User signed in, redirecting to:", redirectAfterLogin);
-            if (formData && redirectAfterLogin === '/publicar-carga') {
-              navigate(redirectAfterLogin, { state: { formData } });
-            } else {
-              navigate(redirectAfterLogin);
-            }
-          }, 0);
+          }, 300);
         } else {
           // Regular email login, proceed with normal flow
           console.log("User signed in, redirecting to:", redirectAfterLogin);

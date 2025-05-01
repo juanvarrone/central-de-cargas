@@ -565,6 +565,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_table_columns: {
+        Args: { table_name: string }
+        Returns: {
+          column_name: string
+          data_type: string
+        }[]
+      }
+      get_tables: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          tablename: string
+        }[]
+      }
       has_valid_phone: {
         Args: { user_id: string }
         Returns: boolean

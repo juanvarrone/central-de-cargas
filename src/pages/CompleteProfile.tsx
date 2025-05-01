@@ -45,27 +45,35 @@ const CompleteProfile = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-      
-      // Check if user has already completed their profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("phone_number, user_type")
-        .eq("id", session.user.id)
-        .single();
-      
-      if (profile?.phone_number && profile?.user_type) {
-        // Profile already complete, redirect to home
-        navigate("/");
-        return;
-      }
+      try {
+        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          navigate("/auth");
+          return;
+        }
+        
+        // Check if user has already completed their profile
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("phone_number, user_type")
+          .eq("id", session.user.id)
+          .single();
+        
+        if (profile?.phone_number && profile?.user_type) {
+          // Profile already complete, redirect to home
+          console.log("Profile already complete, redirecting to home");
+          navigate("/");
+          return;
+        }
 
-      setUserName(session.user.user_metadata.full_name || session.user.user_metadata.name || null);
-      setUserEmail(session.user.email);
+        setUserName(session.user.user_metadata.full_name || session.user.user_metadata.name || null);
+        setUserEmail(session.user.email);
+      } catch (error) {
+        console.error("Error checking session:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     checkSession();
@@ -109,6 +117,23 @@ const CompleteProfile = () => {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Cargando...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
