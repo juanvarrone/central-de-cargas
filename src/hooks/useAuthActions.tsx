@@ -45,6 +45,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     try {
+      console.log(`Starting ${provider} social login`);
       setLoading(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
@@ -54,6 +55,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
         },
       });
       if (error) throw error;
+      console.log(`${provider} social login initiated`);
     } catch (error: any) {
       console.error("OAuth error:", error);
       toast({
@@ -110,10 +112,19 @@ export const useAuthActions = (initialIsSignUp = false) => {
         }
       } else {
         console.log("Attempting login with:", values.email);
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        
+        // This will log any potential network issues
+        const networkTestResult = await fetch("https://httpbin.org/get")
+          .then(res => res.ok ? "Network connection OK" : "Network issues detected")
+          .catch(err => `Network error: ${err.message}`);
+        console.log("Network test:", networkTestResult);
+        
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email: values.email,
           password: values.password,
         });
+        
+        console.log("Login attempt result:", { success: !!data.session, error: signInError?.message });
         
         if (signInError) {
           throw signInError;
@@ -137,7 +148,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
     } catch (error: any) {
       console.error("Auth error:", error);
       toast({
-        title: "Error",
+        title: "Error de autenticación",
         description: error.message || "Error en la autenticación",
         variant: "destructive",
       });

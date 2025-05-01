@@ -7,11 +7,35 @@ import FormDivider from "@/components/auth/FormDivider";
 import LoginForm from "@/components/auth/LoginForm";
 import SignUpForm from "@/components/auth/SignUpForm";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 const Auth = () => {
   const { form, isSignUp, loading, handleSocialLogin, onSubmit, toggleMode } = useAuth();
 
-  console.log("Auth page rendered, isSignUp:", isSignUp);
+  useEffect(() => {
+    console.log("Auth page rendered, isSignUp:", isSignUp);
+    
+    // Debug the existing session on page load
+    const checkExistingSession = async () => {
+      try {
+        const { data } = await fetch("https://yeyubdwclifbgbqivrsu.supabase.co/auth/v1/user", {
+          headers: {
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleXViZHdjbGlmYmdicWl2cnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3MTU3MjcsImV4cCI6MjA1NTI5MTcyN30.mjMAZTv9efiuTluZeVUKiR8T31NHwVCgJ0e8f3RBxnc",
+          },
+          credentials: "include"
+        }).then(r => r.json());
+        console.log("Session check result:", data);
+      } catch (e) {
+        console.error("Error checking session:", e);
+      }
+    };
+    checkExistingSession();
+  }, [isSignUp]);
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    console.log("Form submit event triggered");
+    onSubmit(e);
+  };
 
   return (
     <AuthContainer
@@ -32,7 +56,7 @@ const Auth = () => {
         <FormDivider />
 
         <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             {isSignUp ? (
               <SignUpForm form={form} loading={loading} />
             ) : (

@@ -45,6 +45,7 @@ const LoginForm = ({ form, loading }: LoginFormProps) => {
         type="submit" 
         className="w-full" 
         disabled={loading}
+        onClick={() => console.log("Login button clicked", { email: form.getValues("email"), passwordEntered: !!form.getValues("password") })}
       >
         {loading ? "Cargando..." : "Iniciar sesión"}
       </Button>

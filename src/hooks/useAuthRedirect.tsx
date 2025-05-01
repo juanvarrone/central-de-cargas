@@ -12,15 +12,29 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Checking for existing session...");
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          return;
+        }
+        
+        console.log("Session check result:", { hasSession: !!session, user: session?.user?.email });
+        
         if (session) {
           // Check if profile is complete for social logins
           if (session.user.app_metadata.provider && session.user.app_metadata.provider !== 'email') {
-            const { data: profileData } = await supabase
+            console.log("Social login detected, checking profile completeness");
+            const { data: profileData, error: profileError } = await supabase
               .from('profiles')
               .select('phone_number, user_type')
               .eq('id', session.user.id)
               .single();
+            
+            if (profileError) {
+              console.error("Error checking profile:", profileError);
+            }
             
             // If profile is incomplete, redirect to complete profile page
             if (!profileData?.phone_number || !profileData?.user_type) {
@@ -37,6 +51,8 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
           } else {
             navigate(redirectAfterLogin);
           }
+        } else {
+          console.log("No active session found");
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -48,6 +64,8 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
       const error = searchParams.get("error");
       const code = searchParams.get("code");
       
+      console.log("OAuth callback parameters:", { error, hasCode: !!code });
+      
       if (error) {
         toast({
           title: "Error en autenticación",
@@ -58,7 +76,11 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
         try {
           // Wait a moment to ensure the session is fully established
           setTimeout(async () => {
+            console.log("Processing OAuth callback with code");
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            
+            console.log("Session after OAuth:", { hasSession: !!session, error: sessionError?.message });
+            
             if (sessionError) {
               console.error("Error getting session after OAuth:", sessionError);
               toast({
@@ -68,11 +90,17 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
               });
             } else if (session) {
               // Check if profile is complete
-              const { data: profileData } = await supabase
+              const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('phone_number, user_type')
                 .eq('id', session.user.id)
                 .single();
+              
+              if (profileError) {
+                console.error("Error checking profile after OAuth:", profileError);
+              }
+              
+              console.log("Profile data after OAuth:", profileData);
               
               // If profile is incomplete, redirect to complete profile page
               if (!profileData?.phone_number || !profileData?.user_type) {
@@ -82,6 +110,7 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
               }
               
               // Profile is complete, proceed with normal flow
+              console.log("OAuth flow complete, redirecting to:", redirectAfterLogin);
               if (formData && redirectAfterLogin === '/publicar-carga') {
                 navigate(redirectAfterLogin, { state: { formData } });
               } else {
@@ -95,24 +124,35 @@ export const useAuthRedirect = (redirectAfterLogin = "/", formData = null) => {
       }
     };
 
+    console.log("useAuthRedirect hook initialized");
     checkSession();
     handleOAuthCallback();
   }, [navigate, redirectAfterLogin, formData, searchParams, toast]);
 
   // Return the setup auth listener to be used in the Auth page
   const setupAuthListener = () => {
+    console.log("Setting up auth state listener");
+    
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event);
+      console.log("Auth state changed:", event, { hasSession: !!session, user: session?.user?.email });
+      
       if (event === "SIGNED_IN" && session) {
         // Check if profile is complete for social logins without redirecting unnecessarily
         if (session.user.app_metadata.provider && session.user.app_metadata.provider !== 'email') {
           setTimeout(async () => {
             try {
-              const { data: profileData } = await supabase
+              console.log("Checking profile completeness for social login after sign in");
+              const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('phone_number, user_type')
                 .eq('id', session.user.id)
                 .single();
+              
+              if (profileError) {
+                console.error("Error checking profile after sign in:", profileError);
+              }
+              
+              console.log("Profile data after sign in:", profileData);
               
               // Only redirect to profile completion if necessary
               if (!profileData?.phone_number || !profileData?.user_type) {
