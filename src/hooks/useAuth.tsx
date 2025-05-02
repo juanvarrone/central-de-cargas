@@ -8,6 +8,7 @@ export const useAuth = () => {
   const redirectAfterLogin = location.state?.from || "/";
   const formData = location.state?.formData || null;
   
+  // Pass false to start in login mode by default
   const authActions = useAuthActions(false);
 
   useEffect(() => {
@@ -23,13 +24,12 @@ export const useAuth = () => {
     };
     
     checkSession();
-  }, []);
+  }, [redirectAfterLogin, formData]);
 
   return {
-    ...authActions,
-    authError: authActions.authError
+    ...authActions
   };
 };
 
-// Re-export the AuthFormValues type for convenience
-export type { AuthFormValues } from "./useAuthActions";
+// Re-export the AuthFormValues types for convenience
+export type { LoginFormValues, SignupFormValues, AuthFormValues } from "./useAuthActions";

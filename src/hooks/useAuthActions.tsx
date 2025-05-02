@@ -9,19 +9,26 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 const phoneRegex = /^(\+\d{1,3}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
 
-const authSchema = z.object({
+// Separate schemas for login and signup
+const loginSchema = z.object({
   email: z.string().email("Ingresa un email válido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  fullName: z.string().min(2, "Ingresa tu nombre completo").optional(),
+});
+
+const signupSchema = z.object({
+  email: z.string().email("Ingresa un email válido"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  fullName: z.string().min(2, "Ingresa tu nombre completo"),
   phoneNumber: z.string()
     .refine(val => !val || phoneRegex.test(val), {
       message: "Formato de teléfono inválido. Ej: (123) 456-7890"
-    })
-    .optional(),
-  userType: z.enum(["dador", "camionero"]).optional(),
+    }),
+  userType: z.enum(["dador", "camionero"]),
 });
 
-export type AuthFormValues = z.infer<typeof authSchema>;
+export type LoginFormValues = z.infer<typeof loginSchema>;
+export type SignupFormValues = z.infer<typeof signupSchema>;
+export type AuthFormValues = LoginFormValues | SignupFormValues;
 
 export const useAuthActions = (initialIsSignUp = false) => {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -33,15 +40,19 @@ export const useAuthActions = (initialIsSignUp = false) => {
   const redirectAfterLogin = location.state?.from || "/";
   const formData = location.state?.formData || null;
 
+  // Create the form with the appropriate schema based on isSignUp
   const form = useForm<AuthFormValues>({
-    resolver: zodResolver(authSchema),
+    resolver: zodResolver(isSignUp ? signupSchema : loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      fullName: "",
-      phoneNumber: "",
-      userType: undefined,
+      ...(isSignUp ? {
+        fullName: "",
+        phoneNumber: "",
+        userType: undefined as any, // This will be set by the user
+      } : {}),
     },
+    mode: "onSubmit"
   });
 
   const checkExistingSession = async (redirectPath = "/", formData = null) => {
@@ -103,16 +114,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
     }
   };
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    await form.trigger();
-    if (!form.formState.isValid) {
-      console.log("Form is invalid:", form.formState.errors);
-      return;
-    }
-    
-    const values = form.getValues();
+  const onSubmit = async (values: AuthFormValues) => {
     console.log("Form submitted with values:", values);
     
     setLoading(true);
@@ -120,15 +122,18 @@ export const useAuthActions = (initialIsSignUp = false) => {
     
     try {
       if (isSignUp) {
-        console.log("Attempting signup with:", values.email);
+        // Type assertion since we know we have signup values when isSignUp is true
+        const signupValues = values as SignupFormValues;
+        console.log("Attempting signup with:", signupValues.email);
+        
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email: values.email,
-          password: values.password,
+          email: signupValues.email,
+          password: signupValues.password,
           options: {
             data: {
-              full_name: values.fullName,
-              phone_number: values.phoneNumber,
-              user_type: values.userType,
+              full_name: signupValues.fullName,
+              phone_number: signupValues.phoneNumber,
+              user_type: signupValues.userType,
             },
           },
         });
@@ -139,12 +144,12 @@ export const useAuthActions = (initialIsSignUp = false) => {
 
         if (data?.user?.id) {
           // Update the phone_number in the profile table
-          if (values.phoneNumber) {
+          if (signupValues.phoneNumber) {
             const { error: profileError } = await supabase
               .from('profiles')
               .update({ 
-                phone_number: values.phoneNumber,
-                user_type: values.userType 
+                phone_number: signupValues.phoneNumber,
+                user_type: signupValues.userType 
               })
               .eq('id', data.user.id);
               
@@ -159,12 +164,14 @@ export const useAuthActions = (initialIsSignUp = false) => {
           });
         }
       } else {
-        console.log("Attempting login with:", values.email);
+        // Type assertion since we know we have login values when isSignUp is false
+        const loginValues = values as LoginFormValues;
+        console.log("Attempting login with:", loginValues.email);
         
         try {
           const { data, error: signInError } = await supabase.auth.signInWithPassword({
-            email: values.email,
-            password: values.password,
+            email: loginValues.email,
+            password: loginValues.password,
           });
           
           console.log("Login attempt result:", { 
@@ -219,7 +226,15 @@ export const useAuthActions = (initialIsSignUp = false) => {
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
     setAuthError(null);
-    form.reset();
+    form.reset({
+      email: "",
+      password: "",
+      ...(isSignUp ? {} : {
+        fullName: "",
+        phoneNumber: "",
+        userType: undefined as any,
+      }),
+    });
   };
 
   return {
@@ -228,7 +243,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
     loading,
     authError,
     handleSocialLogin,
-    onSubmit,
+    onSubmit: form.handleSubmit(onSubmit),
     toggleMode,
     checkExistingSession
   };

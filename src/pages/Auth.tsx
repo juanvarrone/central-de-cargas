@@ -6,12 +6,17 @@ import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 import FormDivider from "@/components/auth/FormDivider";
 import LoginForm from "@/components/auth/LoginForm";
 import SignUpForm from "@/components/auth/SignUpForm";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthActions } from "@/hooks/useAuthActions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { useEffect } from "react";
 
 const Auth = () => {
-  const { form, isSignUp, loading, authError, handleSocialLogin, onSubmit, toggleMode } = useAuth();
+  const { form, isSignUp, loading, authError, handleSocialLogin, onSubmit, toggleMode } = useAuthActions();
+
+  useEffect(() => {
+    console.log("Auth page rendered, isSignUp:", isSignUp);
+  }, [isSignUp]);
 
   return (
     <AuthContainer

@@ -1,11 +1,12 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UseFormReturn } from "react-hook-form";
 import { Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 type LoginFormProps = {
   form: UseFormReturn<any>;
@@ -13,7 +14,39 @@ type LoginFormProps = {
 };
 
 const LoginForm = ({ form, loading }: LoginFormProps) => {
-  const [diagnosticInfo, setDiagnosticInfo] = React.useState<string | null>(null);
+  const [diagnosticInfo, setDiagnosticInfo] = useState<string | null>(null);
+
+  // Run connection diagnostics on component mount
+  useEffect(() => {
+    const runDiagnostics = async () => {
+      try {
+        // Test basic network connectivity
+        const networkTest = await fetch('https://www.google.com', { 
+          method: 'HEAD',
+          mode: 'no-cors' 
+        });
+        const networkOk = networkTest.type === 'opaque' ? 'OK' : 'Error';
+        
+        // Test cookies functionality
+        const cookiesEnabled = navigator.cookieEnabled ? 'OK' : 'Disabled';
+        
+        // Test CORS with Supabase
+        let corsStatus;
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          corsStatus = error && error.message?.includes('CORS') ? 'Error' : 'OK';
+        } catch (e) {
+          corsStatus = 'Error';
+        }
+        
+        setDiagnosticInfo(`Red: ${networkOk}, Cookies: ${cookiesEnabled}, CORS: ${corsStatus}`);
+      } catch (error) {
+        setDiagnosticInfo(`Error en diagnóstico: ${error}`);
+      }
+    };
+
+    runDiagnostics();
+  }, []);
 
   return (
     <>
