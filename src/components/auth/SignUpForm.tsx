@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UseFormReturn } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { UseFormReturn } from "react-hook-form";
+import { Eye, EyeOff } from "lucide-react";
 
 type SignUpFormProps = {
   form: UseFormReturn<any>;
@@ -12,8 +13,26 @@ type SignUpFormProps = {
 };
 
 const SignUpForm = ({ form, loading }: SignUpFormProps) => {
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  
   return (
     <>
+      <FormField
+        control={form.control}
+        name="fullName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nombre completo</FormLabel>
+            <FormControl>
+              <Input placeholder="Juan Pérez" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={form.control}
         name="email"
@@ -35,21 +54,22 @@ const SignUpForm = ({ form, loading }: SignUpFormProps) => {
           <FormItem>
             <FormLabel>Contraseña</FormLabel>
             <FormControl>
-              <Input type="password" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="fullName"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Nombre completo</FormLabel>
-            <FormControl>
-              <Input {...field} />
+              <div className="relative">
+                <Input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="Mínimo 6 caracteres" 
+                  {...field} 
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-10 w-10"
+                  onClick={togglePasswordVisibility}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </Button>
+              </div>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -61,21 +81,21 @@ const SignUpForm = ({ form, loading }: SignUpFormProps) => {
         name="phoneNumber"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Número de teléfono</FormLabel>
+            <FormLabel>Teléfono (opcional)</FormLabel>
             <FormControl>
-              <Input placeholder="(123) 456-7890" {...field} />
+              <Input placeholder="+54 9 11 1234-5678" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-      
+
       <FormField
         control={form.control}
         name="userType"
         render={({ field }) => (
           <FormItem className="space-y-3">
-            <FormLabel>Tipo de usuario</FormLabel>
+            <FormLabel>¿Qué tipo de usuario eres?</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
@@ -87,7 +107,7 @@ const SignUpForm = ({ form, loading }: SignUpFormProps) => {
                     <RadioGroupItem value="dador" />
                   </FormControl>
                   <FormLabel className="font-normal">
-                    Perfil Dador de Cargas
+                    Dador de carga
                   </FormLabel>
                 </FormItem>
                 <FormItem className="flex items-center space-x-3 space-y-0">
@@ -95,7 +115,7 @@ const SignUpForm = ({ form, loading }: SignUpFormProps) => {
                     <RadioGroupItem value="camionero" />
                   </FormControl>
                   <FormLabel className="font-normal">
-                    Perfil Camionero
+                    Camionero
                   </FormLabel>
                 </FormItem>
               </RadioGroup>
@@ -105,12 +125,8 @@ const SignUpForm = ({ form, loading }: SignUpFormProps) => {
         )}
       />
 
-      <Button 
-        type="submit" 
-        className="w-full" 
-        disabled={loading || !form.getValues("userType")}
-      >
-        {loading ? "Cargando..." : "Crear cuenta"}
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? "Creando cuenta..." : "Crear cuenta"}
       </Button>
     </>
   );
