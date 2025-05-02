@@ -1,4 +1,6 @@
+
 import { useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface UserAlert {
@@ -19,6 +21,8 @@ export const useUserAlerts = () => {
   const [alerts, setAlerts] = useState<UserAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const fetchAlerts = async () => {
     setLoading(true);
@@ -27,6 +31,17 @@ export const useUserAlerts = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("User not authenticated");
+      }
+
+      // Get user type from profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("user_type")
+        .eq("id", session.user.id)
+        .single();
+        
+      if (profileData) {
+        setUserType(profileData.user_type);
       }
 
       const { data, error } = await supabase
@@ -49,8 +64,8 @@ export const useUserAlerts = () => {
     fetchAlerts();
   }, []);
 
-  const insertAlert = async (alert: Omit<UserAlert, "id" | "user_id">) => {
-    try {
+  const createAlert = useMutation({
+    mutationFn: async (alert: Omit<UserAlert, "id" | "user_id" | "created_at" | "updated_at">) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("User not authenticated");
@@ -62,51 +77,57 @@ export const useUserAlerts = () => {
       });
 
       if (error) throw error;
-      
-      await fetchAlerts();
-    } catch (error) {
-      console.error("Error inserting alert:", error);
-      throw error;
+    },
+    onSuccess: () => {
+      fetchAlerts();
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
     }
-  };
+  });
 
-  const updateAlert = async (id: string, updates: Partial<UserAlert>) => {
-    try {
+  const updateAlert = useMutation({
+    mutationFn: async (alert: UserAlert) => {
+      const { id, user_id, created_at, updated_at, ...updateData } = alert;
       const { error } = await supabase
         .from("user_alerts")
-        .update(updates)
+        .update(updateData)
         .eq("id", id);
 
       if (error) throw error;
-      await fetchAlerts();
-    } catch (error) {
-      console.error("Error updating alert:", error);
-      throw error;
+    },
+    onSuccess: () => {
+      fetchAlerts();
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
     }
-  };
+  });
 
-  const deleteAlert = async (id: string) => {
-    try {
+  const deleteAlert = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("user_alerts")
         .delete()
         .eq("id", id);
 
       if (error) throw error;
-      await fetchAlerts();
-    } catch (error) {
-      console.error("Error deleting alert:", error);
-      throw error;
+    },
+    onSuccess: () => {
+      fetchAlerts();
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
     }
-  };
+  });
 
   return {
     alerts,
     loading,
     error,
     fetchAlerts,
-    insertAlert,
+    createAlert,
     updateAlert,
     deleteAlert,
+    isLoading: loading,
+    isCreating: createAlert.isPending,
+    isEditing: updateAlert.isPending,
+    isDeleting: deleteAlert.isPending,
+    isCamionero: userType === "camionero",
+    isDador: userType === "dador"
   };
 };

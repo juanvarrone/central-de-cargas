@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -325,11 +326,11 @@ const UserManagement = () => {
                   <div>
                     <label className="text-sm text-gray-700 mb-1 block">Tipo de usuario</label>
                     <Select
-                      value={user.user_type || ""}
-                      onValueChange={(value: "dador" | "camionero" | "") =>
+                      value={user.user_type || "no_asignado"}
+                      onValueChange={(value: "dador" | "camionero" | "no_asignado") =>
                         updateProfileMutation.mutate({
                           userId: user.id,
-                          data: { user_type: value || null }
+                          data: { user_type: value === "no_asignado" ? null : value }
                         })
                       }
                     >
@@ -337,7 +338,7 @@ const UserManagement = () => {
                         <SelectValue placeholder="Seleccionar tipo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin asignar</SelectItem>
+                        <SelectItem value="no_asignado">Sin asignar</SelectItem>
                         <SelectItem value="dador">Dador de Cargas</SelectItem>
                         <SelectItem value="camionero">Camionero</SelectItem>
                       </SelectContent>
@@ -395,3 +396,4 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
+

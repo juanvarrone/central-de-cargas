@@ -49,12 +49,31 @@ const ConfigurarAlertas = () => {
     checkAuth();
   }, [navigate, toast]);
 
-  const handleSubmit = async (data: Partial<UserAlert>) => {
+  const handleSubmit = async (data: any) => {
     try {
       if (currentAlert?.id) {
-        await updateAlert.mutateAsync({ ...data, id: currentAlert.id } as UserAlert);
+        // Convert date objects to ISO strings if they exist
+        const updatedAlert = {
+          ...currentAlert,
+          ...data,
+          date_from: data.date_from ? data.date_from.toISOString() : null,
+          date_to: data.date_to ? data.date_to.toISOString() : null,
+        };
+        
+        await updateAlert.mutateAsync(updatedAlert);
       } else {
-        await createAlert.mutateAsync(data as Omit<UserAlert, 'id' | 'user_id'>);
+        // Convert locations from comma-separated string to array and date objects to strings
+        const newAlert = {
+          name: data.name,
+          radius_km: data.radius_km,
+          locations: data.selectedLocations ? data.selectedLocations.split(',').map((s: string) => s.trim()) : [],
+          date_from: data.date_from ? data.date_from.toISOString() : null,
+          date_to: data.date_to ? data.date_to.toISOString() : null,
+          notify_new_loads: data.notify_new_loads,
+          notify_available_trucks: data.notify_available_trucks,
+        };
+        
+        await createAlert.mutateAsync(newAlert);
       }
       resetForm();
     } catch (error) {
@@ -63,6 +82,14 @@ const ConfigurarAlertas = () => {
   };
 
   const handleEdit = (alert: UserAlert) => {
+    // Convert date strings to Date objects for the form
+    const formattedAlert = {
+      ...alert,
+      date_from: alert.date_from ? new Date(alert.date_from) : undefined,
+      date_to: alert.date_to ? new Date(alert.date_to) : undefined,
+      selectedLocations: alert.locations ? alert.locations.join(', ') : ''
+    };
+    
     setCurrentAlert(alert);
     setShowForm(true);
   };
@@ -112,12 +139,17 @@ const ConfigurarAlertas = () => {
             </CardHeader>
             <CardContent>
               <AlertForm
-                defaultValues={currentAlert}
+                defaultValues={currentAlert ? {
+                  name: currentAlert.name,
+                  radius_km: currentAlert.radius_km,
+                  selectedLocations: currentAlert.locations?.join(', '),
+                  date_from: currentAlert.date_from ? new Date(currentAlert.date_from) : undefined,
+                  date_to: currentAlert.date_to ? new Date(currentAlert.date_to) : undefined,
+                  notify_new_loads: currentAlert.notify_new_loads,
+                  notify_available_trucks: currentAlert.notify_available_trucks,
+                } : undefined}
                 onSubmit={handleSubmit}
-                onCancel={resetForm}
-                isSubmitting={isCreating || isEditing}
-                isCamionero={isCamionero}
-                isDador={isDador}
+                loading={isCreating || isEditing}
               />
             </CardContent>
           </Card>

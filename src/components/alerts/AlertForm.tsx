@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -13,7 +14,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useUserAlerts } from "@/hooks/useUserAlerts";
 import {
   Form,
   FormControl,
@@ -30,9 +30,8 @@ import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { DateRange } from "react-day-picker";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { PopoverClose } from "@radix-ui/react-popover";
-import { DatePicker } from "@/components/ui/date-picker";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -62,10 +61,8 @@ interface AlertFormProps {
 const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
   const { toast } = useToast();
   const [selectedLocations, setSelectedLocations] = useState<string>("");
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: defaultValues?.date_from,
-    to: defaultValues?.date_to,
-  });
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(defaultValues?.date_from);
+  const [dateTo, setDateTo] = useState<Date | undefined>(defaultValues?.date_to);
 
   const form = useForm<AlertFormValues>({
     resolver: zodResolver(alertFormSchema),
@@ -85,31 +82,15 @@ const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
   useEffect(() => {
     if (defaultValues) {
       form.reset(defaultValues);
-      setDate({ from: defaultValues.date_from, to: defaultValues.date_to });
       setSelectedLocations(defaultValues.selectedLocations || "");
+      setDateFrom(defaultValues.date_from);
+      setDateTo(defaultValues.date_to);
     }
   }, [defaultValues, form]);
 
   const handleSubmit = (values: AlertFormValues) => {
     try {
-      let locations: string[] = [];
-    
-      if (values.selectedLocations && values.selectedLocations !== "") {
-        // Ensure locations is always treated as a string before splitting
-        locations = (values.selectedLocations as string).split(',');
-      }
-      
-      const newAlert = {
-        name: values.name,
-        radius_km: values.radius_km,
-        locations: locations,
-        date_from: values.date_from?.toISOString() || null,
-        date_to: values.date_to?.toISOString() || null,
-        notify_new_loads: values.notify_new_loads,
-        notify_available_trucks: values.notify_available_trucks,
-      };
-
-      onSubmit(newAlert);
+      onSubmit(values);
     } catch (error) {
       toast({
         title: "Error",
@@ -179,67 +160,95 @@ const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="date_from"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <Label>Rango de fechas</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[240px] pl-3 text-left font-normal",
-                        !date?.from && "text-muted-foreground"
-                      )}
-                    >
-                      {date?.from ? (
-                        date.to ? (
-                          `${format(date.from, "LLL dd, y")} - ${format(
-                            date.to,
-                            "LLL dd, y"
-                          )}`
-                        ) : (
-                          format(date.from, "LLL dd, y")
-                        )
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="center">
-                  <DatePicker
-                    mode="range"
-                    defaultMonth={date?.from}
-                    selected={date}
-                    onSelect={setDate}
-                    disabled={loading}
-                  />
-                  <PopoverClose className="absolute top-2 right-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M18 6L6 18"></path>
-                      <path d="M6 6L18 18"></path>
-                    </svg>
-                  </PopoverClose>
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="space-y-4">
+          <Label>Rango de fechas</Label>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <FormField
+              control={form.control}
+              name="date_from"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "dd/MM/yyyy")
+                          ) : (
+                            <span>Fecha inicial</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="center">
+                      <CalendarComponent
+                        selected={field.value}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setDateFrom(date);
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="date_to"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "dd/MM/yyyy")
+                          ) : (
+                            <span>Fecha final</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="center">
+                      <CalendarComponent
+                        selected={field.value}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setDateTo(date);
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                        disabled={(date) => 
+                          dateFrom ? date < dateFrom : false
+                        }
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <div className="flex items-center justify-between rounded-md border p-4">
           <div className="space-y-1">
