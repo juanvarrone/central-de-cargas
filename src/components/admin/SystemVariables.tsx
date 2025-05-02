@@ -110,7 +110,7 @@ const SystemVariables = () => {
 
       if (error) throw error;
 
-      setVariables([...variables, data[0]]);
+      setVariables([...variables, data[0] as SystemVariable]);
       setNewVariable({
         category: activeCategory,
         name: "",

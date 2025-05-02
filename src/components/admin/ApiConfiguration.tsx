@@ -82,7 +82,7 @@ const ApiConfiguration = () => {
 
       if (error) throw error;
 
-      setConfigs([...configs, data[0]]);
+      setConfigs([...configs, data[0] as ApiConfig]);
       setNewConfig({ name: "", key: "", url: "", description: "" });
       toast({
         title: "Configuración guardada",

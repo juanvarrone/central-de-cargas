@@ -113,7 +113,7 @@ const PremiumSettings = () => {
         }
       }
       
-      setSettings(settingsData);
+      setSettings(settingsData as PremiumSetting[]);
     } catch (error: any) {
       console.error("Error fetching premium settings:", error);
       toast({

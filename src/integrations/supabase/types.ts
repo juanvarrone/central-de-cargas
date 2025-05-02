@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_configurations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       app_modules: {
         Row: {
           created_at: string | null
@@ -260,6 +290,36 @@ export type Database = {
           },
         ]
       }
+      premium_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          setting_key: string
+          setting_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          setting_key: string
+          setting_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          setting_key?: string
+          setting_value?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -413,6 +473,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_variables: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
       }
       trucks: {
         Row: {
