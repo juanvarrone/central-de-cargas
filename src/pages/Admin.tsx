@@ -9,9 +9,10 @@ import {
 } from "@/components/ui/tabs";
 import ModuleManagement from "@/components/admin/ModuleManagement";
 import UserManagement from "@/components/admin/UserManagement";
+import ConfigurationManagement from "@/components/admin/ConfigurationManagement";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const AdminPage = () => {
@@ -19,7 +20,7 @@ const AdminPage = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const { user, session, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
@@ -188,6 +189,10 @@ const AdminPage = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="modules">Gestión de Módulos</TabsTrigger>
           <TabsTrigger value="users">Gestión de Usuarios</TabsTrigger>
+          <TabsTrigger value="configuration" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            <span>Configuración</span>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="modules" className="w-full">
@@ -196,6 +201,10 @@ const AdminPage = () => {
         
         <TabsContent value="users" className="w-full">
           <UserManagement />
+        </TabsContent>
+        
+        <TabsContent value="configuration" className="w-full">
+          <ConfigurationManagement />
         </TabsContent>
       </Tabs>
     </div>
