@@ -18,12 +18,14 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce' // Use PKCE flow for better security
   },
   global: {
-    fetch: (...args) => fetch(...args)
+    headers: {
+      'X-Client-Info': 'supabase-js-web/2.38.4',
+    },
   }
 });
 
 // Log client initialization
-console.log("Supabase client initialized with URL:", SUPABASE_URL.substring(0, 30) + "...");
+console.log("Supabase client initialized with URL:", SUPABASE_URL);
 
 // Test connection on load
 (async () => {

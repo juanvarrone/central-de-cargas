@@ -17,13 +17,18 @@ serve(async (req) => {
   try {
     // Parse the request body if any
     let body = {};
-    try {
-      if (req.body) {
+    if (req.body) {
+      const contentType = req.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
         const text = await req.text();
-        body = JSON.parse(text);
+        if (text.trim()) {
+          try {
+            body = JSON.parse(text);
+          } catch (e) {
+            console.error("Error parsing JSON body:", e);
+          }
+        }
       }
-    } catch (e) {
-      console.error("Error parsing request body:", e);
     }
 
     // Run some basic diagnostics

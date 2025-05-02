@@ -44,53 +44,28 @@ export const useAuthActions = (initialIsSignUp = false) => {
     },
   });
 
-  // Check CORS support using our Edge Function
-  const checkSupabaseConnection = async () => {
+  const checkExistingSession = async (redirectPath = "/", formData = null) => {
     try {
-      console.log("Checking Supabase connection via Edge Function...");
-      const { data, error } = await supabase.functions.invoke('cors-headers', {
-        method: 'POST',
-        body: { test: true }
-      });
+      console.log("Checking for existing session...");
+      const { data, error } = await supabase.auth.getSession();
       
       if (error) {
-        console.error("Edge function CORS test failed:", error);
-        return false;
+        console.error("Error getting session:", error);
+        return;
       }
       
-      console.log("Edge function CORS test result:", data);
-      return data?.status === "ok";
-    } catch (err) {
-      console.error("Failed to check Supabase connection:", err);
-      return false;
-    }
-  };
-
-  // Update supabase client configuration to ensure proper CORS and cookie handling
-  const configureSupabaseClient = async () => {
-    try {
-      // This is just a check to see if we can access localStorage
-      // which is needed for Supabase auth persistence
-      const testStorage = window.localStorage.getItem('test');
-      window.localStorage.setItem('test', 'test');
-      window.localStorage.removeItem('test');
-      console.log("Local storage is available for auth persistence");
-      
-      // Check CORS support
-      const corsSupported = await checkSupabaseConnection();
-      if (!corsSupported) {
-        console.warn("CORS check failed - login might not work properly");
+      if (data.session) {
+        console.log("Active session found, redirecting to:", redirectPath);
+        if (formData && redirectPath === '/publicar-carga') {
+          navigate(redirectPath, { state: { formData } });
+        } else {
+          navigate(redirectPath);
+        }
+      } else {
+        console.log("No active session found");
       }
-      
-      return true;
     } catch (error) {
-      console.error("Local storage is not available:", error);
-      toast({
-        title: "Error de navegador",
-        description: "Tu navegador no permite acceso a localStorage, lo que es necesario para mantener la sesión",
-        variant: "destructive",
-      });
-      return false;
+      console.error("Error checking session:", error);
     }
   };
 
@@ -99,11 +74,6 @@ export const useAuthActions = (initialIsSignUp = false) => {
       console.log(`Starting ${provider} social login`);
       setLoading(true);
       setAuthError(null);
-      
-      const configOk = await configureSupabaseClient();
-      if (!configOk) {
-        throw new Error("No se pudo configurar el cliente para autenticación");
-      }
       
       // Log current location for debugging redirect issues
       console.log("Current location before social login:", window.location.href);
@@ -133,16 +103,20 @@ export const useAuthActions = (initialIsSignUp = false) => {
     }
   };
 
-  const onSubmit = form.handleSubmit(async (values: AuthFormValues) => {
-    console.log("Auth form submitted with values:", values);
-    setLoading(true);
-    setAuthError(null);
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const configOk = await configureSupabaseClient();
-    if (!configOk) {
-      setLoading(false);
+    await form.trigger();
+    if (!form.formState.isValid) {
+      console.log("Form is invalid:", form.formState.errors);
       return;
     }
+    
+    const values = form.getValues();
+    console.log("Form submitted with values:", values);
+    
+    setLoading(true);
+    setAuthError(null);
     
     try {
       if (isSignUp) {
@@ -187,18 +161,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
       } else {
         console.log("Attempting login with:", values.email);
         
-        // This will log any potential network issues
-        const networkTestResult = await fetch("https://httpbin.org/get")
-          .then(res => res.ok ? "Network connection OK" : "Network issues detected")
-          .catch(err => `Network error: ${err.message}`);
-        console.log("Network test before login:", networkTestResult);
-        
-        // Test CORS with our edge function first
-        const corsCheck = await supabase.functions.invoke('cors-headers');
-        console.log("CORS edge function check result:", corsCheck);
-        
         try {
-          console.log("Making login request...");
           const { data, error: signInError } = await supabase.auth.signInWithPassword({
             email: values.email,
             password: values.password,
@@ -221,14 +184,11 @@ export const useAuthActions = (initialIsSignUp = false) => {
               description: "Bienvenido de vuelta.",
             });
             
-            // Add a delay before navigation to ensure state updates
-            setTimeout(() => {
-              if (formData && redirectAfterLogin === '/publicar-carga') {
-                navigate(redirectAfterLogin, { state: { formData } });
-              } else {
-                navigate(redirectAfterLogin);
-              }
-            }, 300);
+            if (formData && redirectAfterLogin === '/publicar-carga') {
+              navigate(redirectAfterLogin, { state: { formData } });
+            } else {
+              navigate(redirectAfterLogin);
+            }
           } else {
             throw new Error("No se pudo iniciar sesión. No se recibió sesión del servidor.");
           }
@@ -236,25 +196,11 @@ export const useAuthActions = (initialIsSignUp = false) => {
           console.error("Login error:", signInError);
           setAuthError(signInError.message || "Error en la autenticación");
           
-          // Check if it's a CORS error
-          if (signInError.message && (
-              signInError.message.includes("CORS") || 
-              signInError.message.includes("Failed to fetch") ||
-              signInError.message.includes("NetworkError")
-          )) {
-            console.error("Detected possible CORS issue");
-            toast({
-              title: "Error de conexión",
-              description: "No se pudo conectar con el servidor de autenticación. Esto puede deberse a bloqueos de CORS en tu navegador o problemas de red.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Error de autenticación",
-              description: signInError.message || "Error en la autenticación",
-              variant: "destructive",
-            });
-          }
+          toast({
+            title: "Error de autenticación",
+            description: signInError.message || "Error en la autenticación",
+            variant: "destructive",
+          });
         }
       }
     } catch (error: any) {
@@ -268,7 +214,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
     } finally {
       setLoading(false);
     }
-  });
+  };
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
@@ -283,6 +229,7 @@ export const useAuthActions = (initialIsSignUp = false) => {
     authError,
     handleSocialLogin,
     onSubmit,
-    toggleMode
+    toggleMode,
+    checkExistingSession
   };
 };
