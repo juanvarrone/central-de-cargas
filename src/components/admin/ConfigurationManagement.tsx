@@ -4,6 +4,12 @@ import ApiConfiguration from "./ApiConfiguration";
 import SystemVariables from "./SystemVariables";
 import PremiumSettings from "./PremiumSettings";
 import { Key, Settings, Tag, Database } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const ConfigurationManagement = () => {
   return (
@@ -49,6 +55,22 @@ const ConfigurationManagement = () => {
 };
 
 const DatabaseConfiguration = () => {
+  const [copied, setCopied] = useState<string | null>(null);
+  const { toast } = useToast();
+  
+  const handleCopy = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(field);
+    toast({
+      title: "Copiado al portapapeles",
+      description: `${field} copiado correctamente`,
+    });
+    
+    setTimeout(() => {
+      setCopied(null);
+    }, 2000);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -94,9 +116,7 @@ const DatabaseConfiguration = () => {
                 <Button 
                   variant="outline"
                   className="ml-2" 
-                  onClick={() => {
-                    navigator.clipboard.writeText("yeyubdwclifbgbqivrsu");
-                  }}
+                  onClick={() => handleCopy("yeyubdwclifbgbqivrsu", "ID de Proyecto")}
                 >
                   Copiar
                 </Button>
@@ -116,9 +136,7 @@ const DatabaseConfiguration = () => {
                 <Button 
                   variant="outline"
                   className="ml-2" 
-                  onClick={() => {
-                    navigator.clipboard.writeText("postgresql://postgres:[PASSWORD]@db.yeyubdwclifbgbqivrsu.supabase.co:5432/postgres");
-                  }}
+                  onClick={() => handleCopy("postgresql://postgres:[PASSWORD]@db.yeyubdwclifbgbqivrsu.supabase.co:5432/postgres", "URL de la base de datos")}
                 >
                   Copiar
                 </Button>
@@ -138,9 +156,7 @@ const DatabaseConfiguration = () => {
                 <Button 
                   variant="outline"
                   className="ml-2" 
-                  onClick={() => {
-                    navigator.clipboard.writeText("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleXViZHdjbGlmYmdicWl2cnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3MTU3MjcsImV4cCI6MjA1NTI5MTcyN30.mjMAZTv9efiuTluZeVUKiR8T31NHwVCgJ0e8f3RBxnc");
-                  }}
+                  onClick={() => handleCopy("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleXViZHdjbGlmYmdicWl2cnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3MTU3MjcsImV4cCI6MjA1NTI5MTcyN30.mjMAZTv9efiuTluZeVUKiR8T31NHwVCgJ0e8f3RBxnc", "Clave Anónima")}
                 >
                   Copiar
                 </Button>
@@ -160,9 +176,7 @@ const DatabaseConfiguration = () => {
                 <Button 
                   variant="outline"
                   className="ml-2" 
-                  onClick={() => {
-                    navigator.clipboard.writeText("https://yeyubdwclifbgbqivrsu.supabase.co");
-                  }}
+                  onClick={() => handleCopy("https://yeyubdwclifbgbqivrsu.supabase.co", "URL de la API")}
                 >
                   Copiar
                 </Button>
@@ -175,11 +189,5 @@ const DatabaseConfiguration = () => {
     </div>
   );
 };
-
-// Import necessary components
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 
 export default ConfigurationManagement;
