@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -247,69 +246,71 @@ const Profile = () => {
             </div>
           </div>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="full_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre completo</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value || ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="phone_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Número de teléfono</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value || ""} placeholder="(123) 456-7890" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre completo</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número de teléfono</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="(123) 456-7890" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {profile.user_type === 'dador' && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">Sube la imagen de tu negocio</h3>
-                <div className="border-dashed border-2 border-gray-300 rounded-md p-6 text-center">
-                  <input
-                    type="file"
-                    id="business-image"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                  />
-                  <label 
-                    htmlFor="business-image" 
-                    className="cursor-pointer flex flex-col items-center justify-center gap-2"
-                  >
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      {uploading ? "Subiendo..." : "Haz clic para subir la imagen de tu empresa"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      PNG, JPG o GIF (máx. 5MB)
-                    </p>
-                  </label>
+              {profile.user_type === 'dador' && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2">Sube la imagen de tu negocio</h3>
+                  <div className="border-dashed border-2 border-gray-300 rounded-md p-6 text-center">
+                    <input
+                      type="file"
+                      id="business-image"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                    />
+                    <label 
+                      htmlFor="business-image" 
+                      className="cursor-pointer flex flex-col items-center justify-center gap-2"
+                    >
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        {uploading ? "Subiendo..." : "Haz clic para subir la imagen de tu empresa"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG o GIF (máx. 5MB)
+                      </p>
+                    </label>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="pt-4">
-              <Button type="submit" className="w-full">
-                Guardar cambios
-              </Button>
-            </div>
-          </form>
+              <div className="pt-4">
+                <Button type="submit" className="w-full">
+                  Guardar cambios
+                </Button>
+              </div>
+            </form>
+          </Form>
           
           {profile.subscription_tier === "base" && (
             <div className="mt-6 bg-muted/50 p-4 rounded-md">
