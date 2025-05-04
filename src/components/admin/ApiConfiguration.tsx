@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Key, Link, Plus, Trash } from "lucide-react";
+import { Loader2, Key, Link, Plus, Trash, Edit, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ApiConfig {
@@ -26,6 +26,7 @@ const ApiConfiguration = () => {
     url: "",
     description: ""
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,6 +57,15 @@ const ApiConfiguration = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setNewConfig({ ...newConfig, [field]: value });
+  };
+
+  const handleEditInputChange = (index: number, field: string, value: string) => {
+    const updatedConfigs = [...configs];
+    updatedConfigs[index] = { 
+      ...updatedConfigs[index], 
+      [field]: value 
+    };
+    setConfigs(updatedConfigs);
   };
 
   const handleSaveConfig = async () => {
@@ -100,6 +110,50 @@ const ApiConfiguration = () => {
     }
   };
 
+  const handleUpdateConfig = async (configId: string) => {
+    const configToUpdate = configs.find(config => config.id === configId);
+    if (!configToUpdate) return;
+
+    if (!configToUpdate.name || !configToUpdate.key) {
+      toast({
+        title: "Campos requeridos",
+        description: "El nombre y la clave son obligatorios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from("api_configurations")
+        .update({
+          name: configToUpdate.name,
+          key: configToUpdate.key,
+          url: configToUpdate.url,
+          description: configToUpdate.description
+        })
+        .eq("id", configId);
+
+      if (error) throw error;
+
+      setEditingId(null);
+      toast({
+        title: "Configuración actualizada",
+        description: `La configuración ${configToUpdate.name} ha sido actualizada exitosamente`
+      });
+    } catch (error: any) {
+      console.error("Error updating API configuration:", error);
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar la configuración: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDeleteConfig = async (id: string, name: string) => {
     if (!confirm(`¿Está seguro que desea eliminar la configuración "${name}"?`)) {
       return;
@@ -126,6 +180,15 @@ const ApiConfiguration = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const startEditing = (id: string) => {
+    setEditingId(id);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    fetchConfigurations();  // Reset to original data
   };
 
   if (loading) {
@@ -211,37 +274,103 @@ const ApiConfiguration = () => {
         {configs.length === 0 ? (
           <p className="text-muted-foreground">No hay APIs configuradas todavía.</p>
         ) : (
-          configs.map((config) => (
+          configs.map((config, index) => (
             <Card key={config.id}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">{config.name}</CardTitle>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-destructive hover:text-destructive/90"
-                    onClick={() => handleDeleteConfig(config.id, config.name)}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
+                  {editingId === config.id ? (
+                    <Input
+                      value={config.name}
+                      onChange={(e) => handleEditInputChange(index, "name", e.target.value)}
+                      className="font-medium"
+                    />
+                  ) : (
+                    <CardTitle className="text-lg">{config.name}</CardTitle>
+                  )}
+                  <div className="flex space-x-1">
+                    {editingId === config.id ? (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-blue-600 hover:text-blue-700"
+                          onClick={() => handleUpdateConfig(config.id)}
+                          disabled={saving}
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-gray-500 hover:text-gray-700"
+                          onClick={cancelEditing}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-blue-600 hover:text-blue-700"
+                          onClick={() => startEditing(config.id)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive hover:text-destructive/90"
+                          onClick={() => handleDeleteConfig(config.id, config.name)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                {config.description && (
-                  <CardDescription>{config.description}</CardDescription>
+                {editingId === config.id ? (
+                  <Input
+                    value={config.description || ""}
+                    onChange={(e) => handleEditInputChange(index, "description", e.target.value)}
+                    placeholder="Descripción (opcional)"
+                    className="text-sm text-gray-500 mt-2"
+                  />
+                ) : (
+                  config.description && (
+                    <CardDescription>{config.description}</CardDescription>
+                  )
                 )}
               </CardHeader>
               <CardContent className="pb-2 space-y-2">
                 <div className="flex items-center space-x-2">
                   <Key className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-mono text-sm bg-muted p-1 rounded">
-                    {config.key.substring(0, 4)}...{config.key.substring(config.key.length - 4)}
-                  </span>
+                  {editingId === config.id ? (
+                    <Input
+                      value={config.key}
+                      onChange={(e) => handleEditInputChange(index, "key", e.target.value)}
+                      className="font-mono text-sm"
+                    />
+                  ) : (
+                    <span className="font-mono text-sm bg-muted p-1 rounded">
+                      {config.key.substring(0, 4)}...{config.key.substring(config.key.length - 4)}
+                    </span>
+                  )}
                 </div>
-                {config.url && (
-                  <div className="flex items-center space-x-2">
-                    <Link className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{config.url}</span>
-                  </div>
-                )}
+                <div className="flex items-center space-x-2">
+                  <Link className="h-4 w-4 text-muted-foreground" />
+                  {editingId === config.id ? (
+                    <Input
+                      value={config.url || ""}
+                      onChange={(e) => handleEditInputChange(index, "url", e.target.value)}
+                      placeholder="URL (opcional)"
+                      className="text-sm"
+                    />
+                  ) : (
+                    <span className="text-sm">{config.url || "Sin URL"}</span>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))

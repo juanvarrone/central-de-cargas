@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 import { format } from "date-fns";
 
 type Profile = {
@@ -32,7 +32,8 @@ const UserManagement = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [blockReasons, setBlockReasons] = useState<Record<string, string>>({});
-
+  const [searchQuery, setSearchQuery] = useState("");
+  
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -74,6 +75,22 @@ const UserManagement = () => {
         }));
       }
     },
+  });
+
+  // Filter users based on search query
+  const filteredUsers = users?.filter(user => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase().trim();
+    
+    // Search in multiple fields
+    return (
+      (user.email && user.email.toLowerCase().includes(query)) ||
+      (user.full_name && user.full_name.toLowerCase().includes(query)) ||
+      (user.user_type && user.user_type.toLowerCase().includes(query)) ||
+      (user.subscription_tier && user.subscription_tier.toLowerCase().includes(query)) ||
+      (user.role && user.role.toLowerCase().includes(query))
+    );
   });
 
   const toggleBlockMutation = useMutation({
@@ -245,13 +262,32 @@ const UserManagement = () => {
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Gestión de Usuarios</h2>
         
+        {/* Search bar */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            placeholder="Buscar usuarios por nombre, email, tipo..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+            >
+              <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+            </button>
+          )}
+        </div>
+        
         {isLoading ? (
           <div className="flex justify-center items-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : users && users.length > 0 ? (
+        ) : filteredUsers && filteredUsers.length > 0 ? (
           <div className="space-y-4">
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <div
                 key={user.id}
                 className="flex flex-col p-4 border rounded gap-4"
@@ -387,7 +423,7 @@ const UserManagement = () => {
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            No hay usuarios disponibles en el sistema.
+            {searchQuery ? "No se encontraron usuarios con ese criterio de búsqueda." : "No hay usuarios disponibles en el sistema."}
           </div>
         )}
       </div>
@@ -396,4 +432,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-

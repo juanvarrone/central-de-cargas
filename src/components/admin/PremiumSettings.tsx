@@ -142,9 +142,10 @@ const PremiumSettings = () => {
     try {
       setSaving(true);
       
-      // Update all settings in a batch
+      // Create proper update objects that include the setting_key
       const updates = settings.map(setting => ({
         id: setting.id,
+        setting_key: setting.setting_key,
         setting_value: setting.setting_value,
         is_active: setting.is_active
       }));
@@ -209,7 +210,7 @@ const PremiumSettings = () => {
                 {setting.setting_key.includes("instrucciones") ? (
                   <Textarea
                     id={`setting-${setting.id}`}
-                    value={setting.setting_value}
+                    value={setting.setting_value || ""}
                     onChange={(e) => handleUpdateSetting(index, e.target.value)}
                     rows={3}
                     className="w-full"
@@ -217,7 +218,7 @@ const PremiumSettings = () => {
                 ) : (
                   <Input
                     id={`setting-${setting.id}`}
-                    value={setting.setting_value}
+                    value={setting.setting_value || ""}
                     onChange={(e) => handleUpdateSetting(index, e.target.value)}
                     className="w-full"
                   />
