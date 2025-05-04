@@ -1,19 +1,21 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Key, Link, Plus, Trash, Edit, Save } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Plus, Save, Trash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ApiConfig {
   id: string;
-  name: string;
   key: string;
-  url?: string;
-  description?: string;
+  name: string;
+  url: string | null;
+  description: string | null;
+  is_active?: boolean;
 }
 
 const ApiConfiguration = () => {
@@ -21,19 +23,19 @@ const ApiConfiguration = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newConfig, setNewConfig] = useState<Partial<ApiConfig>>({
-    name: "",
     key: "",
+    name: "",
     url: "",
-    description: ""
+    description: "",
+    is_active: true
   });
-  const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchConfigurations();
+    fetchApiConfigs();
   }, []);
 
-  const fetchConfigurations = async () => {
+  const fetchApiConfigs = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -55,24 +57,15 @@ const ApiConfiguration = () => {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setNewConfig({ ...newConfig, [field]: value });
   };
 
-  const handleEditInputChange = (index: number, field: string, value: string) => {
-    const updatedConfigs = [...configs];
-    updatedConfigs[index] = { 
-      ...updatedConfigs[index], 
-      [field]: value 
-    };
-    setConfigs(updatedConfigs);
-  };
-
   const handleSaveConfig = async () => {
-    if (!newConfig.name || !newConfig.key) {
+    if (!newConfig.key || !newConfig.name) {
       toast({
         title: "Campos requeridos",
-        description: "El nombre y la clave son obligatorios",
+        description: "La clave y el nombre son obligatorios",
         variant: "destructive"
       });
       return;
@@ -83,17 +76,23 @@ const ApiConfiguration = () => {
       const { data, error } = await supabase
         .from("api_configurations")
         .insert({
-          name: newConfig.name,
           key: newConfig.key,
-          url: newConfig.url,
-          description: newConfig.description
+          name: newConfig.name,
+          url: newConfig.url || null,
+          description: newConfig.description || null
         })
         .select();
 
       if (error) throw error;
 
       setConfigs([...configs, data[0] as ApiConfig]);
-      setNewConfig({ name: "", key: "", url: "", description: "" });
+      setNewConfig({
+        key: "",
+        name: "",
+        url: "",
+        description: "",
+        is_active: true
+      });
       toast({
         title: "Configuración guardada",
         description: `La configuración ${newConfig.name} ha sido guardada exitosamente`
@@ -110,37 +109,25 @@ const ApiConfiguration = () => {
     }
   };
 
-  const handleUpdateConfig = async (configId: string) => {
-    const configToUpdate = configs.find(config => config.id === configId);
-    if (!configToUpdate) return;
-
-    if (!configToUpdate.name || !configToUpdate.key) {
-      toast({
-        title: "Campos requeridos",
-        description: "El nombre y la clave son obligatorios",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleUpdateConfig = async (id: string, field: string, value: any) => {
     try {
-      setSaving(true);
+      // Find the config in the state and update it
+      const updatedConfigs = configs.map(config => 
+        config.id === id ? { ...config, [field]: value } : config
+      );
+      setConfigs(updatedConfigs);
+      
+      // Update in the database
       const { error } = await supabase
         .from("api_configurations")
-        .update({
-          name: configToUpdate.name,
-          key: configToUpdate.key,
-          url: configToUpdate.url,
-          description: configToUpdate.description
-        })
-        .eq("id", configId);
+        .update({ [field]: value })
+        .eq("id", id);
 
       if (error) throw error;
-
-      setEditingId(null);
+      
       toast({
         title: "Configuración actualizada",
-        description: `La configuración ${configToUpdate.name} ha sido actualizada exitosamente`
+        description: `El campo ${field} ha sido actualizado exitosamente`
       });
     } catch (error: any) {
       console.error("Error updating API configuration:", error);
@@ -149,8 +136,9 @@ const ApiConfiguration = () => {
         description: `No se pudo actualizar la configuración: ${error.message}`,
         variant: "destructive"
       });
-    } finally {
-      setSaving(false);
+      
+      // Revert the change in UI if the database update failed
+      fetchApiConfigs();
     }
   };
 
@@ -182,15 +170,6 @@ const ApiConfiguration = () => {
     }
   };
 
-  const startEditing = (id: string) => {
-    setEditingId(id);
-  };
-
-  const cancelEditing = () => {
-    setEditingId(null);
-    fetchConfigurations();  // Reset to original data
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -201,11 +180,12 @@ const ApiConfiguration = () => {
 
   return (
     <div className="space-y-6">
+      {/* Add New API Configuration Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Agregar nueva configuración de API</CardTitle>
+          <CardTitle>Agregar nueva API o Token</CardTitle>
           <CardDescription>
-            Ingrese los detalles de la API que desea configurar
+            Configure APIs externas y tokens de autenticación
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -214,16 +194,16 @@ const ApiConfiguration = () => {
               <Label htmlFor="name">Nombre</Label>
               <Input
                 id="name"
-                placeholder="Google Maps API"
+                placeholder="Ej: Google Maps API"
                 value={newConfig.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="key">Clave API</Label>
+              <Label htmlFor="key">Clave</Label>
               <Input
                 id="key"
-                placeholder="API_KEY_HERE"
+                placeholder="Ej: GOOGLE_MAPS_API_KEY"
                 value={newConfig.key}
                 onChange={(e) => handleInputChange("key", e.target.value)}
               />
@@ -232,18 +212,19 @@ const ApiConfiguration = () => {
               <Label htmlFor="url">URL (opcional)</Label>
               <Input
                 id="url"
-                placeholder="https://api.example.com"
+                placeholder="Ej: https://maps.googleapis.com/maps/api/js"
                 value={newConfig.url || ""}
                 onChange={(e) => handleInputChange("url", e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-1 md:col-span-2">
               <Label htmlFor="description">Descripción (opcional)</Label>
-              <Input
+              <Textarea
                 id="description"
-                placeholder="Utilizada para geocodificación"
+                placeholder="Descripción adicional"
                 value={newConfig.description || ""}
                 onChange={(e) => handleInputChange("description", e.target.value)}
+                rows={2}
               />
             </div>
           </div>
@@ -269,111 +250,69 @@ const ApiConfiguration = () => {
         </CardFooter>
       </Card>
 
+      {/* Existing API Configurations */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">APIs Configuradas</h3>
+        <h3 className="text-lg font-medium">Configuraciones existentes</h3>
         {configs.length === 0 ? (
-          <p className="text-muted-foreground">No hay APIs configuradas todavía.</p>
+          <p className="text-muted-foreground">No hay configuraciones de API guardadas todavía.</p>
         ) : (
-          configs.map((config, index) => (
-            <Card key={config.id}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  {editingId === config.id ? (
-                    <Input
-                      value={config.name}
-                      onChange={(e) => handleEditInputChange(index, "name", e.target.value)}
-                      className="font-medium"
-                    />
-                  ) : (
-                    <CardTitle className="text-lg">{config.name}</CardTitle>
-                  )}
-                  <div className="flex space-x-1">
-                    {editingId === config.id ? (
-                      <>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-blue-600 hover:text-blue-700"
-                          onClick={() => handleUpdateConfig(config.id)}
-                          disabled={saving}
-                        >
-                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-gray-500 hover:text-gray-700"
-                          onClick={cancelEditing}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-blue-600 hover:text-blue-700"
-                          onClick={() => startEditing(config.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-destructive hover:text-destructive/90"
-                          onClick={() => handleDeleteConfig(config.id, config.name)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
+          <div className="space-y-4">
+            {configs.map((config) => (
+              <Card key={config.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-base">{config.name}</CardTitle>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-destructive hover:text-destructive/90"
+                      onClick={() => handleDeleteConfig(config.id, config.name)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-                {editingId === config.id ? (
-                  <Input
-                    value={config.description || ""}
-                    onChange={(e) => handleEditInputChange(index, "description", e.target.value)}
-                    placeholder="Descripción (opcional)"
-                    className="text-sm text-gray-500 mt-2"
-                  />
-                ) : (
-                  config.description && (
-                    <CardDescription>{config.description}</CardDescription>
-                  )
-                )}
-              </CardHeader>
-              <CardContent className="pb-2 space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Key className="h-4 w-4 text-muted-foreground" />
-                  {editingId === config.id ? (
+                  <CardDescription className="font-mono text-xs bg-muted p-1 rounded">
+                    {config.key}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`name-${config.id}`}>Nombre</Label>
                     <Input
+                      id={`name-${config.id}`}
+                      value={config.name}
+                      onChange={(e) => handleUpdateConfig(config.id, "name", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`key-${config.id}`}>Clave</Label>
+                    <Input
+                      id={`key-${config.id}`}
                       value={config.key}
-                      onChange={(e) => handleEditInputChange(index, "key", e.target.value)}
-                      className="font-mono text-sm"
+                      onChange={(e) => handleUpdateConfig(config.id, "key", e.target.value)}
                     />
-                  ) : (
-                    <span className="font-mono text-sm bg-muted p-1 rounded">
-                      {config.key.substring(0, 4)}...{config.key.substring(config.key.length - 4)}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Link className="h-4 w-4 text-muted-foreground" />
-                  {editingId === config.id ? (
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`url-${config.id}`}>URL</Label>
                     <Input
+                      id={`url-${config.id}`}
                       value={config.url || ""}
-                      onChange={(e) => handleEditInputChange(index, "url", e.target.value)}
-                      placeholder="URL (opcional)"
-                      className="text-sm"
+                      onChange={(e) => handleUpdateConfig(config.id, "url", e.target.value)}
                     />
-                  ) : (
-                    <span className="text-sm">{config.url || "Sin URL"}</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`description-${config.id}`}>Descripción</Label>
+                    <Textarea
+                      id={`description-${config.id}`}
+                      value={config.description || ""}
+                      onChange={(e) => handleUpdateConfig(config.id, "description", e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </div>
