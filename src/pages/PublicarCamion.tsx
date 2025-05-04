@@ -9,25 +9,37 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Truck } from "lucide-react";
 import { TruckFormData } from "@/types/truck";
 import { useTruckSubmission } from "@/hooks/useTruckSubmission";
+import { Form } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { camionSchema } from "@/types/truck";
+import { DatePicker } from "@/components/ui/date-picker";
+import TruckDetailsFields from "@/components/truck/TruckDetailsFields";
 
 const PublicarCamion = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const { 
-    canPublishCamion, 
-    user, 
-    isLoading: authLoading 
-  } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { submitTruck } = useTruckSubmission();
-  const [formData, setFormData] = useState<TruckFormData>({
-    origen_provincia: '',
-    destino_provincia: '',
-    tipo_camion: '',
-    capacidad: '',
-    refrigerado: false,
-    fecha_disponible_desde: '',
-    radio_km: 50
+  
+  // Set up form with validation
+  const form = useForm<TruckFormData>({
+    resolver: zodResolver(camionSchema),
+    defaultValues: {
+      origen_provincia: '',
+      destino_provincia: '',
+      tipo_camion: '',
+      capacidad: '',
+      refrigerado: false,
+      fecha_disponible_desde: '',
+      radio_km: 50,
+      origen_lat: 0,
+      origen_lng: 0,
+      destino_lat: 0,
+      destino_lng: 0,
+      tipo_fecha: 'exacta'
+    }
   });
 
   useEffect(() => {
@@ -43,7 +55,38 @@ const PublicarCamion = () => {
           navigate("/auth", { state: { from: "/publicar-camion" } });
           return;
         }
-        setLoading(false);
+        
+        // Check if user is a transportista/camionero
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Error checking profile:", profileError);
+          toast({
+            title: "Error",
+            description: "No se pudo verificar su perfil de usuario",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+        
+        // Allow access for transportista, camionero or admin
+        if (profileData.user_type === 'transportista' || 
+            profileData.user_type === 'camionero' || 
+            profileData.user_type === 'admin') {
+          setLoading(false);
+        } else {
+          toast({
+            title: "Acceso restringido",
+            description: "No tienes permisos para publicar disponibilidad de camiones. Esta funcionalidad es solo para Transportistas y Administradores.",
+            variant: "destructive",
+          });
+          navigate("/");
+        }
       } catch (error) {
         console.error("Error checking auth:", error);
         setLoading(false);
@@ -52,17 +95,6 @@ const PublicarCamion = () => {
     
     checkAuth();
   }, [navigate, toast]);
-
-  useEffect(() => {
-    if (!loading && !authLoading && user && !canPublishCamion) {
-      toast({
-        title: "Acceso restringido",
-        description: "No tienes permisos para publicar disponibilidad de camiones. Esta funcionalidad es solo para Transportistas y Administradores.",
-        variant: "destructive",
-      });
-      navigate("/");
-    }
-  }, [canPublishCamion, loading, authLoading, user, navigate, toast]);
 
   const handleSubmit = async (data: TruckFormData) => {
     try {
@@ -120,18 +152,67 @@ const PublicarCamion = () => {
             Complete el formulario para publicar la disponibilidad de su camión y permitir que dadores de carga puedan contactarlo.
           </p>
           
-          {/* Aquí iría el formulario para los datos del camión */}
-          {/* Por ahora implementamos solo la estructura base */}
-          
-          <div className="mt-6">
-            <Button 
-              onClick={() => handleSubmit(formData)} 
-              disabled={loading}
-              className="w-full md:w-auto"
-            >
-              Publicar disponibilidad
-            </Button>
-          </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Origin */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Origen</h3>
+                    <input 
+                      className="w-full border p-2 rounded"
+                      placeholder="Provincia de origen"
+                      {...form.register("origen_provincia")}
+                    />
+                    {form.formState.errors.origen_provincia && (
+                      <p className="text-red-500 text-sm">{form.formState.errors.origen_provincia.message}</p>
+                    )}
+                  </div>
+                  
+                  {/* Destination */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Destino</h3>
+                    <input 
+                      className="w-full border p-2 rounded"
+                      placeholder="Provincia de destino"
+                      {...form.register("destino_provincia")}
+                    />
+                    {form.formState.errors.destino_provincia && (
+                      <p className="text-red-500 text-sm">{form.formState.errors.destino_provincia.message}</p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Dates */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Fechas de disponibilidad</h3>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium">Fecha disponible desde*</label>
+                    <DatePicker 
+                      date={form.getValues('fecha_disponible_desde') ? new Date(form.getValues('fecha_disponible_desde')) : undefined}
+                      onChange={(date) => form.setValue('fecha_disponible_desde', date ? date.toISOString() : '')}
+                    />
+                    {form.formState.errors.fecha_disponible_desde && (
+                      <p className="text-red-500 text-sm">{form.formState.errors.fecha_disponible_desde.message}</p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Truck details */}
+                <TruckDetailsFields form={form} />
+              </div>
+              
+              <div className="mt-6">
+                <Button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full md:w-auto"
+                >
+                  Publicar disponibilidad
+                </Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>

@@ -15,7 +15,6 @@ import {
   User as UserIcon,
   Truck,
   Bell,
-  Star,
   FileText,
   ClipboardList,
   Crown,
@@ -92,7 +91,7 @@ const UserMenu = () => {
                 Mis Postulaciones
               </DropdownMenuItem>
             </Link>
-            <Link to="/agregar-camion">
+            <Link to="/mis-camiones">
               <DropdownMenuItem className="cursor-pointer">
                 <Truck size={16} className="mr-2" />
                 Mis Camiones
