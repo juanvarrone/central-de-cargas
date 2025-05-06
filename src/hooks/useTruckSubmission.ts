@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { TruckFormData } from "@/types/truck";
+import { geocodeAddress } from "@/utils/geocoding";
 
 export const useTruckSubmission = () => {
   const submitTruck = async (data: TruckFormData) => {
@@ -37,6 +38,16 @@ export const useTruckSubmission = () => {
       // Validate required fields before submission
       if (!data.origen_provincia || !data.fecha_disponible_desde) {
         throw new Error("Faltan campos requeridos");
+      }
+      
+      // Geocode the address to get coordinates
+      let coordinates = null;
+      if (data.origen_provincia) {
+        coordinates = await geocodeAddress(data.origen_provincia);
+        if (coordinates) {
+          data.origen_lat = coordinates.lat;
+          data.origen_lng = coordinates.lng;
+        }
       }
       
       // Format data properly - this has changed to show only the origin as the available location
