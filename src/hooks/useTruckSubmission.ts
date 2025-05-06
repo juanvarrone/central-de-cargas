@@ -35,20 +35,22 @@ export const useTruckSubmission = () => {
       }
       
       // Validate required fields before submission
-      if (!data.origen_provincia || !data.destino_provincia || !data.fecha_disponible_desde) {
+      if (!data.origen_provincia || !data.fecha_disponible_desde) {
         throw new Error("Faltan campos requeridos");
       }
       
-      // Format data properly
+      // Format data properly - this has changed to show only the origin as the available location
       const submissionData = {
         origen: data.origen || `${data.origen_provincia}, ${data.origen_ciudad || ''}`.trim(),
         origen_detalle: data.origen_detalle || null,
         origen_provincia: data.origen_provincia,
         origen_ciudad: data.origen_ciudad || null,
-        destino: data.destino || `${data.destino_provincia}, ${data.destino_ciudad || ''}`.trim(),
-        destino_detalle: data.destino_detalle || null,
-        destino_provincia: data.destino_provincia,
-        destino_ciudad: data.destino_ciudad || null,
+        // Since we're now only tracking where the truck will be available, 
+        // we set destination to match origin
+        destino: data.origen || `${data.origen_provincia}, ${data.origen_ciudad || ''}`.trim(),
+        destino_detalle: null,
+        destino_provincia: data.origen_provincia,
+        destino_ciudad: data.origen_ciudad || null,
         fecha_disponible_desde: new Date(data.fecha_disponible_desde).toISOString(),
         fecha_disponible_hasta: data.fecha_disponible_hasta ? new Date(data.fecha_disponible_hasta).toISOString() : null,
         tipo_camion: data.tipo_camion,
@@ -58,8 +60,8 @@ export const useTruckSubmission = () => {
         observaciones: data.observaciones || null,
         origen_lat: data.origen_lat || 0,
         origen_lng: data.origen_lng || 0,
-        destino_lat: data.destino_lat || 0,
-        destino_lng: data.destino_lng || 0,
+        destino_lat: data.origen_lat || 0, // Same as origin lat
+        destino_lng: data.origen_lng || 0, // Same as origin lng
         estado: "disponible",
         usuario_id: userData.user.id
       };
