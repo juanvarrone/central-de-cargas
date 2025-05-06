@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Truck } from "lucide-react";
+import { ArrowLeft, Truck, Plus } from "lucide-react";
 import { TruckFormData } from "@/types/truck";
 import { useTruckSubmission } from "@/hooks/useTruckSubmission";
 import { Form } from "@/components/ui/form";
@@ -15,6 +15,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { camionSchema } from "@/types/truck";
 import { DatePicker } from "@/components/ui/date-picker";
 import TruckDetailsFields from "@/components/truck/TruckDetailsFields";
+import { useTrucks, Truck as TruckType } from "@/hooks/useTrucks";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const PublicarCamion = () => {
   const navigate = useNavigate();
@@ -22,6 +31,8 @@ const PublicarCamion = () => {
   const [loading, setLoading] = useState(true);
   const { user, isLoading: authLoading } = useAuth();
   const { submitTruck } = useTruckSubmission();
+  const { trucks, isLoading: trucksLoading } = useTrucks();
+  const [selectedTruckId, setSelectedTruckId] = useState<string | null>(null);
   
   // Set up form with validation
   const form = useForm<TruckFormData>({
@@ -41,6 +52,18 @@ const PublicarCamion = () => {
       tipo_fecha: 'exacta'
     }
   });
+
+  // When a truck is selected, update form values
+  useEffect(() => {
+    if (selectedTruckId && trucks.length > 0) {
+      const selectedTruck = trucks.find(truck => truck.id === selectedTruckId);
+      if (selectedTruck) {
+        form.setValue('tipo_camion', selectedTruck.tipo_camion);
+        form.setValue('capacidad', selectedTruck.capacidad);
+        form.setValue('refrigerado', selectedTruck.refrigerado);
+      }
+    }
+  }, [selectedTruckId, trucks, form]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -117,7 +140,7 @@ const PublicarCamion = () => {
     }
   };
 
-  if (loading || authLoading) {
+  if (loading || authLoading || trucksLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Cargando...</div>
@@ -151,6 +174,43 @@ const PublicarCamion = () => {
           <p className="text-muted-foreground mb-4">
             Complete el formulario para publicar la disponibilidad de su camión y permitir que dadores de carga puedan contactarlo.
           </p>
+          
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row justify-between mb-4 gap-4 items-end">
+              <div className="flex-1">
+                <Label htmlFor="truck-select" className="mb-2 block">Seleccione un camión existente</Label>
+                <Select 
+                  value={selectedTruckId || ""} 
+                  onValueChange={(value) => setSelectedTruckId(value || null)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccione un camión" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trucks.length === 0 ? (
+                      <SelectItem value="no-trucks" disabled>
+                        No tiene camiones registrados
+                      </SelectItem>
+                    ) : (
+                      trucks.map((truck) => (
+                        <SelectItem key={truck.id} value={truck.id}>
+                          {truck.tipo_camion} - {truck.patente_chasis} {truck.refrigerado ? "(Refrigerado)" : ""}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Link to="/agregar-camion">
+                  <Button variant="outline" className="w-full">
+                    <Plus size={16} className="mr-2" />
+                    Agregar nuevo camión
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">

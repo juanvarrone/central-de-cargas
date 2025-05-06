@@ -82,7 +82,7 @@ const UserMenu = () => {
           </DropdownMenuItem>
         </Link>
 
-        {/* Show this item for both admin and transportista */}
+        {/* Show this item for both admin and transportista/camionero */}
         {(isAdmin || canPublishCamion) && (
           <>
             <Link to="/mis-postulaciones">
