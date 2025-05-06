@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -146,8 +147,9 @@ export const useUserProfile = (): UseUserProfileResult => {
       }
       
       const fileExt = file.name.split('.').pop();
-      const filePath = `profile_images/${profile.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${profile.id}-${Date.now()}.${fileExt}`;
       
+      // Upload to storage bucket
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);
@@ -156,6 +158,7 @@ export const useUserProfile = (): UseUserProfileResult => {
         throw uploadError;
       }
       
+      // Get public URL
       const { data: publicURL } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);

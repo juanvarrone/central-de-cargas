@@ -24,11 +24,22 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
+// This will help prevent duplicate instances
+let userMenuInstanceCount = 0;
+
 const UserMenu = () => {
   const navigate = useNavigate();
   const { profile, isLoading: profileLoading } = useUserProfile();
   const [open, setOpen] = useState(false);
   const { user, isAdmin, userType, canPublishCamion, canPostulateToCarga } = useAuth();
+  const [instanceId] = useState(() => userMenuInstanceCount++);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      userMenuInstanceCount--;
+    };
+  }, []);
 
   useEffect(() => {
     // Close dropdown when navigating
@@ -41,6 +52,11 @@ const UserMenu = () => {
       window.removeEventListener("popstate", handleRouteChange);
     };
   }, []);
+
+  // If this is a duplicate instance, don't render again
+  if (instanceId > 0) {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {

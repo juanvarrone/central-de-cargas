@@ -1,180 +1,201 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { Truck, Plus, Loader2, AlertOctagon, Pencil, Trash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import TruckCard from "@/components/truck/TruckCard";
-import { useTrucks, Truck } from "@/hooks/useTrucks";
+import { Badge } from "@/components/ui/badge";
+
+interface UserTruck {
+  id: string;
+  tipo_camion: string;
+  capacidad: string;
+  refrigerado: boolean;
+  patente_chasis: string;
+  patente_acoplado: string | null;
+  foto_chasis: string | null;
+  foto_acoplado: string | null;
+  created_at: string;
+}
 
 const MisCamiones = () => {
+  const [trucks, setTrucks] = useState<UserTruck[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { trucks, isLoading, error } = useTrucks();
-  const [truckToDelete, setTruckToDelete] = useState<string | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data?.user) {
-        toast({
-          title: "Acceso restringido",
-          description: "Debe iniciar sesión para ver sus camiones",
-          variant: "destructive",
-        });
-        navigate("/auth", { state: { from: "/mis-camiones" } });
+    const fetchUserTrucks = async () => {
+      try {
+        setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          navigate("/auth");
+          return;
+        }
+
+        // Fetch user trucks
+        const { data, error } = await supabase
+          .from("trucks")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        setTrucks(data || []);
+      } catch (err: any) {
+        console.error("Error fetching trucks:", err);
+        setError(err.message || "Error al cargar los camiones");
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkAuth();
-  }, [navigate, toast]);
+    fetchUserTrucks();
+  }, [navigate]);
 
-  const handleDelete = async (truckId: string) => {
+  const handleDelete = async (id: string) => {
     try {
-      setDeleteLoading(true);
-      
       const { error } = await supabase
         .from("trucks")
         .delete()
-        .eq("id", truckId);
-      
+        .eq("id", id);
+
       if (error) throw error;
-      
+
+      setTrucks(trucks.filter(truck => truck.id !== id));
       toast({
         title: "Camión eliminado",
-        description: "El camión ha sido eliminado exitosamente",
+        description: "El camión ha sido eliminado correctamente"
       });
-      
-      // Refresh the trucks list
-      window.location.reload();
-      
-    } catch (error: any) {
-      console.error("Error deleting truck:", error);
+    } catch (err: any) {
+      console.error("Error deleting truck:", err);
       toast({
         title: "Error",
-        description: "No se pudo eliminar el camión",
-        variant: "destructive",
+        description: err.message || "Error al eliminar el camión",
+        variant: "destructive"
       });
-    } finally {
-      setDeleteLoading(false);
-      setTruckToDelete(null);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Cargando camiones...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="flex items-center space-x-2 mb-6">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate(-1)} 
-          className="mr-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Volver
-        </Button>
-        <h1 className="text-2xl font-bold">Mis Camiones</h1>
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <p className="text-muted-foreground">
-          {trucks.length === 0
-            ? "No tienes camiones registrados"
-            : `${trucks.length} camiones registrados`}
-        </p>
-        <Button onClick={() => navigate("/agregar-camion")}>
-          <Plus size={16} className="mr-2" />
-          Agregar Camión
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-2xl font-bold mb-4 md:mb-0">Mis Camiones</h1>
+        <Button onClick={() => navigate("/agregar-camion")} className="flex items-center">
+          <Plus className="mr-2 h-4 w-4" />
+          Agregar nuevo camión
         </Button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 p-4 rounded-md mb-4 text-red-800">
-          {error}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      )}
-
-      {trucks.length === 0 ? (
+      ) : error ? (
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="mb-4">No has registrado ningún camión todavía.</p>
+          <CardContent className="flex flex-col items-center justify-center py-10">
+            <AlertOctagon className="h-12 w-12 text-red-500 mb-4" />
+            <p className="text-center text-red-500 font-medium mb-2">Error al cargar los camiones</p>
+            <p className="text-center text-muted-foreground mb-4">{error}</p>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
+      ) : trucks.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Truck className="h-16 w-16 text-muted-foreground mb-6" />
+            <h2 className="text-xl font-medium mb-2">No tienes camiones registrados</h2>
+            <p className="text-center text-muted-foreground mb-6">
+              Agrega tu primer camión para poder publicar disponibilidad y recibir cargas
+            </p>
             <Button onClick={() => navigate("/agregar-camion")}>
-              <Plus size={16} className="mr-2" />
-              Registrar mi primer camión
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar camión
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {trucks.map((truck: Truck) => (
-            <div key={truck.id} className="relative">
-              <TruckCard truck={truck} />
-              <div className="absolute top-4 right-4 flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(`/editar-camion/${truck.id}`)}
-                  className="bg-white"
-                >
-                  <Edit size={16} />
-                </Button>
-                
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-white text-red-600 hover:text-red-700 hover:bg-red-50"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {trucks.map((truck) => (
+            <Card key={truck.id} className="overflow-hidden">
+              <CardHeader className="bg-muted/50">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg">
+                    {truck.tipo_camion}
+                  </CardTitle>
+                  {truck.refrigerado && (
+                    <Badge className="bg-blue-500 hover:bg-blue-600">Refrigerado</Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium">Patente del chasis</p>
+                    <p className="text-muted-foreground">{truck.patente_chasis}</p>
+                  </div>
+                  
+                  {truck.patente_acoplado && (
+                    <div>
+                      <p className="font-medium">Patente del acoplado</p>
+                      <p className="text-muted-foreground">{truck.patente_acoplado}</p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <p className="font-medium">Capacidad</p>
+                    <p className="text-muted-foreground">{truck.capacidad}</p>
+                  </div>
+
+                  <div className="pt-4 flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => navigate(`/editar-camion/${truck.id}`)}
                     >
-                      <Trash2 size={16} />
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Editar
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Eliminar este camión lo quitará permanentemente de su cuenta.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={() => handleDelete(truck.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                        disabled={deleteLoading}
-                      >
-                        {deleteLoading ? "Eliminando..." : "Sí, eliminar camión"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => {
+                        if (confirm("¿Estás seguro de que deseas eliminar este camión?")) {
+                          handleDelete(truck.id);
+                        }
+                      }}
+                    >
+                      <Trash className="h-4 w-4 mr-2" />
+                      Eliminar
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
+
+      <div className="mt-8">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate("/publicar-camion")} 
+          className="flex items-center"
+        >
+          <Truck className="mr-2 h-4 w-4" />
+          Publicar disponibilidad
+        </Button>
+      </div>
     </div>
   );
 };

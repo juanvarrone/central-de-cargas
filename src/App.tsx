@@ -7,6 +7,7 @@ import BuscarCamiones from "./pages/BuscarCamiones";
 import PublicarCarga from "./pages/PublicarCarga";
 import PublicarCamion from "./pages/PublicarCamion";
 import MisCargas from "./pages/MisCargas";
+import MisCamiones from "./pages/MisCamiones";
 import AgregarCamion from "./pages/AgregarCamion";
 import Profile from "./pages/Profile";
 import Index from "./pages/Index";
@@ -42,6 +43,7 @@ function App() {
               <Route path="/publicar-carga" element={<PublicarCarga />} />
               <Route path="/publicar-camion" element={<PublicarCamion />} />
               <Route path="/mis-cargas" element={<MisCargas />} />
+              <Route path="/mis-camiones" element={<MisCamiones />} />
               <Route path="/mis-postulaciones" element={<MisPostulaciones />} />
               <Route path="/agregar-camion" element={<AgregarCamion />} />
               <Route path="/perfil" element={<Profile />} />

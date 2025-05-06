@@ -11,8 +11,9 @@ export const camionSchema = z.object({
   destino_provincia: z.string().optional(), // Now optional as we are not using destination
   destino_ciudad: z.string().optional(),
   tipo_fecha: z.enum(["exacta", "rango"]).optional(),
-  fecha_disponible_desde: z.string().min(1, "La fecha de disponibilidad es requerida"),
+  fecha_disponible_desde: z.string().optional(),
   fecha_disponible_hasta: z.string().optional(),
+  fecha_permanente: z.boolean().optional().default(false),
   tipo_camion: z.string().optional(), // Now optional as it comes from the truck
   capacidad: z.string().optional(), // Now optional as it comes from the truck
   refrigerado: z.boolean().default(false),
@@ -22,6 +23,7 @@ export const camionSchema = z.object({
   origen_lng: z.number().optional().default(0),
   destino_lat: z.number().optional(),
   destino_lng: z.number().optional(),
+  selected_trucks: z.array(z.string()).optional(),
 });
 
 export type TruckFormData = z.infer<typeof camionSchema>;
@@ -49,7 +51,7 @@ export interface TruckAvailability {
   destino_ciudad: string | null;
   destino_lat: number | null;
   destino_lng: number | null;
-  fecha_disponible_desde: string;
+  fecha_disponible_desde: string | null;
   fecha_disponible_hasta: string | null;
   tipo_camion: string;
   capacidad: string;
@@ -60,6 +62,7 @@ export interface TruckAvailability {
   usuario_id: string;
   created_at: string;
   updated_at: string;
+  es_permanente: boolean;
   usuario?: {
     id: string;
     full_name: string | null;

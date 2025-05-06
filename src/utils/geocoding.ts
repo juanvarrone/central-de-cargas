@@ -8,6 +8,11 @@ type Coordinates = {
 
 export const geocodeAddress = async (address: string): Promise<Coordinates> => {
   try {
+    if (!window.google || !google.maps) {
+      console.error("Google Maps API not loaded");
+      return null;
+    }
+    
     const geocoder = new google.maps.Geocoder();
     
     const result = await new Promise<google.maps.GeocoderResult[]>((resolve, reject) => {
@@ -39,26 +44,38 @@ export const usePlacesAutocomplete = (inputRef: React.RefObject<HTMLInputElement
   const [place, setPlace] = useState<google.maps.places.PlaceResult | null>(null);
 
   useEffect(() => {
+    // Ensure Google Maps API is loaded
     if (!inputRef.current || !window.google || !google.maps || !google.maps.places) {
       return;
     }
 
-    const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-      types: ['geocode'], // Restrict to addresses only
-      componentRestrictions: { country: 'ar' }, // Restrict to Argentina
-    });
+    try {
+      const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+        types: ['geocode'], // Restrict to addresses only
+        componentRestrictions: { country: 'ar' }, // Restrict to Argentina
+      });
 
-    autocomplete.addListener('place_changed', () => {
-      const selectedPlace = autocomplete.getPlace();
-      if (selectedPlace && selectedPlace.geometry) {
-        setPlace(selectedPlace);
-      }
-    });
+      autocomplete.addListener('place_changed', () => {
+        try {
+          const selectedPlace = autocomplete.getPlace();
+          if (selectedPlace && selectedPlace.geometry) {
+            setPlace(selectedPlace);
+          }
+        } catch (err) {
+          console.error("Error getting place details:", err);
+        }
+      });
 
-    return () => {
-      // Cleanup if needed
-      google.maps.event.clearInstanceListeners(autocomplete);
-    };
+      return () => {
+        // Cleanup if needed
+        if (google && google.maps && autocomplete) {
+          google.maps.event.clearInstanceListeners(autocomplete);
+        }
+      };
+    } catch (err) {
+      console.error("Error setting up Places Autocomplete:", err);
+      return undefined;
+    }
   }, [inputRef]);
 
   return { place };

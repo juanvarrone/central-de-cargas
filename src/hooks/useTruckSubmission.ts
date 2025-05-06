@@ -5,20 +5,20 @@ import { geocodeAddress } from "@/utils/geocoding";
 
 export const useTruckSubmission = () => {
   const submitTruck = async (data: TruckFormData) => {
-    // Get the current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    // Check if user is authenticated
-    if (userError || !userData.user) {
-      console.error("Authentication error:", userError);
-      throw new Error("Usuario no autenticado");
-    }
-
-    // Added detailed console logs for debugging
-    console.log("Submitting truck availability with data:", data);
-    console.log("User ID:", userData.user.id);
-    
     try {
+      // Get the current user
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      // Check if user is authenticated
+      if (userError || !userData.user) {
+        console.error("Authentication error:", userError);
+        throw new Error("Usuario no autenticado");
+      }
+
+      // Added detailed console logs for debugging
+      console.log("Submitting truck availability with data:", data);
+      console.log("User ID:", userData.user.id);
+      
       // Check if user has a valid phone number
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -50,31 +50,38 @@ export const useTruckSubmission = () => {
         }
       }
       
-      // Format data properly - this has changed to show only the origin as the available location
+      // Format data properly for submission
       const submissionData = {
-        origen: data.origen || `${data.origen_provincia}, ${data.origen_ciudad || ''}`.trim(),
+        origen: data.origen || data.origen_provincia,
         origen_detalle: data.origen_detalle || null,
         origen_provincia: data.origen_provincia,
         origen_ciudad: data.origen_ciudad || null,
-        // Since we're now only tracking where the truck will be available, 
+        // Since we're now only tracking where the truck will be available,
         // we set destination to match origin
-        destino: data.origen || `${data.origen_provincia}, ${data.origen_ciudad || ''}`.trim(),
+        destino: data.origen || data.origen_provincia,
         destino_detalle: null,
         destino_provincia: data.origen_provincia,
         destino_ciudad: data.origen_ciudad || null,
-        fecha_disponible_desde: new Date(data.fecha_disponible_desde).toISOString(),
-        fecha_disponible_hasta: data.fecha_disponible_hasta ? new Date(data.fecha_disponible_hasta).toISOString() : null,
-        tipo_camion: data.tipo_camion,
-        capacidad: data.capacidad,
-        refrigerado: data.refrigerado,
-        radio_km: data.radio_km,
+        fecha_disponible_desde: data.fecha_permanente 
+          ? null 
+          : new Date(data.fecha_disponible_desde).toISOString(),
+        fecha_disponible_hasta: data.fecha_permanente 
+          ? null
+          : data.fecha_disponible_hasta 
+            ? new Date(data.fecha_disponible_hasta).toISOString() 
+            : null,
+        tipo_camion: data.tipo_camion || "No especificado",
+        capacidad: data.capacidad || "No especificada",
+        refrigerado: data.refrigerado || false,
+        radio_km: data.radio_km || 50,
         observaciones: data.observaciones || null,
         origen_lat: data.origen_lat || 0,
         origen_lng: data.origen_lng || 0,
         destino_lat: data.origen_lat || 0, // Same as origin lat
         destino_lng: data.origen_lng || 0, // Same as origin lng
         estado: "disponible",
-        usuario_id: userData.user.id
+        usuario_id: userData.user.id,
+        es_permanente: data.fecha_permanente || false
       };
       
       console.log("Final submission data:", submissionData);
@@ -89,6 +96,7 @@ export const useTruckSubmission = () => {
       }
       
       console.log("Truck availability submitted successfully");
+      return { success: true };
     } catch (error: any) {
       console.error("Error in submitTruck:", error);
       throw error;

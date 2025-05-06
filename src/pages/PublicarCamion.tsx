@@ -1,194 +1,177 @@
 
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Truck, Plus } from "lucide-react";
-import { TruckFormData } from "@/types/truck";
-import { useTruckSubmission } from "@/hooks/useTruckSubmission";
-import { Form } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { camionSchema } from "@/types/truck";
-import { DatePicker } from "@/components/ui/date-picker";
-import { useTrucks } from "@/hooks/useTrucks";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { usePlacesAutocomplete } from "@/utils/geocoding";
-import { Script } from "@/components/ui/script";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Truck, AlertCircle } from "lucide-react";
+import { useTruckSubmission } from "@/hooks/useTruckSubmission";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { TruckFormData, camionSchema } from "@/types/truck";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { supabase } from "@/integrations/supabase/client";
+import { Checkbox } from "@/components/ui/checkbox";
+import MapLocationInput from "@/components/MapLocationInput";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
+
+interface UserTruck {
+  id: string;
+  tipo_camion: string;
+  capacidad: string;
+  refrigerado: boolean;
+  patente_chasis: string;
+}
 
 const PublicarCamion = () => {
+  const [loading, setLoading] = useState(false);
+  const [userTrucks, setUserTrucks] = useState<UserTruck[]>([]);
+  const [selectedTrucks, setSelectedTrucks] = useState<string[]>([]);
+  const [loadingTrucks, setLoadingTrucks] = useState(true);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const { user, isLoading: authLoading } = useAuth();
   const { submitTruck } = useTruckSubmission();
-  const { trucks, isLoading: trucksLoading } = useTrucks();
-  const [selectedTruckIds, setSelectedTruckIds] = useState<string[]>([]);
-  const [disponibilidadTipo, setDisponibilidadTipo] = useState<'permanente' | 'temporal'>('temporal');
-  const [scriptLoaded, setScriptLoaded] = useState(false);
-  const locationInputRef = useRef<HTMLInputElement>(null);
-  
-  // Integration with Google Places
-  const { place } = usePlacesAutocomplete(scriptLoaded ? locationInputRef : { current: null });
-  
-  // Set up form with validation
+
   const form = useForm<TruckFormData>({
     resolver: zodResolver(camionSchema),
     defaultValues: {
-      origen_provincia: '',
-      origen_ciudad: '',
+      origen_provincia: "",
       radio_km: 50,
-      origen_lat: 0,
-      origen_lng: 0,
-      fecha_disponible_desde: '',
-      fecha_disponible_hasta: '',
-    }
+      fecha_permanente: false,
+      fecha_disponible_desde: format(new Date(), "yyyy-MM-dd"),
+      refrigerado: false,
+    },
   });
 
-  // Update coordinates when place changes
-  useEffect(() => {
-    if (place && place.geometry && place.geometry.location) {
-      form.setValue('origen_lat', place.geometry.location.lat());
-      form.setValue('origen_lng', place.geometry.location.lng());
-      
-      // Get address components
-      const addressComponents = place.address_components || [];
-      
-      // Find city and state/province
-      let city = '';
-      let province = '';
-      
-      for (const component of addressComponents) {
-        const types = component.types;
-        if (types.includes('locality')) {
-          city = component.long_name;
-        } else if (types.includes('administrative_area_level_1')) {
-          province = component.long_name;
-        }
-      }
-      
-      // If we found both city and province
-      if (province) {
-        form.setValue('origen_provincia', place.formatted_address || province);
-      }
-      if (city) {
-        form.setValue('origen_ciudad', city);
-      }
-    }
-  }, [place, form]);
+  const isPermanent = form.watch("fecha_permanente");
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const fetchUserTrucks = async () => {
       try {
-        const { data } = await supabase.auth.getUser();
-        if (!data?.user) {
-          toast({
-            title: "Acceso restringido",
-            description: "Debe iniciar sesión para acceder a esta página",
-            variant: "destructive",
-          });
-          navigate("/auth", { state: { from: "/publicar-camion" } });
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !sessionData.session) {
+          console.error("Not authenticated:", sessionError);
+          navigate("/auth");
           return;
         }
         
-        // Check if user is a transportista/camionero
         const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', data.user.id)
+          .from("profiles")
+          .select("user_type")
+          .eq("id", sessionData.session.user.id)
           .single();
-        
+          
         if (profileError) {
-          console.error("Error checking profile:", profileError);
+          console.error("Error fetching profile:", profileError);
           toast({
             title: "Error",
-            description: "No se pudo verificar su perfil de usuario",
+            description: "No se pudo verificar tu tipo de usuario",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (profileData.user_type !== "camionero") {
+          toast({
+            title: "Acceso restringido",
+            description: "Solo los usuarios de tipo camionero pueden publicar disponibilidad",
             variant: "destructive",
           });
           navigate("/");
           return;
         }
-        
-        // Allow access for transportista, camionero or admin
-        if (profileData.user_type === 'transportista' || 
-            profileData.user_type === 'camionero' || 
-            profileData.user_type === 'admin') {
-          setLoading(false);
-        } else {
+
+        const { data: trucks, error: trucksError } = await supabase
+          .from("trucks")
+          .select("id, tipo_camion, capacidad, refrigerado, patente_chasis")
+          .eq("user_id", sessionData.session.user.id);
+
+        if (trucksError) {
+          throw trucksError;
+        }
+
+        setUserTrucks(trucks || []);
+        if (trucks && trucks.length === 0) {
           toast({
-            title: "Acceso restringido",
-            description: "No tienes permisos para publicar disponibilidad de camiones. Esta funcionalidad es solo para Transportistas y Administradores.",
-            variant: "destructive",
+            title: "No tienes camiones registrados",
+            description: "Debes registrar al menos un camión para publicar disponibilidad",
+            action: (
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/agregar-camion")}
+              >
+                Agregar camión
+              </Button>
+            ),
           });
-          navigate("/");
         }
       } catch (error) {
-        console.error("Error checking auth:", error);
-        setLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, [navigate, toast]);
-
-  const handleSubmit = async (data: TruckFormData) => {
-    try {
-      // Validate that at least one truck is selected
-      if (selectedTruckIds.length === 0) {
+        console.error("Error fetching trucks:", error);
         toast({
           title: "Error",
-          description: "Debe seleccionar al menos un camión",
+          description: "No se pudieron cargar tus camiones",
           variant: "destructive",
         });
-        return;
+      } finally {
+        setLoadingTrucks(false);
       }
-      
-      setLoading(true);
-      
-      // For each selected truck, submit availability
-      for (const truckId of selectedTruckIds) {
-        const selectedTruck = trucks.find(truck => truck.id === truckId);
-        
-        if (selectedTruck) {
-          // Merge truck data with form data
-          const submissionData = {
-            ...data,
-            tipo_camion: selectedTruck.tipo_camion,
-            capacidad: selectedTruck.capacidad,
-            refrigerado: selectedTruck.refrigerado,
-            // If permanente, set fecha_hasta to null
-            fecha_disponible_hasta: disponibilidadTipo === 'permanente' ? null : data.fecha_disponible_hasta,
-            // Use origen_provincia as the location
-            destino_provincia: '', // Clear destination as it's no longer needed
-          };
-          
-          await submitTruck(submissionData);
-        }
-      }
-      
-      toast({
-        title: "Disponibilidad publicada",
-        description: `Disponibilidad de ${selectedTruckIds.length} camión(es) publicada exitosamente`,
-      });
-      navigate("/mis-camiones");
-    } catch (error: any) {
-      console.error("Error submitting truck:", error);
+    };
+
+    fetchUserTrucks();
+  }, [navigate, toast]);
+
+  const onSubmit = async (data: TruckFormData) => {
+    if (selectedTrucks.length === 0) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo publicar la disponibilidad del camión",
+        description: "Debes seleccionar al menos un camión",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Add selected trucks to data
+      data.selected_trucks = selectedTrucks;
+      
+      // Submit truck availability
+      await submitTruck(data);
+      
+      setSubmitSuccess(true);
+      toast({
+        title: "Disponibilidad publicada",
+        description: "Tu disponibilidad ha sido publicada exitosamente",
+      });
+      
+      // Reset form after successful submission
+      form.reset();
+      setSelectedTrucks([]);
+      
+      // Redirect after a short delay
+      setTimeout(() => {
+        navigate("/buscar-camiones");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error submitting availability:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al publicar disponibilidad",
         variant: "destructive",
       });
     } finally {
@@ -197,7 +180,7 @@ const PublicarCamion = () => {
   };
 
   const handleTruckSelection = (truckId: string) => {
-    setSelectedTruckIds(prev => {
+    setSelectedTrucks(prev => {
       if (prev.includes(truckId)) {
         return prev.filter(id => id !== truckId);
       } else {
@@ -206,193 +189,307 @@ const PublicarCamion = () => {
     });
   };
 
-  if (loading || authLoading || trucksLoading) {
+  if (loadingTrucks) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Cargando...</div>
+      <div className="container mx-auto py-12 px-4 flex justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Cargando tus camiones...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (userTrucks.length === 0) {
+    return (
+      <div className="container mx-auto py-12 px-4">
+        <div className="max-w-md mx-auto text-center p-6 bg-white rounded-lg shadow-md">
+          <AlertCircle className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
+          <h2 className="text-xl font-semibold mb-4">No tienes camiones registrados</h2>
+          <p className="mb-6 text-gray-600">
+            Para publicar disponibilidad, primero debes registrar al menos un camión.
+          </p>
+          <Button onClick={() => navigate("/agregar-camion")}>
+            Registrar un camión
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitSuccess) {
+    return (
+      <div className="container mx-auto py-12 px-4 max-w-lg">
+        <div className="text-center p-6 bg-white rounded-lg shadow-lg">
+          <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <Truck className="h-8 w-8 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">¡Disponibilidad publicada!</h2>
+          <p className="text-gray-600 mb-6">
+            Tu disponibilidad ha sido publicada con éxito y ya está visible para los dadores de carga.
+          </p>
+          <div className="space-y-3">
+            <Button onClick={() => navigate("/buscar-camiones")} className="w-full">
+              Ver todos los camiones disponibles
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSubmitSuccess(false);
+                form.reset();
+                setSelectedTrucks([]);
+              }} 
+              className="w-full"
+            >
+              Publicar otra disponibilidad
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <Script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=places"
-        onLoad={() => setScriptLoaded(true)}
-      />
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex items-center mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate(-1)} 
-            className="mr-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Volver
-          </Button>
-          <h1 className="text-3xl font-bold">Publicar Disponibilidad de Camión</h1>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Truck className="mr-2 h-6 w-6" />
-              Registrar disponibilidad de transporte
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Complete el formulario para publicar la disponibilidad de su camión y permitir que dadores de carga puedan contactarlo.
-            </p>
-            
-            <div className="mb-6">
-              <div className="mb-4">
-                <Label className="text-lg font-medium mb-2 block">Seleccione uno o más camiones</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
-                  {trucks.length === 0 ? (
-                    <p className="text-muted-foreground col-span-full">No tiene camiones registrados</p>
-                  ) : (
-                    trucks.map((truck) => (
-                      <div 
-                        key={truck.id} 
-                        className={`border rounded-md p-3 cursor-pointer ${
-                          selectedTruckIds.includes(truck.id) ? 'border-primary bg-primary/5' : 'border-gray-200'
-                        }`}
-                        onClick={() => handleTruckSelection(truck.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{truck.tipo_camion}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {truck.patente_chasis}
-                              {truck.refrigerado ? " (Refrigerado)" : ""}
-                            </div>
-                            <div className="text-sm text-muted-foreground">{truck.capacidad}</div>
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border ${
-                            selectedTruckIds.includes(truck.id) 
-                              ? 'bg-primary border-primary' 
-                              : 'border-gray-400'
-                          }`}>
-                            {selectedTruckIds.includes(truck.id) && (
-                              <svg 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                viewBox="0 0 24 24" 
-                                fill="white" 
-                                className="w-5 h-5"
-                              >
-                                <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <Link to="/agregar-camion">
-                  <Button variant="outline" className="w-full md:w-auto">
-                    <Plus size={16} className="mr-2" />
-                    Agregar nuevo camión
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                <div className="space-y-6">
-                  {/* Location with Google Maps integration */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Lugar donde tendrá el camión disponible</h3>
-                    <Input 
-                      ref={locationInputRef}
-                      className="w-full"
-                      placeholder="Ingrese ubicación (ciudad, provincia)"
-                      {...form.register("origen_provincia")}
-                    />
-                    {form.formState.errors.origen_provincia && (
-                      <p className="text-red-500 text-sm">{form.formState.errors.origen_provincia.message}</p>
-                    )}
-                    
-                    {/* Radio KM slider */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <Label>Radio de búsqueda</Label>
-                        <span className="text-sm font-medium">{form.watch("radio_km")} km</span>
-                      </div>
-                      <Slider
-                        min={5}
-                        max={500}
-                        step={5}
-                        defaultValue={[form.watch("radio_km")]}
-                        onValueChange={(values) => form.setValue("radio_km", values[0])}
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Availability Type */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Tipo de disponibilidad</h3>
-                    <RadioGroup 
-                      value={disponibilidadTipo} 
-                      onValueChange={(v) => setDisponibilidadTipo(v as 'permanente' | 'temporal')}
-                      className="space-y-3"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="permanente" id="permanente" />
-                        <Label htmlFor="permanente">Tengo flota permanente aquí</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="temporal" id="temporal" />
-                        <Label htmlFor="temporal">Voy a estar próximo a estas fechas</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                  
-                  {/* Dates */}
-                  {disponibilidadTipo === 'temporal' && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Fechas de disponibilidad</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Desde</Label>
-                          <DatePicker 
-                            date={form.getValues('fecha_disponible_desde') ? new Date(form.getValues('fecha_disponible_desde')) : undefined}
-                            onChange={(date) => form.setValue('fecha_disponible_desde', date ? date.toISOString() : '')}
-                          />
-                          {form.formState.errors.fecha_disponible_desde && (
-                            <p className="text-red-500 text-sm">{form.formState.errors.fecha_disponible_desde.message}</p>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Hasta</Label>
-                          <DatePicker 
-                            date={form.getValues('fecha_disponible_hasta') ? new Date(form.getValues('fecha_disponible_hasta')) : undefined}
-                            onChange={(date) => form.setValue('fecha_disponible_hasta', date ? date.toISOString() : '')}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="mt-6">
-                  <Button 
-                    type="submit"
-                    disabled={loading || selectedTruckIds.length === 0}
-                    className="w-full md:w-auto"
-                  >
-                    Publicar disponibilidad
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex items-center mb-6">
+        <Button
+          variant="outline"
+          onClick={() => navigate(-1)}
+          className="mr-4"
+        >
+          Volver
+        </Button>
+        <h1 className="text-2xl font-bold">Publicar Disponibilidad de Camión</h1>
       </div>
-    </>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Selecciona tus camiones</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Selecciona uno o más camiones que estarán disponibles en la ubicación especificada.
+                </p>
+                <div className="space-y-2">
+                  {userTrucks.map((truck) => (
+                    <div
+                      key={truck.id}
+                      className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                        selectedTrucks.includes(truck.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:border-primary/50"
+                      }`}
+                      onClick={() => handleTruckSelection(truck.id)}
+                    >
+                      <div className="flex items-center">
+                        <Checkbox
+                          checked={selectedTrucks.includes(truck.id)}
+                          onCheckedChange={() => handleTruckSelection(truck.id)}
+                          className="mr-3"
+                        />
+                        <div>
+                          <p className="font-medium">
+                            {truck.tipo_camion} - {truck.capacidad}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Patente: {truck.patente_chasis}
+                            {truck.refrigerado && " • Refrigerado"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {selectedTrucks.length === 0 && (
+                  <p className="text-sm text-red-500 mt-2">
+                    Debes seleccionar al menos un camión
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="origen_provincia"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Lugar donde tendrá el camión disponible *</FormLabel>
+                          <FormControl>
+                            <MapLocationInput
+                              id="origen_provincia"
+                              label=""
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Ingrese la ubicación donde estará disponible el camión"
+                              required
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="space-y-2">
+                      <Label>Radio de kilometros</Label>
+                      <div className="pt-4">
+                        <Controller
+                          control={form.control}
+                          name="radio_km"
+                          render={({ field }) => (
+                            <div className="space-y-3">
+                              <Slider
+                                value={[field.value]}
+                                min={0}
+                                max={500}
+                                step={10}
+                                onValueChange={(vals) => field.onChange(vals[0])}
+                              />
+                              <div className="flex justify-between">
+                                <span className="text-sm">{field.value} km</span>
+                                <span className="text-sm text-muted-foreground">
+                                  Max: 500km
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Disponibilidad</Label>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="fecha_permanente"
+                            checked={form.watch("fecha_permanente")}
+                            onCheckedChange={(checked) => {
+                              form.setValue("fecha_permanente", checked === true);
+                            }}
+                          />
+                          <label
+                            htmlFor="fecha_permanente"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Tengo flota permanente aquí
+                          </label>
+                        </div>
+                        
+                        {!isPermanent && (
+                          <div className="mt-4 space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="fecha_disponible_desde"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Disponible desde *</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="date"
+                                      min={format(new Date(), "yyyy-MM-dd")}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="fecha_disponible_hasta"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Disponible hasta</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="date"
+                                      min={form.watch("fecha_disponible_desde") || format(new Date(), "yyyy-MM-dd")}
+                                      {...field}
+                                      value={field.value || ""}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="observaciones"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Observaciones</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Agregue información adicional sobre su disponibilidad..."
+                              className="resize-none"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Por ejemplo: disponibilidad, tipo de cargas, etc.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="pt-4">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loading || selectedTrucks.length === 0}
+                      >
+                        {loading && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        {loading ? "Publicando..." : "Publicar disponibilidad"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </form>
+          </Form>
+        </div>
+
+        <div className="hidden lg:block">
+          <Card>
+            <CardHeader>
+              <CardTitle>Información</CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-sm max-w-none">
+              <p>
+                Al publicar la disponibilidad de tu camión, estás 
+                permitiendo que los dadores de carga puedan encontrarte
+                cuando busquen transportes disponibles.
+              </p>
+              <h4>Consejos</h4>
+              <ul className="space-y-1">
+                <li>Se específico con tu ubicación para mejor visibilidad.</li>
+                <li>Establece el radio de kilómetros adecuado según tu disponibilidad para desplazarte.</li>
+                <li>Actualiza tu disponibilidad regularmente.</li>
+                <li>Incluye información relevante en las observaciones.</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 
