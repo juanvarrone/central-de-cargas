@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { createThumbnail } from "@/utils/imageUtils";
 
 const truckSchema = z.object({
   tipo_camion: z.string().min(1, "El tipo de camión es requerido"),
@@ -182,10 +183,21 @@ const AgregarCamion = () => {
       // Upload photos and get URLs
       let fotoChasisUrl = null;
       let fotoAcopladoUrl = null;
+      let fotoChasisThumbnailUrl = null;
       
       if (fotoChassis) {
         const filePath = `${basePath}/chasis_${fotoChassis.name}`;
         fotoChasisUrl = await uploadPhoto(fotoChassis, filePath);
+        
+        // Generate and upload thumbnail
+        try {
+          const thumbnail = await createThumbnail(fotoChassis, 120);
+          const thumbnailPath = `${basePath}/thumb_chasis_${fotoChassis.name}`;
+          fotoChasisThumbnailUrl = await uploadPhoto(thumbnail, thumbnailPath);
+        } catch (thumbnailError) {
+          console.error("Error creating thumbnail:", thumbnailError);
+          // Continue without thumbnail if it fails
+        }
       }
       
       if (fotoAcoplado) {
@@ -205,6 +217,7 @@ const AgregarCamion = () => {
           patente_acoplado: data.patente_acoplado || null,
           foto_chasis: fotoChasisUrl,
           foto_acoplado: fotoAcopladoUrl,
+          foto_chasis_thumbnail: fotoChasisThumbnailUrl,
         });
       
       if (error) {

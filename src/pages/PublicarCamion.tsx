@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Truck, AlertCircle } from "lucide-react";
+import { Loader2, Truck, AlertCircle, Plus, Info } from "lucide-react";
 import { useTruckSubmission } from "@/hooks/useTruckSubmission";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,6 +26,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import MapLocationInput from "@/components/MapLocationInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 interface UserTruck {
   id: string;
@@ -34,6 +39,8 @@ interface UserTruck {
   capacidad: string;
   refrigerado: boolean;
   patente_chasis: string;
+  foto_chasis?: string | null;
+  foto_chasis_thumbnail?: string | null;
 }
 
 const PublicarCamion = () => {
@@ -98,7 +105,7 @@ const PublicarCamion = () => {
 
         const { data: trucks, error: trucksError } = await supabase
           .from("trucks")
-          .select("id, tipo_camion, capacidad, refrigerado, patente_chasis")
+          .select("id, tipo_camion, capacidad, refrigerado, patente_chasis, foto_chasis, foto_chasis_thumbnail")
           .eq("user_id", sessionData.session.user.id);
 
         if (trucksError) {
@@ -249,6 +256,15 @@ const PublicarCamion = () => {
     );
   }
 
+  // Tips for each section
+  const tips = {
+    location: "Sé específico con tu ubicación para mejor visibilidad.",
+    radius: "Establece el radio de kilómetros adecuado según tu disponibilidad para desplazarte.",
+    availability: "Marca esta opción si tienes camiones disponibles de forma permanente en esta ubicación.",
+    date: "Actualiza tu disponibilidad regularmente.",
+    observations: "Incluye información relevante que los dadores de carga deberían saber.",
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center mb-6">
@@ -262,34 +278,55 @@ const PublicarCamion = () => {
         <h1 className="text-2xl font-bold">Publicar Disponibilidad de Camión</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <Card className="mb-6">
-            <CardHeader>
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex justify-between items-center">
               <CardTitle>Selecciona tus camiones</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Selecciona uno o más camiones que estarán disponibles en la ubicación especificada.
-                </p>
-                <div className="space-y-2">
-                  {userTrucks.map((truck) => (
-                    <div
-                      key={truck.id}
-                      className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                        selectedTrucks.includes(truck.id)
-                          ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:border-primary/50"
-                      }`}
-                      onClick={() => handleTruckSelection(truck.id)}
-                    >
-                      <div className="flex items-center">
-                        <Checkbox
-                          checked={selectedTrucks.includes(truck.id)}
-                          onCheckedChange={() => handleTruckSelection(truck.id)}
-                          className="mr-3"
-                        />
+              <Button 
+                onClick={() => navigate("/agregar-camion")}
+                size="sm" 
+                variant="outline"
+                className="flex items-center"
+              >
+                <Plus className="mr-1 h-4 w-4" /> Agregar camión
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Selecciona uno o más camiones que estarán disponibles en la ubicación especificada.
+              </p>
+              <div className="space-y-2">
+                {userTrucks.map((truck) => (
+                  <div
+                    key={truck.id}
+                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                      selectedTrucks.includes(truck.id)
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 hover:border-primary/50"
+                    }`}
+                    onClick={() => handleTruckSelection(truck.id)}
+                  >
+                    <div className="flex items-center">
+                      <Checkbox
+                        checked={selectedTrucks.includes(truck.id)}
+                        onCheckedChange={() => handleTruckSelection(truck.id)}
+                        className="mr-3"
+                      />
+                      <div className="flex items-center flex-1">
+                        {(truck.foto_chasis_thumbnail || truck.foto_chasis) ? (
+                          <img 
+                            src={truck.foto_chasis_thumbnail || truck.foto_chasis} 
+                            alt={`Camión ${truck.patente_chasis}`} 
+                            className="w-12 h-12 object-cover rounded-md mr-3"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center mr-3">
+                            <Truck className="h-6 w-6 text-gray-400" />
+                          </div>
+                        )}
                         <div>
                           <p className="font-medium">
                             {truck.tipo_camion} - {truck.capacidad}
@@ -301,28 +338,42 @@ const PublicarCamion = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-                {selectedTrucks.length === 0 && (
-                  <p className="text-sm text-red-500 mt-2">
-                    Debes seleccionar al menos un camión
-                  </p>
-                )}
+                  </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+              {selectedTrucks.length === 0 && (
+                <p className="text-sm text-red-500 mt-2">
+                  Debes seleccionar al menos un camión
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-6">
+                  <TooltipProvider>
                     <FormField
                       control={form.control}
                       name="origen_provincia"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Lugar donde tendrá el camión disponible *</FormLabel>
+                          <div className="flex items-center">
+                            <FormLabel>Lugar donde tendrá el camión disponible *</FormLabel>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" className="p-0 h-auto ml-2">
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{tips.location}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                           <FormControl>
                             <MapLocationInput
                               id="origen_provincia"
@@ -339,7 +390,19 @@ const PublicarCamion = () => {
                     />
 
                     <div className="space-y-2">
-                      <Label>Radio de kilometros</Label>
+                      <div className="flex items-center">
+                        <Label>Radio de kilometros</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" className="p-0 h-auto ml-2">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{tips.radius}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <div className="pt-4">
                         <Controller
                           control={form.control}
@@ -366,7 +429,19 @@ const PublicarCamion = () => {
                     </div>
 
                     <div className="space-y-4">
-                      <Label>Disponibilidad</Label>
+                      <div className="flex items-center">
+                        <Label>Disponibilidad</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" className="p-0 h-auto ml-2">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{tips.availability}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
                           <Checkbox
@@ -391,7 +466,19 @@ const PublicarCamion = () => {
                               name="fecha_disponible_desde"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Disponible desde *</FormLabel>
+                                  <div className="flex items-center">
+                                    <FormLabel>Disponible desde *</FormLabel>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="ghost" className="p-0 h-auto ml-2">
+                                          <Info className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{tips.date}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </div>
                                   <FormControl>
                                     <Input
                                       type="date"
@@ -432,7 +519,19 @@ const PublicarCamion = () => {
                       name="observaciones"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Observaciones</FormLabel>
+                          <div className="flex items-center">
+                            <FormLabel>Observaciones</FormLabel>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" className="p-0 h-auto ml-2">
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{tips.observations}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                           <FormControl>
                             <Textarea
                               placeholder="Agregue información adicional sobre su disponibilidad..."
@@ -447,47 +546,25 @@ const PublicarCamion = () => {
                         </FormItem>
                       )}
                     />
+                  </TooltipProvider>
 
-                    <div className="pt-4">
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={loading || selectedTrucks.length === 0}
-                      >
-                        {loading && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        {loading ? "Publicando..." : "Publicar disponibilidad"}
-                      </Button>
-                    </div>
+                  <div className="pt-4">
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={loading || selectedTrucks.length === 0}
+                    >
+                      {loading && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {loading ? "Publicando..." : "Publicar disponibilidad"}
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </form>
-          </Form>
-        </div>
-
-        <div className="hidden lg:block">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-sm max-w-none">
-              <p>
-                Al publicar la disponibilidad de tu camión, estás 
-                permitiendo que los dadores de carga puedan encontrarte
-                cuando busquen transportes disponibles.
-              </p>
-              <h4>Consejos</h4>
-              <ul className="space-y-1">
-                <li>Se específico con tu ubicación para mejor visibilidad.</li>
-                <li>Establece el radio de kilómetros adecuado según tu disponibilidad para desplazarte.</li>
-                <li>Actualiza tu disponibilidad regularmente.</li>
-                <li>Incluye información relevante en las observaciones.</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+                </div>
+              </CardContent>
+            </Card>
+          </form>
+        </Form>
       </div>
     </div>
   );
