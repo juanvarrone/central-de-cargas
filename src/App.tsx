@@ -29,7 +29,7 @@ import Layout from "./components/layout";
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+    <ThemeProvider attribute="class" defaultTheme="light" storageKey="vite-ui-theme">
       <AuthProvider>
         <BrowserRouter>
           <Layout>

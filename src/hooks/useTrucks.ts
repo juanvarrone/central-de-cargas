@@ -11,6 +11,7 @@ export interface Truck {
   patente_acoplado: string | null;
   foto_chasis: string | null;
   foto_acoplado: string | null;
+  foto_chasis_thumbnail: string | null;
   created_at: string;
   user_id: string;
 }
