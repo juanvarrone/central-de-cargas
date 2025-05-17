@@ -56,7 +56,14 @@ export const useTrucks = () => {
         }
         
         console.log("Trucks data:", data);
-        setTrucks(data || []);
+        
+        // Transform data to ensure it includes foto_chasis_thumbnail (which might be null)
+        const truckData: Truck[] = data?.map((truck: any) => ({
+          ...truck,
+          foto_chasis_thumbnail: truck.foto_chasis_thumbnail || null
+        })) || [];
+        
+        setTrucks(truckData);
       } catch (err: any) {
         console.error('Error fetching trucks:', err);
         setError(err.message || 'Error al cargar los camiones');

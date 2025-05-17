@@ -513,6 +513,7 @@ export type Database = {
           created_at: string
           foto_acoplado: string | null
           foto_chasis: string | null
+          foto_chasis_thumbnail: string | null
           id: string
           patente_acoplado: string | null
           patente_chasis: string
@@ -526,6 +527,7 @@ export type Database = {
           created_at?: string
           foto_acoplado?: string | null
           foto_chasis?: string | null
+          foto_chasis_thumbnail?: string | null
           id?: string
           patente_acoplado?: string | null
           patente_chasis: string
@@ -539,6 +541,7 @@ export type Database = {
           created_at?: string
           foto_acoplado?: string | null
           foto_chasis?: string | null
+          foto_chasis_thumbnail?: string | null
           id?: string
           patente_acoplado?: string | null
           patente_chasis?: string
