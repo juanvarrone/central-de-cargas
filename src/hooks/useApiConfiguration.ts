@@ -33,7 +33,7 @@ export const useApiConfiguration = (configKey: string) => {
         if (data) {
           setConfig({
             key: data.key,
-            value: data.key, // Usando el campo 'key' como valor de la API key
+            value: data.value || "", // Use the value field for the actual API key
             url: data.url
           });
         } else {

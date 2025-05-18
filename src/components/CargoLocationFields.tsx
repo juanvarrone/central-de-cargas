@@ -1,8 +1,8 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { useEffect, useRef } from "react";
+import { useApiConfiguration } from "@/hooks/useApiConfiguration";
 
 interface CargoLocationFieldsProps {
   form: UseFormReturn<any>;
@@ -17,9 +17,10 @@ const CargoLocationFields = ({
 }: CargoLocationFieldsProps) => {
   const origenRef = useRef<HTMLInputElement>(null);
   const destinoRef = useRef<HTMLInputElement>(null);
+  const { config } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
 
   useEffect(() => {
-    if (!window.google) return;
+    if (!window.google || !config?.value) return;
 
     const setupAutocomplete = (inputRef: HTMLInputElement | null, onPlaceSelect: (value: string) => void, fieldType: 'origen' | 'destino') => {
       if (!inputRef) return;
@@ -85,7 +86,7 @@ const CargoLocationFields = ({
 
     setupAutocomplete(origenRef.current, onOrigenChange, 'origen');
     setupAutocomplete(destinoRef.current, onDestinoChange, 'destino');
-  }, [onOrigenChange, onDestinoChange, form]);
+  }, [onOrigenChange, onDestinoChange, form, config]);
 
   return (
     <div className="space-y-6">
