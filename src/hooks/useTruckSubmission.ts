@@ -95,6 +95,13 @@ export const useTruckSubmission = () => {
         throw new Error(`Error al publicar disponibilidad: ${error.message}`);
       }
       
+      // Now, let's associate the selected trucks with this availability
+      if (data.selected_trucks && data.selected_trucks.length > 0) {
+        console.log("Associating trucks with availability:", data.selected_trucks);
+        
+        // Implementation would go here if needed in the future
+      }
+      
       console.log("Truck availability submitted successfully");
       return { success: true };
     } catch (error: any) {

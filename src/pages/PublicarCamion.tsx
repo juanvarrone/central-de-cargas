@@ -170,6 +170,9 @@ const PublicarCamion = () => {
       form.reset();
       setSelectedTrucks([]);
       
+      // Reset loading state immediately
+      setLoading(false);
+      
       // Redirect after a short delay
       setTimeout(() => {
         navigate("/buscar-camiones");
@@ -181,7 +184,7 @@ const PublicarCamion = () => {
         description: error.message || "Error al publicar disponibilidad",
         variant: "destructive",
       });
-    } finally {
+      // Make sure loading is set to false on error
       setLoading(false);
     }
   };
@@ -310,11 +313,19 @@ const PublicarCamion = () => {
                     onClick={() => handleTruckSelection(truck.id)}
                   >
                     <div className="flex items-center">
-                      <Checkbox
-                        checked={selectedTrucks.includes(truck.id)}
-                        onCheckedChange={() => handleTruckSelection(truck.id)}
+                      <div 
                         className="mr-3"
-                      />
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTruckSelection(truck.id);
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedTrucks.includes(truck.id)}
+                          onCheckedChange={() => handleTruckSelection(truck.id)}
+                          className="pointer-events-auto"
+                        />
+                      </div>
                       <div className="flex items-center flex-1">
                         {(truck.foto_chasis_thumbnail || truck.foto_chasis) ? (
                           <img 

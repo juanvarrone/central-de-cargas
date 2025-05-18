@@ -24,11 +24,25 @@ interface TruckCardProps {
 const TruckCard = ({ truck, onSelect, isSelected }: TruckCardProps) => {
   const [imageOpen, setImageOpen] = useState(false);
   
+  const handleCardClick = () => {
+    if (onSelect) {
+      onSelect(truck.id);
+    }
+  };
+  
+  // Prevent checkbox click from triggering card click
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Stop event propagation
+    if (onSelect) {
+      onSelect(truck.id);
+    }
+  };
+  
   return (
     <>
       <Card 
         className={`cursor-pointer transition-colors ${isSelected ? 'border-primary bg-primary/5' : ''}`}
-        onClick={() => onSelect && onSelect(truck.id)}
+        onClick={handleCardClick}
       >
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
