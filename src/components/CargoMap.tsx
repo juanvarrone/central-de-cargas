@@ -1,6 +1,8 @@
 
 import { GoogleMap, LoadScript, Marker, Libraries } from "@react-google-maps/api";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useApiConfiguration } from "@/hooks/useApiConfiguration";
 
 type Coordinates = {
   lat: number;
@@ -31,6 +33,14 @@ const CargoMap = ({
   };
 
   const libraries: Libraries = useMemo(() => ["places"], []);
+  const { config, loading: apiKeyLoading } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
+  const [mapApiKey, setMapApiKey] = useState<string>("");
+
+  useEffect(() => {
+    if (config?.value) {
+      setMapApiKey(config.value);
+    }
+  }, [config]);
 
   const calculateDistance = () => {
     if (!origenCoords || !destinoCoords) return null;
@@ -69,10 +79,31 @@ const CargoMap = ({
     },
   });
 
+  if (apiKeyLoading) {
+    return (
+      <div className="flex items-center justify-center h-[300px] bg-gray-100 rounded-md">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Cargando mapa...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!mapApiKey) {
+    return (
+      <div className="flex items-center justify-center h-[300px] bg-gray-100 rounded-md">
+        <p className="text-sm text-muted-foreground">
+          No se ha configurado la API key de Google Maps.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <LoadScript 
-        googleMapsApiKey="AIzaSyD8ns70mGT3vZSmWPw7YOIduUiqB5RAl8g"
+        googleMapsApiKey={mapApiKey}
         libraries={libraries}
       >
         <GoogleMap

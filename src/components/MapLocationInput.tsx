@@ -5,6 +5,7 @@ import { Label } from "./ui/label";
 import { usePlacesAutocomplete } from "@/utils/geocoding";
 import { Script } from "./ui/script";
 import { Loader2 } from "lucide-react";
+import { useApiConfiguration } from "@/hooks/useApiConfiguration";
 
 interface MapLocationInputProps {
   id: string;
@@ -29,6 +30,14 @@ const MapLocationInput = ({
   const [googleLoaded, setGoogleLoaded] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(true);
   const { place } = usePlacesAutocomplete(inputRef);
+  const { config, loading: apiKeyLoading } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
+  const [mapApiKey, setMapApiKey] = useState<string>("");
+
+  useEffect(() => {
+    if (config?.value) {
+      setMapApiKey(config.value);
+    }
+  }, [config]);
 
   useEffect(() => {
     // When a place is selected, update the input value
@@ -45,9 +54,9 @@ const MapLocationInput = ({
 
   return (
     <div className={`relative ${className}`}>
-      {!googleLoaded && (
+      {!googleLoaded && mapApiKey && (
         <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyBfn7RKrw6hnkvwTyn4Say_nNtTeWrD-rg&libraries=places`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${mapApiKey}&libraries=places`}
           onLoad={handleScriptLoad}
         />
       )}
@@ -65,14 +74,20 @@ const MapLocationInput = ({
           placeholder={placeholder}
           className="w-full"
           required={required}
+          disabled={apiKeyLoading || !mapApiKey}
         />
 
-        {googleLoading && (
+        {(googleLoading || apiKeyLoading) && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             <Loader2 className="h-4 w-4 animate-spin" />
           </div>
         )}
       </div>
+      {!mapApiKey && !apiKeyLoading && (
+        <p className="text-xs text-red-500 mt-1">
+          No se ha configurado la API key de Google Maps.
+        </p>
+      )}
     </div>
   );
 };
