@@ -29,7 +29,7 @@ const GoogleMapsSettings = () => {
         if (error) throw error;
 
         if (data) {
-          setApiKey(data.name); // La API key se guarda en el campo 'name'
+          setApiKey(data.key); // Usando el campo 'key' en lugar de 'name'
           setDescription(data.description || "");
         }
       } catch (error: any) {
@@ -65,7 +65,7 @@ const GoogleMapsSettings = () => {
         const { error: updateError } = await supabase
           .from("api_configurations")
           .update({
-            name: apiKey,
+            key: apiKey, // Guardando la API key en el campo 'key'
             description: description,
           })
           .eq("id", existingConfig.id);
@@ -75,8 +75,8 @@ const GoogleMapsSettings = () => {
         const { error: insertError } = await supabase
           .from("api_configurations")
           .insert({
-            key: "GOOGLE_MAPS_API_KEY",
-            name: apiKey,
+            key: apiKey, // Guardando la API key en el campo 'key'
+            name: "Google Maps API Key", // Usamos 'name' como un título descriptivo
             description: description,
             url: "https://maps.googleapis.com/maps/api/js",
           });
