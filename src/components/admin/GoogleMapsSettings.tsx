@@ -9,6 +9,18 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+// Define the type for the data structure returned from the database
+interface ApiConfiguration {
+  id: string;
+  key: string;
+  value?: string | null;
+  name: string;
+  description?: string | null;
+  url?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const GoogleMapsSettings = () => {
   const [apiKey, setApiKey] = useState("");
   const [description, setDescription] = useState("");
@@ -29,8 +41,9 @@ const GoogleMapsSettings = () => {
         if (error) throw error;
 
         if (data) {
-          setApiKey(data.value || ""); // Use the value field for the API key
-          setDescription(data.description || "");
+          const config = data as ApiConfiguration;
+          setApiKey(config.value || ""); // Use the value field for the API key
+          setDescription(config.description || "");
         }
       } catch (error: any) {
         console.error("Error al cargar la API key de Google Maps:", error);
