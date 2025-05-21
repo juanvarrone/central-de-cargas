@@ -21,6 +21,8 @@ export const useApiConfiguration = (configKey: string) => {
         setLoading(true);
         console.log(`Fetching API configuration for key: ${configKey}`);
         
+        // Remove any filters that might be applying auth.uid() checks since configurations
+        // should be accessible to all users regardless of login status
         const { data, error } = await supabase
           .from('api_configurations')
           .select('*')

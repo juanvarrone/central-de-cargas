@@ -54,23 +54,34 @@ const Premium = () => {
     const fetchSettings = async () => {
       try {
         setLoading(true);
+        console.log("Fetching premium module settings...");
+        
+        // Fetch the premium module without auth filters to ensure all users can see it
         const { data, error } = await supabase
           .from("app_modules")
           .select("*")
           .eq("name", "premium_subscription")
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching premium settings:", error);
+          throw error;
+        }
 
+        console.log("Premium module data:", data);
+        
         const moduleData = data as AppModule;
         
         if (moduleData?.settings) {
+          console.log("Premium module settings:", moduleData.settings);
           setBankInfo({
             bankName: moduleData.settings.bankName || "",
             accountName: moduleData.settings.accountName || "",
             cbu: moduleData.settings.cbu || "",
             alias: moduleData.settings.alias || "",
           });
+        } else {
+          console.log("No settings found for premium module");
         }
       } catch (error) {
         console.error("Error fetching premium settings:", error);
