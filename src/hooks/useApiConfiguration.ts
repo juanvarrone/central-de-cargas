@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ApiConfig {
   key: string;
-  value: string;
+  value: string | null;
   url?: string | null;
 }
 
@@ -33,7 +33,7 @@ export const useApiConfiguration = (configKey: string) => {
         if (data) {
           setConfig({
             key: data.key,
-            value: data.value || "", // Use the value field for the actual API key
+            value: data.value, // Use the value field for the actual API key
             url: data.url
           });
         } else {

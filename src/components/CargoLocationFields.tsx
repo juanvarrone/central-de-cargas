@@ -21,7 +21,7 @@ const CargoLocationFields = ({
 
   useEffect(() => {
     if (!window.google || !config?.value) return;
-
+    
     const setupAutocomplete = (inputRef: HTMLInputElement | null, onPlaceSelect: (value: string) => void, fieldType: 'origen' | 'destino') => {
       if (!inputRef) return;
 
