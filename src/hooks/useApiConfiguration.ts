@@ -19,6 +19,7 @@ export const useApiConfiguration = (configKey: string) => {
     const fetchConfig = async () => {
       try {
         setLoading(true);
+        console.log(`Fetching API configuration for key: ${configKey}`);
         
         const { data, error } = await supabase
           .from('api_configurations')
@@ -27,15 +28,19 @@ export const useApiConfiguration = (configKey: string) => {
           .maybeSingle();
 
         if (error) {
+          console.error(`Error fetching configuration for ${configKey}:`, error);
           throw error;
         }
 
+        console.log(`Config data for ${configKey}:`, data);
+        
         if (data) {
           setConfig({
             key: data.key,
-            value: data.value, // Use the value field for the actual API key
+            value: data.value, // Usar el campo value para la API key
             url: data.url
           });
+          console.log(`Configuration loaded for ${configKey}, value:`, data.value);
         } else {
           console.warn(`No se encontró configuración para la clave: ${configKey}`);
         }

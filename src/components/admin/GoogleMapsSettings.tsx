@@ -32,18 +32,27 @@ const GoogleMapsSettings = () => {
     const fetchApiKey = async () => {
       try {
         setLoading(true);
+        console.log("Fetching Google Maps API Key...");
         const { data, error } = await supabase
           .from("api_configurations")
           .select("*")
           .eq("key", "GOOGLE_MAPS_API_KEY")
           .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching API key:", error);
+          throw error;
+        }
+        
+        console.log("API configuration data:", data);
 
         if (data) {
           const config = data as ApiConfiguration;
           setApiKey(config.value || ""); // Use the value field for the API key
           setDescription(config.description || "");
+          console.log("Loaded API key:", config.value);
+        } else {
+          console.log("No Google Maps API Key configuration found");
         }
       } catch (error: any) {
         console.error("Error al cargar la API key de Google Maps:", error);
@@ -63,6 +72,7 @@ const GoogleMapsSettings = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
+      console.log("Saving API key:", apiKey);
       
       // Verificar si ya existe la configuración
       const { data: existingConfig, error: checkError } = await supabase
@@ -75,22 +85,24 @@ const GoogleMapsSettings = () => {
 
       // Actualizar o insertar según corresponda
       if (existingConfig) {
+        console.log("Updating existing configuration with ID:", existingConfig.id);
         const { error: updateError } = await supabase
           .from("api_configurations")
           .update({
-            value: apiKey, // Save the API key in the value field
+            value: apiKey, // Guardar la API key en el campo value
             description: description,
           })
           .eq("id", existingConfig.id);
 
         if (updateError) throw updateError;
       } else {
+        console.log("Creating new configuration");
         const { error: insertError } = await supabase
           .from("api_configurations")
           .insert({
-            key: "GOOGLE_MAPS_API_KEY", // This is the identifier
-            value: apiKey, // This is the actual API key value
-            name: "Google Maps API Key", // A descriptive name
+            key: "GOOGLE_MAPS_API_KEY", // Este es el identificador
+            value: apiKey, // Este es el valor real de la API key
+            name: "Google Maps API Key", // Un nombre descriptivo
             description: description,
             url: "https://maps.googleapis.com/maps/api/js",
           });
@@ -134,6 +146,9 @@ const GoogleMapsSettings = () => {
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Ingrese su API Key de Google Maps"
               />
+              <p className="text-xs text-muted-foreground">
+                Esta API key se almacena en la columna "value" de la tabla api_configurations.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Descripción (opcional)</Label>
