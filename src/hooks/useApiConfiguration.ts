@@ -21,13 +21,14 @@ export const useApiConfiguration = (configKey: string) => {
         setLoading(true);
         console.log(`Fetching API configuration for key: ${configKey}`);
         
-        // Remove any filters that might be applying auth.uid() checks since configurations
-        // should be accessible to all users regardless of login status
+        // With RLS policies now in place, all users can read API configurations
         const { data, error } = await supabase
           .from('api_configurations')
           .select('*')
           .eq('key', configKey)
           .maybeSingle();
+
+        console.log(`Query result for ${configKey}:`, { data, error });
 
         if (error) {
           console.error(`Error fetching configuration for ${configKey}:`, error);
@@ -39,15 +40,15 @@ export const useApiConfiguration = (configKey: string) => {
         if (data) {
           setConfig({
             key: data.key,
-            value: data.value, // Usar el campo value para la API key
+            value: data.value, // Using the value field for the API key
             url: data.url
           });
-          console.log(`Configuration loaded for ${configKey}, value:`, data.value);
+          console.log(`Configuration loaded for ${configKey}, value present:`, !!data.value);
         } else {
-          console.warn(`No se encontró configuración para la clave: ${configKey}`);
+          console.warn(`No configuration found for key: ${configKey}`);
         }
       } catch (err: any) {
-        console.error(`Error al obtener configuración de API ${configKey}:`, err);
+        console.error(`Error getting API configuration ${configKey}:`, err);
         setError(err);
         toast({
           title: "Error",

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -56,12 +55,14 @@ const Premium = () => {
         setLoading(true);
         console.log("Fetching premium module settings...");
         
-        // Fetch the premium module without auth filters to ensure all users can see it
+        // Fetch the premium module settings - this should be accessible to all users
         const { data, error } = await supabase
           .from("app_modules")
           .select("*")
           .eq("name", "premium_subscription")
-          .single();
+          .maybeSingle();
+
+        console.log("Premium module query result:", { data, error });
 
         if (error) {
           console.error("Error fetching premium settings:", error);
@@ -70,28 +71,38 @@ const Premium = () => {
 
         console.log("Premium module data:", data);
         
-        const moduleData = data as AppModule;
-        
-        if (moduleData?.settings) {
-          console.log("Premium module settings:", moduleData.settings);
-          setBankInfo({
-            bankName: moduleData.settings.bankName || "",
-            accountName: moduleData.settings.accountName || "",
-            cbu: moduleData.settings.cbu || "",
-            alias: moduleData.settings.alias || "",
-          });
+        if (data) {
+          const moduleData = data as AppModule;
+          console.log("Module settings found:", moduleData.settings);
+          
+          if (moduleData?.settings) {
+            setBankInfo({
+              bankName: moduleData.settings.bankName || "",
+              accountName: moduleData.settings.accountName || "",
+              cbu: moduleData.settings.cbu || "",
+              alias: moduleData.settings.alias || "",
+            });
+            console.log("Bank info updated successfully");
+          } else {
+            console.log("No settings object found in module data");
+          }
         } else {
-          console.log("No settings found for premium module");
+          console.log("No premium module found with name 'premium_subscription'");
         }
       } catch (error) {
         console.error("Error fetching premium settings:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los datos de pago",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchSettings();
-  }, []);
+  }, [toast]);
 
   const isUserPremium = profile?.subscription_tier === "premium";
 
