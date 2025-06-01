@@ -17,6 +17,7 @@ export interface Carga {
   tipo_camion: string;
   estado: string;
   tarifa: number;
+  tipo_tarifa: string;
   tarifa_aproximada?: boolean;
   fecha_carga_desde: string;
   fecha_carga_hasta?: string | null;
