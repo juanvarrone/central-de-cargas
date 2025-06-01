@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Truck, MapPin } from "lucide-react";
@@ -16,9 +15,9 @@ interface CargoListViewProps {
 const CargoListView = ({ filters }: CargoListViewProps) => {
   const [cargas, setCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [revisarTarifaStates, setRevisarTarifaStates] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [revisarTarifa, setRevisarTarifa] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [currentCargaId, setCurrentCargaId] = useState<string | null>(null);
 
@@ -63,6 +62,24 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
     fetchCargas();
   }, [filters, toast]);
 
+  const getTipoTarifaLabel = (tipo: string) => {
+    switch (tipo) {
+      case 'por_viaje':
+        return 'por viaje';
+      case 'por_tonelada':
+        return 'por tn';
+      default:
+        return '';
+    }
+  };
+
+  const handleRevisarTarifaChange = (cargaId: string, checked: boolean) => {
+    setRevisarTarifaStates(prev => ({
+      ...prev,
+      [cargaId]: checked
+    }));
+  };
+
   const handlePostularse = async (cargaId: string) => {
     try {
       // Check if user is logged in
@@ -75,6 +92,7 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
       }
 
       const userId = session.user.id;
+      const revisarTarifa = revisarTarifaStates[cargaId] || false;
       
       // Check if user has already applied to this load using raw query
       const { data: existingApplication, error: checkError } = await supabase
@@ -112,6 +130,12 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
         title: "Postulación exitosa",
         description: "Te has postulado a la carga exitosamente",
       });
+
+      // Reset the checkbox state after successful application
+      setRevisarTarifaStates(prev => ({
+        ...prev,
+        [cargaId]: false
+      }));
     } catch (error: any) {
       console.error("Error al postularse:", error);
       toast({
@@ -179,6 +203,9 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
                 </div>
                 <div className="text-sm font-semibold">
                   ${new Intl.NumberFormat("es-AR").format(carga.tarifa)}
+                  <span className="ml-1 text-xs text-gray-500">
+                    ({getTipoTarifaLabel(carga.tipo_tarifa)})
+                  </span>
                   {carga.tarifa_aproximada && (
                     <span className="ml-1 text-xs text-gray-500">(aprox.)</span>
                   )}
@@ -193,8 +220,8 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
                   <div className="flex items-center space-x-2 mb-2">
                     <Checkbox 
                       id={`revisar-tarifa-${carga.id}`}
-                      checked={revisarTarifa} 
-                      onCheckedChange={(checked) => setRevisarTarifa(checked === true)}
+                      checked={revisarTarifaStates[carga.id] || false}
+                      onCheckedChange={(checked) => handleRevisarTarifaChange(carga.id, checked === true)}
                       className="w-3 h-3"
                     />
                     <label 

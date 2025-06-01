@@ -177,6 +177,7 @@ export type Database = {
           tarifa_aproximada: boolean | null
           tipo_camion: string
           tipo_carga: string
+          tipo_tarifa: string
           updated_at: string
           usuario_id: string
         }
@@ -206,6 +207,7 @@ export type Database = {
           tarifa_aproximada?: boolean | null
           tipo_camion: string
           tipo_carga: string
+          tipo_tarifa?: string
           updated_at?: string
           usuario_id: string
         }
@@ -235,6 +237,7 @@ export type Database = {
           tarifa_aproximada?: boolean | null
           tipo_camion?: string
           tipo_carga?: string
+          tipo_tarifa?: string
           updated_at?: string
           usuario_id?: string
         }

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,17 @@ const ListadoCargas = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const getTipoTarifaLabel = (tipo: string) => {
+    switch (tipo) {
+      case 'por_viaje':
+        return 'por viaje';
+      case 'por_tonelada':
+        return 'por tn';
+      default:
+        return '';
+    }
+  };
 
   useEffect(() => {
     const fetchCargas = async () => {
@@ -109,6 +119,9 @@ const ListadoCargas = () => {
                       </div>
                       <div className="text-base font-medium">
                         ${new Intl.NumberFormat("es-AR").format(carga.tarifa)}
+                        <span className="ml-1 text-xs text-gray-500">
+                          ({getTipoTarifaLabel(carga.tipo_tarifa)})
+                        </span>
                       </div>
                     </div>
                   </CardTitle>

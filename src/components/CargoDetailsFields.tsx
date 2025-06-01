@@ -2,22 +2,14 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
+import TarifaFields from "@/components/cargo/TarifaFields";
 
 interface CargoDetailsFieldsProps {
   form: UseFormReturn<any>;
+  distanciaKm?: number;
 }
 
-const CargoDetailsFields = ({ form }: CargoDetailsFieldsProps) => {
-  const formatCurrency = (value: string) => {
-    const number = value.replace(/\D/g, "");
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(Number(number));
-  };
-
+const CargoDetailsFields = ({ form, distanciaKm }: CargoDetailsFieldsProps) => {
   return (
     <>
       <div className="grid md:grid-cols-2 gap-6">
@@ -55,47 +47,21 @@ const CargoDetailsFields = ({ form }: CargoDetailsFieldsProps) => {
         />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <FormField
-          control={form.control}
-          name="tipoCamion"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo de Camión</FormLabel>
-              <FormControl>
-                <Input placeholder="Ej: Semi, Chasis" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="tarifa"
-          render={({ field: { onChange, ...field } }) => (
-            <FormItem>
-              <FormLabel>Tarifa Propuesta</FormLabel>
-              <FormControl>
-                <Input 
-                  type="text"
-                  placeholder="$ 0"
-                  {...field}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^\d]/g, "");
-                    onChange(value);
-                    e.target.value = formatCurrency(value);
-                  }}
-                  onBlur={(e) => {
-                    const value = e.target.value.replace(/[^\d]/g, "");
-                    e.target.value = formatCurrency(value);
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="tipoCamion"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Tipo de Camión</FormLabel>
+            <FormControl>
+              <Input placeholder="Ej: Semi, Chasis" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <TarifaFields form={form} distanciaKm={distanciaKm} />
     </>
   );
 };

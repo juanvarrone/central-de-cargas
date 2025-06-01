@@ -17,6 +17,9 @@ export const cargaSchema = z.object({
   tipoCarga: z.string().min(2, "El tipo de carga es requerido"),
   tipoCamion: z.string().min(2, "El tipo de camión es requerido"),
   tarifa: z.string().min(1, "La tarifa es requerida"),
+  tipo_tarifa: z.enum(["por_viaje", "por_tonelada"], {
+    required_error: "El tipo de tarifa es requerido"
+  }),
   observaciones: z.string().optional(),
   origen_lat: z.number(),
   origen_lng: z.number(),

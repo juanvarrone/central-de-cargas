@@ -28,6 +28,7 @@ type Coordinates = {
 const CargoForm = ({ onSubmit, loading }: CargoFormProps) => {
   const [origenCoords, setOrigenCoords] = useState<Coordinates>(null);
   const [destinoCoords, setDestinoCoords] = useState<Coordinates>(null);
+  const [distanciaKm, setDistanciaKm] = useState<number | undefined>(undefined);
   const location = useLocation();
   const savedFormData = location.state?.formData || null;
 
@@ -45,6 +46,7 @@ const CargoForm = ({ onSubmit, loading }: CargoFormProps) => {
       tipoCarga: "",
       tipoCamion: "",
       tarifa: "",
+      tipo_tarifa: "por_viaje" as const,
       observaciones: "",
     },
   });
@@ -78,6 +80,33 @@ const CargoForm = ({ onSubmit, loading }: CargoFormProps) => {
       }
     }
   }, [savedFormData, form]);
+
+  // Calcular distancia cuando cambien las coordenadas
+  useEffect(() => {
+    if (origenCoords && destinoCoords) {
+      const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+        const R = 6371; // Radio de la Tierra en km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+          Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+      };
+
+      const distancia = calculateDistance(
+        origenCoords.lat, 
+        origenCoords.lng, 
+        destinoCoords.lat, 
+        destinoCoords.lng
+      );
+      setDistanciaKm(distancia);
+    } else {
+      setDistanciaKm(undefined);
+    }
+  }, [origenCoords, destinoCoords]);
 
   const handleOrigenChange = async (value: string) => {
     const coords = await geocodeAddress(value);
@@ -123,7 +152,7 @@ const CargoForm = ({ onSubmit, loading }: CargoFormProps) => {
 
         <CargoDateTypeField form={form} />
         <CargoDateFields form={form} />
-        <CargoDetailsFields form={form} />
+        <CargoDetailsFields form={form} distanciaKm={distanciaKm} />
 
         <FormField
           control={form.control}

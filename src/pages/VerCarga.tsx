@@ -103,6 +103,17 @@ const VerCarga = () => {
     }
   };
 
+  const getTipoTarifaLabel = (tipo: string) => {
+    switch (tipo) {
+      case 'por_viaje':
+        return 'por viaje completo';
+      case 'por_tonelada':
+        return 'por tonelada';
+      default:
+        return 'no especificado';
+    }
+  };
+
   const handlePostularse = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -275,14 +286,16 @@ const VerCarga = () => {
               <div>
                 <p className="text-xl font-bold">
                   {formatCurrency(carga.tarifa)}
-                  {carga.tarifa_aproximada && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">(aproximada, a definir)</span>
-                  )}
-                  {!carga.tarifa_aproximada && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">(tarifa fija)</span>
-                  )}
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    ({getTipoTarifaLabel(carga.tipo_tarifa)})
+                  </span>
                 </p>
-                <p className="text-sm text-muted-foreground">Precio total</p>
+                {carga.tarifa_aproximada && (
+                  <p className="text-sm text-muted-foreground">(tarifa aproximada, a definir)</p>
+                )}
+                {!carga.tarifa_aproximada && (
+                  <p className="text-sm text-muted-foreground">Tarifa fija</p>
+                )}
               </div>
 
               {carga.observaciones && (

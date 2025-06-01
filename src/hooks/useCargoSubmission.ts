@@ -31,6 +31,7 @@ export const useCargoSubmission = () => {
         tipo_carga: data.tipoCarga,
         tipo_camion: data.tipoCamion,
         tarifa: parseFloat(data.tarifa.replace(/\D/g, "")),
+        tipo_tarifa: data.tipo_tarifa,
         observaciones: data.observaciones || null,
         origen_lat: data.origen_lat,
         origen_lng: data.origen_lng,
