@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +26,8 @@ interface Carga {
   fecha_carga_desde: string;
   estado: string;
   created_at: string;
+  tarifa: number;
+  tipo_tarifa: string;
   postulaciones?: number;
   postulacion_asignada_id?: string | null;
   transportista?: {
@@ -71,7 +72,19 @@ const MisCargas = () => {
       // Get cargas with postulaciones count
       const { data: cargasData, error } = await supabase
         .from("cargas")
-        .select("*, postulaciones:cargas_postulaciones(count)")
+        .select(`
+          id,
+          tipo_carga,
+          origen,
+          destino,
+          fecha_carga_desde,
+          estado,
+          created_at,
+          tarifa,
+          tipo_tarifa,
+          postulacion_asignada_id,
+          cargas_postulaciones(count)
+        `)
         .eq("usuario_id", user.id)
         .order("created_at", { ascending: false });
         
@@ -80,7 +93,7 @@ const MisCargas = () => {
       // Transform the data to extract the count
       const cargasWithCounts = (cargasData || []).map((carga: any) => ({
         ...carga,
-        postulaciones: carga.postulaciones?.[0]?.count || 0
+        postulaciones: carga.cargas_postulaciones?.[0]?.count || 0
       }));
       
       // For cargas with assigned postulaciones, fetch the transportista details
@@ -199,6 +212,26 @@ const MisCargas = () => {
     });
   };
 
+  const getTipoTarifaLabel = (tipo: string) => {
+    switch (tipo) {
+      case 'por_viaje':
+        return 'por viaje';
+      case 'por_tonelada':
+        return 'por tn';
+      default:
+        return '';
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center space-x-2 mb-6">
@@ -253,6 +286,7 @@ const MisCargas = () => {
                     <div className="text-sm text-muted-foreground">
                       <p>Fecha de carga: {formatDate(carga.fecha_carga_desde)}</p>
                       <p>Publicado: {formatDate(carga.created_at)}</p>
+                      <p>Tarifa: {formatCurrency(carga.tarifa)} ({getTipoTarifaLabel(carga.tipo_tarifa)})</p>
                       
                       {/* Mostrar información del transportista asignado si existe */}
                       {carga.transportista && carga.estado === "asignada" && (

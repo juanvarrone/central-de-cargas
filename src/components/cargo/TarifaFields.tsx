@@ -19,9 +19,15 @@ const TarifaFields = ({ form, distanciaKm }: TarifaFieldsProps) => {
   // Calcular tarifa por kilómetro cuando es por viaje
   useEffect(() => {
     if (tipoTarifa === "por_viaje" && tarifa && distanciaKm && distanciaKm > 0) {
+      // Eliminar todo excepto números para obtener el valor real
       const tarifaNumero = parseFloat(tarifa.replace(/\D/g, ""));
-      const tarifaCalculada = tarifaNumero / distanciaKm;
-      setTarifaPorKm(tarifaCalculada);
+      if (!isNaN(tarifaNumero) && tarifaNumero > 0) {
+        // Cálculo correcto: tarifa / kilómetros
+        const tarifaCalculada = tarifaNumero / distanciaKm;
+        setTarifaPorKm(tarifaCalculada);
+      } else {
+        setTarifaPorKm(null);
+      }
     } else {
       setTarifaPorKm(null);
     }
@@ -89,7 +95,7 @@ const TarifaFields = ({ form, distanciaKm }: TarifaFieldsProps) => {
             
             {tarifaPorKm && (
               <div className="text-sm text-muted-foreground mt-2 p-2 bg-blue-50 rounded">
-                <strong>Tarifa por km:</strong> {formatCurrency(tarifaPorKm.toString())}
+                <strong>Tarifa por km:</strong> {formatCurrency(tarifaPorKm.toFixed(2))}
                 {distanciaKm && (
                   <span className="ml-2">
                     (Distancia: {distanciaKm.toFixed(1)} km)
