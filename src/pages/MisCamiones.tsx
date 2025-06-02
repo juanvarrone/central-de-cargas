@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Truck, Plus, Loader2, AlertOctagon, Pencil, Trash } from "lucide-react";
+import { Truck, Plus, Loader2, AlertOctagon, Pencil, Trash, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -155,28 +155,40 @@ const MisCamiones = () => {
                     <p className="text-muted-foreground">{truck.capacidad}</p>
                   </div>
 
-                  <div className="pt-4 flex space-x-2">
+                  <div className="pt-4 space-y-2">
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => navigate(`/editar-camion/${truck.id}`)}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Editar
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => {
+                          if (confirm("¿Estás seguro de que deseas eliminar este camión?")) {
+                            handleDelete(truck.id);
+                          }
+                        }}
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Eliminar
+                      </Button>
+                    </div>
+                    
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="flex-1"
-                      onClick={() => navigate(`/editar-camion/${truck.id}`)}
+                      className="w-full"
+                      onClick={() => navigate(`/disponibilidades-camion/${truck.id}`)}
                     >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Editar
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => {
-                        if (confirm("¿Estás seguro de que deseas eliminar este camión?")) {
-                          handleDelete(truck.id);
-                        }
-                      }}
-                    >
-                      <Trash className="h-4 w-4 mr-2" />
-                      Eliminar
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Ver disponibilidades publicadas
                     </Button>
                   </div>
                 </div>

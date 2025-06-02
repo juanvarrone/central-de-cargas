@@ -19,8 +19,8 @@ const TarifaFields = ({ form, distanciaKm }: TarifaFieldsProps) => {
   // Calcular tarifa por kilómetro cuando es por viaje
   useEffect(() => {
     if (tipoTarifa === "por_viaje" && tarifa && distanciaKm && distanciaKm > 0) {
-      // Eliminar todo excepto números para obtener el valor real
-      const tarifaNumero = parseFloat(tarifa.replace(/\D/g, ""));
+      // Convertir a número directamente sin formatear
+      const tarifaNumero = parseFloat(tarifa.toString());
       if (!isNaN(tarifaNumero) && tarifaNumero > 0) {
         // Cálculo correcto: tarifa / kilómetros
         const tarifaCalculada = tarifaNumero / distanciaKm;
@@ -41,6 +41,15 @@ const TarifaFields = ({ form, distanciaKm }: TarifaFieldsProps) => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(Number(number));
+  };
+
+  const formatCurrencyForDisplay = (value: number) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Math.round(value));
   };
 
   return (
@@ -95,7 +104,7 @@ const TarifaFields = ({ form, distanciaKm }: TarifaFieldsProps) => {
             
             {tarifaPorKm && (
               <div className="text-sm text-muted-foreground mt-2 p-2 bg-blue-50 rounded">
-                <strong>Tarifa por km:</strong> {formatCurrency(tarifaPorKm.toFixed(2))}
+                <strong>Tarifa por km:</strong> {formatCurrencyForDisplay(tarifaPorKm)}
                 {distanciaKm && (
                   <span className="ml-2">
                     (Distancia: {distanciaKm.toFixed(1)} km)
