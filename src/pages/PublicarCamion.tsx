@@ -32,6 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger 
 } from "@/components/ui/tooltip";
+import TruckAvailabilityCard from "@/components/truck/TruckAvailabilityCard";
 
 interface UserTruck {
   id: string;
@@ -199,6 +200,11 @@ const PublicarCamion = () => {
     });
   };
 
+  const handleAvailabilityChange = () => {
+    // This will trigger a re-render of the availability cards
+    // by updating a timestamp or similar state if needed
+  };
+
   if (loadingTrucks) {
     return (
       <div className="container mx-auto py-12 px-4 flex justify-center">
@@ -281,301 +287,326 @@ const PublicarCamion = () => {
         <h1 className="text-2xl font-bold">Publicar Disponibilidad de Camión</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Selecciona tus camiones</CardTitle>
-              <Button 
-                onClick={() => navigate("/agregar-camion")}
-                size="sm" 
-                variant="outline"
-                className="flex items-center"
-              >
-                <Plus className="mr-1 h-4 w-4" /> Agregar camión
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Selecciona uno o más camiones que estarán disponibles en la ubicación especificada.
-              </p>
-              <div className="space-y-2">
-                {userTrucks.map((truck) => (
-                  <div
-                    key={truck.id}
-                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                      selectedTrucks.includes(truck.id)
-                        ? "border-primary bg-primary/5"
-                        : "border-gray-200 hover:border-primary/50"
-                    }`}
-                    onClick={() => handleTruckSelection(truck.id)}
-                  >
-                    <div className="flex items-center">
-                      <div 
-                        className="mr-3"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTruckSelection(truck.id);
-                        }}
-                      >
-                        <Checkbox
-                          checked={selectedTrucks.includes(truck.id)}
-                          onCheckedChange={() => handleTruckSelection(truck.id)}
-                          className="pointer-events-auto"
-                        />
-                      </div>
-                      <div className="flex items-center flex-1">
-                        {(truck.foto_chasis_thumbnail || truck.foto_chasis) ? (
-                          <img 
-                            src={truck.foto_chasis_thumbnail || truck.foto_chasis} 
-                            alt={`Camión ${truck.patente_chasis}`} 
-                            className="w-12 h-12 object-cover rounded-md mr-3"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center mr-3">
-                            <Truck className="h-6 w-6 text-gray-400" />
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-medium">
-                            {truck.tipo_camion} - {truck.capacidad}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Patente: {truck.patente_chasis}
-                            {truck.refrigerado && " • Refrigerado"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Truck Selection and Availability Display */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Selecciona tus camiones</CardTitle>
+                <Button 
+                  onClick={() => navigate("/agregar-camion")}
+                  size="sm" 
+                  variant="outline"
+                  className="flex items-center"
+                >
+                  <Plus className="mr-1 h-4 w-4" /> Agregar camión
+                </Button>
               </div>
-              {selectedTrucks.length === 0 && (
-                <p className="text-sm text-red-500 mt-2">
-                  Debes seleccionar al menos un camión
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Selecciona uno o más camiones que estarán disponibles en la ubicación especificada.
                 </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-6">
-                  <TooltipProvider>
-                    <FormField
-                      control={form.control}
-                      name="origen_provincia"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center">
-                            <FormLabel>Lugar donde tendrá el camión disponible *</FormLabel>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto ml-2">
-                                  <Info className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{tips.location}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <FormControl>
-                            <MapLocationInput
-                              id="origen_provincia"
-                              label=""
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Ingrese la ubicación donde estará disponible el camión"
-                              required
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="space-y-2">
+                <div className="space-y-2">
+                  {userTrucks.map((truck) => (
+                    <div
+                      key={truck.id}
+                      className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                        selectedTrucks.includes(truck.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:border-primary/50"
+                      }`}
+                      onClick={() => handleTruckSelection(truck.id)}
+                    >
                       <div className="flex items-center">
-                        <Label>Radio de kilometros</Label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" className="p-0 h-auto ml-2">
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{tips.radius}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <div className="pt-4">
-                        <Controller
-                          control={form.control}
-                          name="radio_km"
-                          render={({ field }) => (
-                            <div className="space-y-3">
-                              <Slider
-                                value={[field.value]}
-                                min={0}
-                                max={500}
-                                step={10}
-                                onValueChange={(vals) => field.onChange(vals[0])}
-                              />
-                              <div className="flex justify-between">
-                                <span className="text-sm">{field.value} km</span>
-                                <span className="text-sm text-muted-foreground">
-                                  Max: 500km
-                                </span>
-                              </div>
+                        <div 
+                          className="mr-3"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTruckSelection(truck.id);
+                          }}
+                        >
+                          <Checkbox
+                            checked={selectedTrucks.includes(truck.id)}
+                            onCheckedChange={() => handleTruckSelection(truck.id)}
+                            className="pointer-events-auto"
+                          />
+                        </div>
+                        <div className="flex items-center flex-1">
+                          {(truck.foto_chasis_thumbnail || truck.foto_chasis) ? (
+                            <img 
+                              src={truck.foto_chasis_thumbnail || truck.foto_chasis} 
+                              alt={`Camión ${truck.patente_chasis}`} 
+                              className="w-12 h-12 object-cover rounded-md mr-3"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center mr-3">
+                              <Truck className="h-6 w-6 text-gray-400" />
                             </div>
                           )}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center">
-                        <Label>Disponibilidad</Label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" className="p-0 h-auto ml-2">
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{tips.availability}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="fecha_permanente"
-                            checked={form.watch("fecha_permanente")}
-                            onCheckedChange={(checked) => {
-                              form.setValue("fecha_permanente", checked === true);
-                            }}
-                          />
-                          <label
-                            htmlFor="fecha_permanente"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            Tengo flota permanente aquí
-                          </label>
+                          <div>
+                            <p className="font-medium">
+                              {truck.tipo_camion} - {truck.capacidad}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Patente: {truck.patente_chasis}
+                              {truck.refrigerado && " • Refrigerado"}
+                            </p>
+                          </div>
                         </div>
-                        
-                        {!isPermanent && (
-                          <div className="mt-4 space-y-4">
-                            <FormField
-                              control={form.control}
-                              name="fecha_disponible_desde"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <div className="flex items-center">
-                                    <FormLabel>Disponible desde *</FormLabel>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button variant="ghost" className="p-0 h-auto ml-2">
-                                          <Info className="h-4 w-4 text-muted-foreground" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>{tips.date}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </div>
-                                  <FormControl>
-                                    <Input
-                                      type="date"
-                                      min={format(new Date(), "yyyy-MM-dd")}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={form.control}
-                              name="fecha_disponible_hasta"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Disponible hasta</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="date"
-                                      min={form.watch("fecha_disponible_desde") || format(new Date(), "yyyy-MM-dd")}
-                                      {...field}
-                                      value={field.value || ""}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        )}
                       </div>
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="observaciones"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center">
-                            <FormLabel>Observaciones</FormLabel>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto ml-2">
-                                  <Info className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{tips.observations}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Agregue información adicional sobre su disponibilidad..."
-                              className="resize-none"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Por ejemplo: disponibilidad, tipo de cargas, etc.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TooltipProvider>
-
-                  <div className="pt-4">
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={loading || selectedTrucks.length === 0}
-                    >
-                      {loading && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      {loading ? "Publicando..." : "Publicar disponibilidad"}
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          </form>
-        </Form>
+                {selectedTrucks.length === 0 && (
+                  <p className="text-sm text-red-500 mt-2">
+                    Debes seleccionar al menos un camión
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Current Availability Display */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Disponibilidades Actuales</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Aquí puedes ver y gestionar las disponibilidades activas de tus camiones
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {userTrucks.map((truck) => (
+                <TruckAvailabilityCard
+                  key={truck.id}
+                  truck={truck}
+                  onAvailabilityChange={handleAvailabilityChange}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Form Section */}
+        <div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-6">
+                    <TooltipProvider>
+                      <FormField
+                        control={form.control}
+                        name="origen_provincia"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center">
+                              <FormLabel>Lugar donde tendrá el camión disponible *</FormLabel>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" className="p-0 h-auto ml-2">
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{tips.location}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <FormControl>
+                              <MapLocationInput
+                                id="origen_provincia"
+                                label=""
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Ingrese la ubicación donde estará disponible el camión"
+                                required
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="space-y-2">
+                        <div className="flex items-center">
+                          <Label>Radio de kilometros</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" className="p-0 h-auto ml-2">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{tips.radius}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <div className="pt-4">
+                          <Controller
+                            control={form.control}
+                            name="radio_km"
+                            render={({ field }) => (
+                              <div className="space-y-3">
+                                <Slider
+                                  value={[field.value]}
+                                  min={0}
+                                  max={500}
+                                  step={10}
+                                  onValueChange={(vals) => field.onChange(vals[0])}
+                                />
+                                <div className="flex justify-between">
+                                  <span className="text-sm">{field.value} km</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    Max: 500km
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center">
+                          <Label>Disponibilidad</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" className="p-0 h-auto ml-2">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{tips.availability}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="fecha_permanente"
+                              checked={form.watch("fecha_permanente")}
+                              onCheckedChange={(checked) => {
+                                form.setValue("fecha_permanente", checked === true);
+                              }}
+                            />
+                            <label
+                              htmlFor="fecha_permanente"
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              Tengo flota permanente aquí
+                            </label>
+                          </div>
+                          
+                          {!isPermanent && (
+                            <div className="mt-4 space-y-4">
+                              <FormField
+                                control={form.control}
+                                name="fecha_disponible_desde"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <div className="flex items-center">
+                                      <FormLabel>Disponible desde *</FormLabel>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button variant="ghost" className="p-0 h-auto ml-2">
+                                            <Info className="h-4 w-4 text-muted-foreground" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{tips.date}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </div>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        min={format(new Date(), "yyyy-MM-dd")}
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name="fecha_disponible_hasta"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Disponible hasta</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        min={form.watch("fecha_disponible_desde") || format(new Date(), "yyyy-MM-dd")}
+                                        {...field}
+                                        value={field.value || ""}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="observaciones"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center">
+                              <FormLabel>Observaciones</FormLabel>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" className="p-0 h-auto ml-2">
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{tips.observations}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Agregue información adicional sobre su disponibilidad..."
+                                className="resize-none"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Por ejemplo: disponibilidad, tipo de cargas, etc.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </TooltipProvider>
+
+                    <div className="pt-4">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loading || selectedTrucks.length === 0}
+                      >
+                        {loading && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        {loading ? "Publicando..." : "Publicar disponibilidad"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   );
