@@ -12,8 +12,12 @@ interface CargoListViewProps {
   filters: Filters;
 }
 
+interface CargaWithPostulaciones extends Carga {
+  postulaciones_count?: number;
+}
+
 const CargoListView = ({ filters }: CargoListViewProps) => {
-  const [cargas, setCargas] = useState<Carga[]>([]);
+  const [cargas, setCargas] = useState<CargaWithPostulaciones[]>([]);
   const [loading, setLoading] = useState(true);
   const [revisarTarifaStates, setRevisarTarifaStates] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
@@ -28,7 +32,10 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
         
         let query = supabase
           .from("cargas")
-          .select("*")
+          .select(`
+            *,
+            postulaciones_count:cargas_postulaciones(count)
+          `)
           .eq("estado", "disponible");
 
         if (filters.provinciaOrigen) {
@@ -67,8 +74,13 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
           return daysDifference <= 30;
         }) || [];
 
-        // Cast data to Carga[] to ensure type compatibility
-        setCargas(filteredData as unknown as Carga[]);
+        // Process the postulaciones count and cast data to CargaWithPostulaciones[]
+        const processedData = filteredData.map((carga: any) => ({
+          ...carga,
+          postulaciones_count: Array.isArray(carga.postulaciones_count) ? carga.postulaciones_count.length : 0
+        })) as CargaWithPostulaciones[];
+
+        setCargas(processedData);
       } catch (error: any) {
         console.error("Error fetching cargas:", error);
         toast({
@@ -93,6 +105,21 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
       default:
         return '';
     }
+  };
+
+  const calculateCostPerKm = (tarifa: number) => {
+    // This is a simplified calculation - estimated 800km average distance for demonstration
+    // In a real app you'd need the actual distance calculation
+    const estimatedDistance = 800; // km
+    const costPerKm = tarifa / estimatedDistance;
+    return costPerKm.toFixed(2);
+  };
+
+  const formatLocation = (ciudad?: string, provincia?: string) => {
+    const parts = [];
+    if (ciudad) parts.push(ciudad);
+    if (provincia) parts.push(provincia);
+    return parts.join(", ") || "Sin detalles";
   };
 
   const handleRevisarTarifaChange = (cargaId: string, checked: boolean) => {
@@ -197,31 +224,30 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="font-medium">{carga.origen}</span>
+                  <span className="font-medium">Origen: {formatLocation(carga.origen_ciudad, carga.origen_provincia)}</span>
                 </div>
                 <p className="text-sm text-gray-500 ml-5">
-                  {carga.origen_ciudad && carga.origen_provincia
-                    ? `${carga.origen_ciudad}, ${carga.origen_provincia}`
-                    : "Sin detalles de ubicación"}
+                  {carga.origen_detalle || "Sin detalles adicionales"}
                 </p>
               </div>
               
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="font-medium">{carga.destino}</span>
+                  <span className="font-medium">Destino: {formatLocation(carga.destino_ciudad, carga.destino_provincia)}</span>
                 </div>
                 <p className="text-sm text-gray-500 ml-5">
-                  {carga.destino_ciudad && carga.destino_provincia
-                    ? `${carga.destino_ciudad}, ${carga.destino_provincia}`
-                    : "Sin detalles de ubicación"}
+                  {carga.destino_detalle || "Sin detalles adicionales"}
                 </p>
               </div>
               
-              <div className="flex flex-col">
+              <div className="flex flex-col space-y-2">
                 <div className="flex items-center gap-2">
                   <Truck size={16} className="text-primary" />
-                  <span>{carga.tipo_camion}</span>
+                  <span className="text-sm">{carga.tipo_camion}</span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Carga:</span> {carga.tipo_carga}
                 </div>
                 <div className="text-sm font-semibold">
                   ${new Intl.NumberFormat("es-AR").format(carga.tarifa)}
@@ -231,6 +257,14 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
                   {carga.tarifa_aproximada && (
                     <span className="ml-1 text-xs text-gray-500">(aprox.)</span>
                   )}
+                </div>
+                {carga.tipo_tarifa === 'por_viaje' && (
+                  <div className="text-xs text-blue-600">
+                    ~${calculateCostPerKm(carga.tarifa)}/km
+                  </div>
+                )}
+                <div className="text-xs text-gray-500">
+                  {carga.postulaciones_count || 0} postulaciones
                 </div>
               </div>
               
