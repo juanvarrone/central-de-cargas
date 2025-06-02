@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -75,7 +74,7 @@ const DisponibilidadesCamion = () => {
         if (truckError) throw truckError;
         setTruck(truckData);
 
-        // Fetch disponibilidades for this truck
+        // Fetch disponibilidades for this truck - filter by truck_id if it exists, otherwise by user_id
         const { data: disponibilidadesData, error: disponibilidadesError } = await supabase
           .from("camiones_disponibles")
           .select(`

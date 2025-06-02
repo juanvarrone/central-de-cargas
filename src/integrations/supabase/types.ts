@@ -79,6 +79,7 @@ export type Database = {
           destino_lat: number | null
           destino_lng: number | null
           destino_provincia: string | null
+          es_permanente: boolean | null
           estado: string
           fecha_disponible_desde: string
           fecha_disponible_hasta: string | null
@@ -105,6 +106,7 @@ export type Database = {
           destino_lat?: number | null
           destino_lng?: number | null
           destino_provincia?: string | null
+          es_permanente?: boolean | null
           estado?: string
           fecha_disponible_desde: string
           fecha_disponible_hasta?: string | null
@@ -131,6 +133,7 @@ export type Database = {
           destino_lat?: number | null
           destino_lng?: number | null
           destino_provincia?: string | null
+          es_permanente?: boolean | null
           estado?: string
           fecha_disponible_desde?: string
           fecha_disponible_hasta?: string | null
