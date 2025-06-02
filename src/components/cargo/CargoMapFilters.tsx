@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Truck } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 const provinciasArgentina = [
   "Buenos Aires",
@@ -96,7 +96,8 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
           </Select>
         </div>
         
-        <div className="grow-0 min-w-40">
+        {/* Truck type filter hidden temporarily */}
+        {/* <div className="grow-0 min-w-40">
           <Label className="flex items-center gap-1 mb-1 text-sm">
             <Truck className="h-3 w-3" />
             Camión
@@ -115,7 +116,7 @@ const CargoMapFilters = ({ onFilterChange }: CargoMapFiltersProps) => {
               <SelectItem value="chasis">Chasis</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
         
         <div className="ml-auto self-end">
           <Button 

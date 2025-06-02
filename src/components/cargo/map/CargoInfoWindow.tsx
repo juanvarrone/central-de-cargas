@@ -58,7 +58,16 @@ const CargoInfoWindow = ({ selectedCarga, onClose }: CargoInfoWindowProps) => {
         fechaCargaDesde={selectedCarga.carga.fecha_carga_desde}
         fechaCargaHasta={selectedCarga.carga.fecha_carga_hasta}
         tarifa={selectedCarga.carga.tarifa}
+        tipoTarifa={selectedCarga.carga.tipo_tarifa}
+        tarifaAproximada={selectedCarga.carga.tarifa_aproximada}
         observaciones={selectedCarga.carga.observaciones}
+        // Complete origin and destination data
+        origen={selectedCarga.carga.origen}
+        origenCiudad={selectedCarga.carga.origen_ciudad}
+        origenProvincia={selectedCarga.carga.origen_provincia}
+        destino={selectedCarga.carga.destino}
+        destinoCiudad={selectedCarga.carga.destino_ciudad}
+        destinoProvincia={selectedCarga.carga.destino_provincia}
         onClose={onClose}
       />
     </InfoWindow>

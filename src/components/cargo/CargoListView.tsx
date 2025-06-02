@@ -41,12 +41,34 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
           query = query.eq("tipo_camion", filters.tipoCamion);
         }
 
+        // Extended visibility logic: show cargas until 30 days past their "hasta" date
+        const now = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+
+        // Filter cargas that are either:
+        // 1. Still within their date range (fecha_carga_hasta is null or >= today)
+        // 2. Past their date range but within 30 days of expiry
+        query = query.or(`fecha_carga_hasta.is.null,fecha_carga_hasta.gte.${now.toISOString()},fecha_carga_hasta.gte.${thirtyDaysAgo.toISOString()}`);
+
         const { data, error } = await query;
 
         if (error) throw error;
 
+        // Additional client-side filtering for cargas that are past their "hasta" date
+        // but still within 30 days (these should remain visible)
+        const filteredData = data?.filter((carga: any) => {
+          if (!carga.fecha_carga_hasta) return true; // No end date, always visible
+          
+          const cargoEndDate = new Date(carga.fecha_carga_hasta);
+          const daysDifference = Math.floor((now.getTime() - cargoEndDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Show if within date range or up to 30 days past end date
+          return daysDifference <= 30;
+        }) || [];
+
         // Cast data to Carga[] to ensure type compatibility
-        setCargas(data as unknown as Carga[]);
+        setCargas(filteredData as unknown as Carga[]);
       } catch (error: any) {
         console.error("Error fetching cargas:", error);
         toast({
