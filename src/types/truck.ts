@@ -63,7 +63,7 @@ export interface TruckAvailability {
   created_at: string;
   updated_at: string;
   es_permanente: boolean;
-  usuario?: {
+  profiles?: {
     id: string;
     full_name: string | null;
     phone_number: string | null;

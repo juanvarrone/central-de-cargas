@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,31 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Truck, MapPin, Calendar, Star, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TruckContactModal from "./TruckContactModal";
-import { TruckFilters } from "@/types/truck";
+import { TruckFilters, TruckAvailability } from "@/types/truck";
 import { useAuth } from "@/context/AuthContext";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-
-interface TruckAvailability {
-  id: string;
-  usuario_id: string;
-  origen: string;
-  origen_ciudad?: string;
-  origen_provincia?: string;
-  destino: string;
-  destino_ciudad?: string;
-  destino_provincia?: string;
-  tipo_camion: string;
-  capacidad: string;
-  refrigerado: boolean;
-  fecha_disponible_desde: string;
-  fecha_disponible_hasta?: string;
-  es_permanente: boolean;
-  profiles?: {
-    id: string;
-    full_name: string | null;
-    phone_number: string | null;
-  } | null;
-}
 
 interface TruckListViewProps {
   filters: TruckFilters;
@@ -107,7 +86,8 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
           return daysDifference <= systemConfig.camiones_extra_days;
         }) || [];
 
-        setTrucks(filteredData);
+        // Type assertion to handle the Supabase response correctly
+        setTrucks(filteredData as TruckAvailability[]);
       } catch (error: any) {
         console.error("Error fetching trucks:", error);
         toast({

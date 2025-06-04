@@ -107,7 +107,8 @@ export const useTruckMap = (filters: TruckFilters) => {
           return daysDifference <= systemConfig.camiones_extra_days;
         }) || [];
 
-        setTrucks(filteredData);
+        // Type assertion to handle the Supabase response correctly
+        setTrucks(filteredData as TruckWithLocation[]);
       } catch (error: any) {
         console.error("Error fetching trucks for map:", error);
         toast({
