@@ -28,7 +28,7 @@ interface TruckAvailability {
     id: string;
     full_name: string | null;
     phone_number: string | null;
-  };
+  } | null;
 }
 
 interface TruckListViewProps {
@@ -89,7 +89,8 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
 
         if (error) throw error;
         
-        setTrucks(data || []);
+        // Type assertion to handle the Supabase response
+        setTrucks((data || []) as TruckAvailability[]);
       } catch (error: any) {
         console.error("Error fetching trucks:", error);
         toast({

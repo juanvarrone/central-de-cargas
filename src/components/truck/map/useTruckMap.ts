@@ -27,7 +27,7 @@ export interface TruckWithLocation {
     id: string;
     full_name: string | null;
     phone_number: string | null;
-  };
+  } | null;
 }
 
 export interface SelectedTruck {
@@ -87,7 +87,8 @@ export const useTruckMap = (filters: TruckFilters) => {
 
         if (error) throw error;
         
-        setTrucks(data || []);
+        // Type assertion to handle the Supabase response
+        setTrucks((data || []) as TruckWithLocation[]);
       } catch (error: any) {
         console.error("Error fetching trucks for map:", error);
         toast({
