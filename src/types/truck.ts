@@ -37,6 +37,37 @@ export interface TruckFilters {
   refrigerado?: boolean;
 }
 
+// Raw response from Supabase query
+export interface TruckAvailabilityRaw {
+  id: string;
+  origen: string;
+  origen_detalle: string | null;
+  origen_provincia: string | null;
+  origen_ciudad: string | null;
+  origen_lat: number | null;
+  origen_lng: number | null;
+  destino: string;
+  destino_detalle: string | null;
+  destino_provincia: string | null;
+  destino_ciudad: string | null;
+  destino_lat: number | null;
+  destino_lng: number | null;
+  fecha_disponible_desde: string | null;
+  fecha_disponible_hasta: string | null;
+  tipo_camion: string;
+  capacidad: string;
+  refrigerado: boolean;
+  radio_km: number;
+  observaciones: string | null;
+  estado: string;
+  usuario_id: string;
+  created_at: string;
+  updated_at: string;
+  es_permanente: boolean;
+  profiles?: any; // This can be null, an object, or a SelectQueryError
+}
+
+// Processed interface for app use
 export interface TruckAvailability {
   id: string;
   origen: string;

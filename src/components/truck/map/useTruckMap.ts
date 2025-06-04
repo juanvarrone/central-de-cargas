@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { TruckFilters } from "@/types/truck";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { processTruckMapData } from "@/utils/dataValidation";
 
 export interface TruckWithLocation {
   id: string;
@@ -107,8 +108,9 @@ export const useTruckMap = (filters: TruckFilters) => {
           return daysDifference <= systemConfig.camiones_extra_days;
         }) || [];
 
-        // Type assertion to handle the Supabase response correctly
-        setTrucks(filteredData as TruckWithLocation[]);
+        // Process the data to handle potential Supabase query errors
+        const processedTrucks = processTruckMapData(filteredData);
+        setTrucks(processedTrucks as TruckWithLocation[]);
       } catch (error: any) {
         console.error("Error fetching trucks for map:", error);
         toast({

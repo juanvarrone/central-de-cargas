@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,9 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Truck, MapPin, Calendar, Star, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TruckContactModal from "./TruckContactModal";
-import { TruckFilters, TruckAvailability } from "@/types/truck";
+import { TruckFilters, TruckAvailability, TruckAvailabilityRaw } from "@/types/truck";
 import { useAuth } from "@/context/AuthContext";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { processTruckData } from "@/utils/dataValidation";
 
 interface TruckListViewProps {
   filters: TruckFilters;
@@ -86,8 +86,9 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
           return daysDifference <= systemConfig.camiones_extra_days;
         }) || [];
 
-        // Type assertion to handle the Supabase response correctly
-        setTrucks(filteredData as TruckAvailability[]);
+        // Process the data to handle potential Supabase query errors
+        const processedTrucks = processTruckData(filteredData as TruckAvailabilityRaw[]);
+        setTrucks(processedTrucks);
       } catch (error: any) {
         console.error("Error fetching trucks:", error);
         toast({
