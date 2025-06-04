@@ -23,7 +23,7 @@ export interface TruckWithLocation {
   fecha_disponible_desde: string;
   fecha_disponible_hasta?: string;
   es_permanente: boolean;
-  usuario?: {
+  profiles?: {
     id: string;
     full_name: string | null;
     phone_number: string | null;
@@ -55,7 +55,7 @@ export const useTruckMap = (filters: TruckFilters) => {
           .from("camiones_disponibles")
           .select(`
             *,
-            usuario:usuario_id (
+            profiles!camiones_disponibles_usuario_id_fkey (
               id,
               full_name,
               phone_number
@@ -87,8 +87,7 @@ export const useTruckMap = (filters: TruckFilters) => {
 
         if (error) throw error;
         
-        const trucksData = (data || []) as TruckWithLocation[];
-        setTrucks(trucksData);
+        setTrucks(data || []);
       } catch (error: any) {
         console.error("Error fetching trucks for map:", error);
         toast({

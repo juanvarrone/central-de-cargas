@@ -24,7 +24,7 @@ interface TruckAvailability {
   fecha_disponible_desde: string;
   fecha_disponible_hasta?: string;
   es_permanente: boolean;
-  usuario?: {
+  profiles?: {
     id: string;
     full_name: string | null;
     phone_number: string | null;
@@ -58,7 +58,7 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
           .from("camiones_disponibles")
           .select(`
             *,
-            usuario:usuario_id (
+            profiles!camiones_disponibles_usuario_id_fkey (
               id,
               full_name,
               phone_number
@@ -89,9 +89,7 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
 
         if (error) throw error;
         
-        // Cast data to ensure type safety
-        const trucksData = (data || []) as TruckAvailability[];
-        setTrucks(trucksData);
+        setTrucks(data || []);
       } catch (error: any) {
         console.error("Error fetching trucks:", error);
         toast({
@@ -130,11 +128,11 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
 
       setSelectedTruckUserId(truck.usuario_id);
       
-      if (truck.usuario) {
+      if (truck.profiles) {
         setSelectedTruckUserData({
-          full_name: truck.usuario.full_name,
-          phone_number: truck.usuario.phone_number,
-          user_id: truck.usuario.id
+          full_name: truck.profiles.full_name,
+          phone_number: truck.profiles.phone_number,
+          user_id: truck.profiles.id
         });
       } else {
         // Fetch user data if not available
