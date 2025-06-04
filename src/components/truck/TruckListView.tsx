@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,8 +6,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { Truck, MapPin, Calendar, Star, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TruckContactModal from "./TruckContactModal";
-import { TruckAvailability, TruckFilters, TruckUser } from "@/types/truck";
+import { TruckFilters } from "@/types/truck";
 import { useAuth } from "@/context/AuthContext";
+
+interface TruckAvailability {
+  id: string;
+  usuario_id: string;
+  origen: string;
+  origen_ciudad?: string;
+  origen_provincia?: string;
+  destino: string;
+  destino_ciudad?: string;
+  destino_provincia?: string;
+  tipo_camion: string;
+  capacidad: string;
+  refrigerado: boolean;
+  fecha_disponible_desde: string;
+  fecha_disponible_hasta?: string;
+  es_permanente: boolean;
+  usuario?: {
+    id: string;
+    full_name: string | null;
+    phone_number: string | null;
+  };
+}
 
 interface TruckListViewProps {
   filters: TruckFilters;
@@ -50,9 +73,6 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
         if (filters.provinciaDestino) {
           query = query.ilike("destino_provincia", `%${filters.provinciaDestino}%`);
         }
-        if (filters.tipoCamion) {
-          query = query.eq("tipo_camion", filters.tipoCamion);
-        }
         if (filters.refrigerado !== undefined) {
           query = query.eq("refrigerado", filters.refrigerado);
         }
@@ -61,12 +81,16 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
           query = query.gte("fecha_disponible_desde", filters.fecha);
         }
 
+        // Filter out expired availabilities - only show current ones
+        const now = new Date().toISOString();
+        query = query.or(`fecha_disponible_hasta.is.null,fecha_disponible_hasta.gte.${now}`);
+
         const { data, error } = await query;
 
         if (error) throw error;
         
-        // Cast data to ensure type safety (needed because of Supabase typing issues)
-        const trucksData = data as unknown as TruckAvailability[];
+        // Cast data to ensure type safety
+        const trucksData = (data || []) as TruckAvailability[];
         setTrucks(trucksData);
       } catch (error: any) {
         console.error("Error fetching trucks:", error);

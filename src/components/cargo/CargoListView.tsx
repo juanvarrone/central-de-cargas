@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Truck, MapPin } from "lucide-react";
@@ -43,9 +44,6 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
         }
         if (filters.provinciaDestino) {
           query = query.ilike("destino_provincia", `%${filters.provinciaDestino}%`);
-        }
-        if (filters.tipoCamion) {
-          query = query.eq("tipo_camion", filters.tipoCamion);
         }
 
         // Extended visibility logic: show cargas until 30 days past their "hasta" date
@@ -226,9 +224,6 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
                   <span className="font-medium">Origen: {formatLocation(carga.origen_ciudad, carga.origen_provincia)}</span>
                 </div>
-                <p className="text-sm text-gray-500 ml-5">
-                  {carga.origen_detalle || "Sin detalles adicionales"}
-                </p>
               </div>
               
               <div className="space-y-1">
@@ -236,9 +231,6 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
                   <span className="font-medium">Destino: {formatLocation(carga.destino_ciudad, carga.destino_provincia)}</span>
                 </div>
-                <p className="text-sm text-gray-500 ml-5">
-                  {carga.destino_detalle || "Sin detalles adicionales"}
-                </p>
               </div>
               
               <div className="flex flex-col space-y-2">
