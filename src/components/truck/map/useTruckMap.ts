@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { TruckFilters } from "@/types/truck";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
 
 export interface TruckWithLocation {
   id: string;
@@ -41,6 +42,7 @@ export const useTruckMap = (filters: TruckFilters) => {
   const [selectedTruck, setSelectedTruck] = useState<SelectedTruck | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const { toast } = useToast();
+  const { config: systemConfig } = useSystemConfig();
 
   const handleMapLoad = (map: google.maps.Map) => {
     setMap(map);
@@ -55,7 +57,7 @@ export const useTruckMap = (filters: TruckFilters) => {
           .from("camiones_disponibles")
           .select(`
             *,
-            profiles!camiones_disponibles_usuario_id_fkey (
+            profiles:usuario_id (
               id,
               full_name,
               phone_number
@@ -79,16 +81,33 @@ export const useTruckMap = (filters: TruckFilters) => {
           query = query.gte("fecha_disponible_desde", filters.fecha);
         }
 
-        // Filter out expired availabilities
-        const now = new Date().toISOString();
-        query = query.or(`fecha_disponible_hasta.is.null,fecha_disponible_hasta.gte.${now}`);
+        // Extended visibility logic using configurable days
+        const now = new Date();
+        const extraDaysAgo = new Date();
+        extraDaysAgo.setDate(now.getDate() - systemConfig.camiones_extra_days);
+
+        // Filter trucks that are either:
+        // 1. Still within their date range (fecha_disponible_hasta is null or >= today)
+        // 2. Past their date range but within configured extra days of expiry
+        query = query.or(`fecha_disponible_hasta.is.null,fecha_disponible_hasta.gte.${now.toISOString()},fecha_disponible_hasta.gte.${extraDaysAgo.toISOString()}`);
 
         const { data, error } = await query;
 
         if (error) throw error;
         
-        // Type assertion to handle the Supabase response
-        setTrucks((data || []) as TruckWithLocation[]);
+        // Additional client-side filtering for trucks that are past their "hasta" date
+        // but still within configured extra days
+        const filteredData = data?.filter((truck: any) => {
+          if (!truck.fecha_disponible_hasta) return true; // No end date, always visible
+          
+          const truckEndDate = new Date(truck.fecha_disponible_hasta);
+          const daysDifference = Math.floor((now.getTime() - truckEndDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Show if within date range or up to configured extra days past end date
+          return daysDifference <= systemConfig.camiones_extra_days;
+        }) || [];
+
+        setTrucks(filteredData);
       } catch (error: any) {
         console.error("Error fetching trucks for map:", error);
         toast({
@@ -102,7 +121,7 @@ export const useTruckMap = (filters: TruckFilters) => {
     };
 
     fetchTrucks();
-  }, [filters, toast]);
+  }, [filters, toast, systemConfig.camiones_extra_days]);
 
   return {
     trucks,

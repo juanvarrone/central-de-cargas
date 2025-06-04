@@ -5,6 +5,7 @@ import ApiConfiguration from "./ApiConfiguration";
 import PremiumSettings from "./PremiumSettings";
 import SystemVariables from "./SystemVariables";
 import GoogleMapsSettings from "./GoogleMapsSettings";
+import VisibilitySettings from "./VisibilitySettings";
 
 // Esta función será usada en otro archivo
 export const addGoogleMapsTabToConfigManagement = () => {
@@ -24,6 +25,7 @@ const ConfigurationManagement = () => {
           <TabsTrigger value="premium">Premium</TabsTrigger>
           <TabsTrigger value="system">Variables del Sistema</TabsTrigger>
           <TabsTrigger value="maps">Google Maps</TabsTrigger>
+          <TabsTrigger value="visibility">Visibilidad</TabsTrigger>
         </TabsList>
         
         <TabsContent value="api" className="space-y-4">
@@ -40,6 +42,10 @@ const ConfigurationManagement = () => {
         
         <TabsContent value="maps" className="space-y-4">
           <GoogleMapsSettings />
+        </TabsContent>
+        
+        <TabsContent value="visibility" className="space-y-4">
+          <VisibilitySettings />
         </TabsContent>
       </Tabs>
     </div>

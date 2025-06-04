@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Truck, MapPin } from "lucide-react";
@@ -8,6 +7,7 @@ import { Carga, Filters } from "@/types/mapa-cargas";
 import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
 
 interface CargoListViewProps {
   filters: Filters;
@@ -25,6 +25,7 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
   const navigate = useNavigate();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [currentCargaId, setCurrentCargaId] = useState<string | null>(null);
+  const { config: systemConfig } = useSystemConfig();
 
   useEffect(() => {
     const fetchCargas = async () => {
@@ -46,30 +47,30 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
           query = query.ilike("destino_provincia", `%${filters.provinciaDestino}%`);
         }
 
-        // Extended visibility logic: show cargas until 30 days past their "hasta" date
+        // Extended visibility logic using configurable days
         const now = new Date();
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(now.getDate() - 30);
+        const extraDaysAgo = new Date();
+        extraDaysAgo.setDate(now.getDate() - systemConfig.cargas_extra_days);
 
         // Filter cargas that are either:
         // 1. Still within their date range (fecha_carga_hasta is null or >= today)
-        // 2. Past their date range but within 30 days of expiry
-        query = query.or(`fecha_carga_hasta.is.null,fecha_carga_hasta.gte.${now.toISOString()},fecha_carga_hasta.gte.${thirtyDaysAgo.toISOString()}`);
+        // 2. Past their date range but within configured extra days of expiry
+        query = query.or(`fecha_carga_hasta.is.null,fecha_carga_hasta.gte.${now.toISOString()},fecha_carga_hasta.gte.${extraDaysAgo.toISOString()}`);
 
         const { data, error } = await query;
 
         if (error) throw error;
 
         // Additional client-side filtering for cargas that are past their "hasta" date
-        // but still within 30 days (these should remain visible)
+        // but still within configured extra days
         const filteredData = data?.filter((carga: any) => {
           if (!carga.fecha_carga_hasta) return true; // No end date, always visible
           
           const cargoEndDate = new Date(carga.fecha_carga_hasta);
           const daysDifference = Math.floor((now.getTime() - cargoEndDate.getTime()) / (1000 * 60 * 60 * 24));
           
-          // Show if within date range or up to 30 days past end date
-          return daysDifference <= 30;
+          // Show if within date range or up to configured extra days past end date
+          return daysDifference <= systemConfig.cargas_extra_days;
         }) || [];
 
         // Process the postulaciones count and cast data to CargaWithPostulaciones[]
@@ -92,7 +93,7 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
     };
 
     fetchCargas();
-  }, [filters, toast]);
+  }, [filters, toast, systemConfig.cargas_extra_days]);
 
   const getTipoTarifaLabel = (tipo: string) => {
     switch (tipo) {
