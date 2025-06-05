@@ -34,3 +34,29 @@ export const processTruckMapData = (rawTrucks: any[]): any[] => {
       profiles: isValidProfilesData(truck.profiles) ? truck.profiles : null
     }));
 };
+
+// Utility function to apply client-side date filtering with fallback values
+export const applyDateFilter = (items: any[], dateField: string, extraDays: number = 30): any[] => {
+  const now = new Date();
+  
+  return items.filter((item: any) => {
+    const endDateField = item[dateField];
+    if (!endDateField) return true; // No end date, always visible
+    
+    const endDate = new Date(endDateField);
+    const daysDifference = Math.floor((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Show if within date range or up to configured extra days past end date
+    return daysDifference <= extraDays;
+  });
+};
+
+// Safe database query builder for date-based visibility
+export const buildVisibilityQuery = (baseQuery: any, dateField: string, extraDays: number = 30) => {
+  const now = new Date();
+  const extraDaysAgo = new Date();
+  extraDaysAgo.setDate(now.getDate() - extraDays);
+
+  // Build a more robust query that handles null dates and uses fallback
+  return baseQuery.or(`${dateField}.is.null,${dateField}.gte.${now.toISOString()},${dateField}.gte.${extraDaysAgo.toISOString()}`);
+};

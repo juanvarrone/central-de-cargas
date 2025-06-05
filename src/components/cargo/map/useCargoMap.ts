@@ -2,15 +2,20 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Carga, SelectedCarga, Filters } from "@/types/mapa-cargas";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { applyDateFilter, buildVisibilityQuery } from "@/utils/dataValidation";
 
 export const useCargoMap = (filters: Filters) => {
   const [cargas, setCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCarga, setSelectedCarga] = useState<SelectedCarga | null>(null);
+  const { config: systemConfig, loading: configLoading } = useSystemConfig();
 
   const fetchCargas = async () => {
     try {
       setLoading(true);
+      console.log("useCargoMap: Fetching cargas with filters:", filters);
+      console.log("useCargoMap: System config:", systemConfig);
       
       let query = supabase
         .from("cargas")
@@ -28,35 +33,39 @@ export const useCargoMap = (filters: Filters) => {
         query = query.eq("tipo_camion", filters.tipoCamion);
       }
 
-      // Extended visibility logic: show cargas until 30 days past their "hasta" date
-      const now = new Date();
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(now.getDate() - 30);
+      // Use fallback value if config is not loaded yet or missing
+      const extraDays = systemConfig.cargas_extra_days || 30;
+      console.log("useCargoMap: Using extra days for cargas:", extraDays);
 
-      // Filter cargas that are either:
-      // 1. Still within their date range (fecha_carga_hasta is null or >= today)
-      // 2. Past their date range but within 30 days of expiry
-      query = query.or(`fecha_carga_hasta.is.null,fecha_carga_hasta.gte.${now.toISOString()},fecha_carga_hasta.gte.${thirtyDaysAgo.toISOString()}`);
+      // Apply visibility filter with safer approach
+      try {
+        query = buildVisibilityQuery(query, "fecha_carga_hasta", extraDays);
+      } catch (queryError) {
+        console.warn("useCargoMap: Error building visibility query, using basic query:", queryError);
+        // Fallback: just get available cargas without complex date filtering
+      }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error("useCargoMap: Supabase query error:", error);
+        throw error;
+      }
 
-      // Additional client-side filtering for cargas that are past their "hasta" date
-      // but still within 30 days (these should remain visible)
-      const filteredData = data?.filter((carga: any) => {
-        if (!carga.fecha_carga_hasta) return true; // No end date, always visible
-        
-        const cargoEndDate = new Date(carga.fecha_carga_hasta);
-        const daysDifference = Math.floor((now.getTime() - cargoEndDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        // Show if within date range or up to 30 days past end date
-        return daysDifference <= 30;
-      }) || [];
+      console.log("useCargoMap: Raw cargas data:", data);
 
+      if (!data) {
+        setCargas([]);
+        return;
+      }
+
+      // Apply additional client-side filtering for robustness
+      const filteredData = applyDateFilter(data, "fecha_carga_hasta", extraDays);
+
+      console.log("useCargoMap: Processed cargas data:", filteredData);
       setCargas(filteredData as Carga[]);
     } catch (error: any) {
-      console.error("Error fetching cargas:", error);
+      console.error("useCargoMap: Error fetching cargas:", error);
       setCargas([]);
     } finally {
       setLoading(false);
@@ -64,8 +73,11 @@ export const useCargoMap = (filters: Filters) => {
   };
 
   useEffect(() => {
-    fetchCargas();
-  }, [filters]);
+    // Only fetch when config is loaded or after a reasonable timeout
+    if (!configLoading) {
+      fetchCargas();
+    }
+  }, [filters, systemConfig, configLoading]);
 
   const handleMapLoad = (map: google.maps.Map) => {
     // Map loaded callback

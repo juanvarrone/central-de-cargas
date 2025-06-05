@@ -8,7 +8,7 @@ import TruckContactModal from "./TruckContactModal";
 import { TruckFilters, TruckAvailability, TruckAvailabilityRaw } from "@/types/truck";
 import { useAuth } from "@/context/AuthContext";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { processTruckData } from "@/utils/dataValidation";
+import { processTruckData, applyDateFilter, buildVisibilityQuery } from "@/utils/dataValidation";
 
 interface TruckListViewProps {
   filters: TruckFilters;
@@ -27,12 +27,14 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
   } | null>(null);
   const [loginRequired, setLoginRequired] = useState(false);
   const { canContactTransportistas } = useAuth();
-  const { config: systemConfig } = useSystemConfig();
+  const { config: systemConfig, loading: configLoading } = useSystemConfig();
 
   useEffect(() => {
     const fetchTrucks = async () => {
       try {
         setLoading(true);
+        console.log("Fetching trucks with filters:", filters);
+        console.log("System config:", systemConfig);
         
         let query = supabase
           .from("camiones_disponibles")
@@ -60,49 +62,58 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
           query = query.gte("fecha_disponible_desde", filters.fecha);
         }
 
-        // Extended visibility logic using configurable days
-        const now = new Date();
-        const extraDaysAgo = new Date();
-        extraDaysAgo.setDate(now.getDate() - systemConfig.camiones_extra_days);
+        // Use fallback value if config is not loaded yet or missing
+        const extraDays = systemConfig.camiones_extra_days || 30;
+        console.log("Using extra days for trucks:", extraDays);
 
-        // Filter trucks that are either:
-        // 1. Still within their date range (fecha_disponible_hasta is null or >= today)
-        // 2. Past their date range but within configured extra days of expiry
-        query = query.or(`fecha_disponible_hasta.is.null,fecha_disponible_hasta.gte.${now.toISOString()},fecha_disponible_hasta.gte.${extraDaysAgo.toISOString()}`);
+        // Apply visibility filter with safer approach
+        try {
+          query = buildVisibilityQuery(query, "fecha_disponible_hasta", extraDays);
+        } catch (queryError) {
+          console.warn("Error building visibility query, using basic query:", queryError);
+          // Fallback: just get available trucks without complex date filtering
+        }
 
         const { data, error } = await query;
 
-        if (error) throw error;
-        
-        // Additional client-side filtering for trucks that are past their "hasta" date
-        // but still within configured extra days
-        const filteredData = data?.filter((truck: any) => {
-          if (!truck.fecha_disponible_hasta) return true; // No end date, always visible
-          
-          const truckEndDate = new Date(truck.fecha_disponible_hasta);
-          const daysDifference = Math.floor((now.getTime() - truckEndDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          // Show if within date range or up to configured extra days past end date
-          return daysDifference <= systemConfig.camiones_extra_days;
-        }) || [];
+        if (error) {
+          console.error("Supabase query error:", error);
+          throw error;
+        }
+
+        console.log("Raw trucks data:", data);
+
+        if (!data) {
+          setTrucks([]);
+          return;
+        }
+
+        // Apply additional client-side filtering for robustness
+        let filteredData = applyDateFilter(data, "fecha_disponible_hasta", extraDays);
 
         // Process the data to handle potential Supabase query errors
         const processedTrucks = processTruckData(filteredData as TruckAvailabilityRaw[]);
+        console.log("Processed trucks data:", processedTrucks);
         setTrucks(processedTrucks);
       } catch (error: any) {
         console.error("Error fetching trucks:", error);
         toast({
           title: "Error",
-          description: "No se pudieron cargar los camiones disponibles",
+          description: `No se pudieron cargar los camiones disponibles: ${error.message || 'Error desconocido'}`,
           variant: "destructive",
         });
+        // Set empty array on error to avoid infinite loading
+        setTrucks([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTrucks();
-  }, [filters, toast, systemConfig.camiones_extra_days]);
+    // Only fetch when config is loaded or after a reasonable timeout
+    if (!configLoading) {
+      fetchTrucks();
+    }
+  }, [filters, systemConfig, configLoading, toast]);
 
   const handleContactClick = async (truck: TruckAvailability) => {
     try {
@@ -162,7 +173,7 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
     }
   };
 
-  if (loading) {
+  if (loading || configLoading) {
     return <div className="text-center py-8">Cargando camiones disponibles...</div>;
   }
 

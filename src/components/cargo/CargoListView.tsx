@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { applyDateFilter, buildVisibilityQuery } from "@/utils/dataValidation";
 
 interface CargoListViewProps {
   filters: Filters;
@@ -25,12 +26,14 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
   const navigate = useNavigate();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [currentCargaId, setCurrentCargaId] = useState<string | null>(null);
-  const { config: systemConfig } = useSystemConfig();
+  const { config: systemConfig, loading: configLoading } = useSystemConfig();
 
   useEffect(() => {
     const fetchCargas = async () => {
       try {
         setLoading(true);
+        console.log("Fetching cargas with filters:", filters);
+        console.log("System config:", systemConfig);
         
         let query = supabase
           .from("cargas")
@@ -40,6 +43,7 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
           `)
           .eq("estado", "disponible");
 
+        // Apply basic filters first
         if (filters.provinciaOrigen) {
           query = query.ilike("origen_provincia", `%${filters.provinciaOrigen}%`);
         }
@@ -47,31 +51,34 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
           query = query.ilike("destino_provincia", `%${filters.provinciaDestino}%`);
         }
 
-        // Extended visibility logic using configurable days
-        const now = new Date();
-        const extraDaysAgo = new Date();
-        extraDaysAgo.setDate(now.getDate() - systemConfig.cargas_extra_days);
+        // Use fallback value if config is not loaded yet or missing
+        const extraDays = systemConfig.cargas_extra_days || 30;
+        console.log("Using extra days for cargas:", extraDays);
 
-        // Filter cargas that are either:
-        // 1. Still within their date range (fecha_carga_hasta is null or >= today)
-        // 2. Past their date range but within configured extra days of expiry
-        query = query.or(`fecha_carga_hasta.is.null,fecha_carga_hasta.gte.${now.toISOString()},fecha_carga_hasta.gte.${extraDaysAgo.toISOString()}`);
+        // Apply visibility filter with safer approach
+        try {
+          query = buildVisibilityQuery(query, "fecha_carga_hasta", extraDays);
+        } catch (queryError) {
+          console.warn("Error building visibility query, using basic query:", queryError);
+          // Fallback: just get available cargas without complex date filtering
+        }
 
         const { data, error } = await query;
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase query error:", error);
+          throw error;
+        }
 
-        // Additional client-side filtering for cargas that are past their "hasta" date
-        // but still within configured extra days
-        const filteredData = data?.filter((carga: any) => {
-          if (!carga.fecha_carga_hasta) return true; // No end date, always visible
-          
-          const cargoEndDate = new Date(carga.fecha_carga_hasta);
-          const daysDifference = Math.floor((now.getTime() - cargoEndDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          // Show if within date range or up to configured extra days past end date
-          return daysDifference <= systemConfig.cargas_extra_days;
-        }) || [];
+        console.log("Raw cargas data:", data);
+
+        if (!data) {
+          setCargas([]);
+          return;
+        }
+
+        // Apply additional client-side filtering for robustness
+        let filteredData = applyDateFilter(data, "fecha_carga_hasta", extraDays);
 
         // Process the postulaciones count and cast data to CargaWithPostulaciones[]
         const processedData = filteredData.map((carga: any) => ({
@@ -79,21 +86,27 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
           postulaciones_count: Array.isArray(carga.postulaciones_count) ? carga.postulaciones_count.length : 0
         })) as CargaWithPostulaciones[];
 
+        console.log("Processed cargas data:", processedData);
         setCargas(processedData);
       } catch (error: any) {
         console.error("Error fetching cargas:", error);
         toast({
           title: "Error",
-          description: "No se pudieron cargar las cargas",
+          description: `No se pudieron cargar las cargas: ${error.message || 'Error desconocido'}`,
           variant: "destructive",
         });
+        // Set empty array on error to avoid infinite loading
+        setCargas([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCargas();
-  }, [filters, toast, systemConfig.cargas_extra_days]);
+    // Only fetch when config is loaded or after a reasonable timeout
+    if (!configLoading) {
+      fetchCargas();
+    }
+  }, [filters, systemConfig, configLoading, toast]);
 
   const getTipoTarifaLabel = (tipo: string) => {
     switch (tipo) {
@@ -202,7 +215,7 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
     }
   };
 
-  if (loading) {
+  if (loading || configLoading) {
     return <div className="text-center py-8">Cargando...</div>;
   }
 

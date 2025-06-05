@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { TruckFilters } from "@/types/truck";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { processTruckMapData } from "@/utils/dataValidation";
+import { processTruckMapData, applyDateFilter, buildVisibilityQuery } from "@/utils/dataValidation";
 
 export interface TruckWithLocation {
   id: string;
@@ -43,7 +43,7 @@ export const useTruckMap = (filters: TruckFilters) => {
   const [selectedTruck, setSelectedTruck] = useState<SelectedTruck | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const { toast } = useToast();
-  const { config: systemConfig } = useSystemConfig();
+  const { config: systemConfig, loading: configLoading } = useSystemConfig();
 
   const handleMapLoad = (map: google.maps.Map) => {
     setMap(map);
@@ -53,6 +53,8 @@ export const useTruckMap = (filters: TruckFilters) => {
     const fetchTrucks = async () => {
       try {
         setLoading(true);
+        console.log("useTruckMap: Fetching trucks with filters:", filters);
+        console.log("useTruckMap: System config:", systemConfig);
         
         let query = supabase
           .from("camiones_disponibles")
@@ -82,49 +84,58 @@ export const useTruckMap = (filters: TruckFilters) => {
           query = query.gte("fecha_disponible_desde", filters.fecha);
         }
 
-        // Extended visibility logic using configurable days
-        const now = new Date();
-        const extraDaysAgo = new Date();
-        extraDaysAgo.setDate(now.getDate() - systemConfig.camiones_extra_days);
+        // Use fallback value if config is not loaded yet or missing
+        const extraDays = systemConfig.camiones_extra_days || 30;
+        console.log("useTruckMap: Using extra days for trucks:", extraDays);
 
-        // Filter trucks that are either:
-        // 1. Still within their date range (fecha_disponible_hasta is null or >= today)
-        // 2. Past their date range but within configured extra days of expiry
-        query = query.or(`fecha_disponible_hasta.is.null,fecha_disponible_hasta.gte.${now.toISOString()},fecha_disponible_hasta.gte.${extraDaysAgo.toISOString()}`);
+        // Apply visibility filter with safer approach
+        try {
+          query = buildVisibilityQuery(query, "fecha_disponible_hasta", extraDays);
+        } catch (queryError) {
+          console.warn("useTruckMap: Error building visibility query, using basic query:", queryError);
+          // Fallback: just get available trucks without complex date filtering
+        }
 
         const { data, error } = await query;
 
-        if (error) throw error;
-        
-        // Additional client-side filtering for trucks that are past their "hasta" date
-        // but still within configured extra days
-        const filteredData = data?.filter((truck: any) => {
-          if (!truck.fecha_disponible_hasta) return true; // No end date, always visible
-          
-          const truckEndDate = new Date(truck.fecha_disponible_hasta);
-          const daysDifference = Math.floor((now.getTime() - truckEndDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          // Show if within date range or up to configured extra days past end date
-          return daysDifference <= systemConfig.camiones_extra_days;
-        }) || [];
+        if (error) {
+          console.error("useTruckMap: Supabase query error:", error);
+          throw error;
+        }
+
+        console.log("useTruckMap: Raw trucks data:", data);
+
+        if (!data) {
+          setTrucks([]);
+          return;
+        }
+
+        // Apply additional client-side filtering for robustness
+        let filteredData = applyDateFilter(data, "fecha_disponible_hasta", extraDays);
 
         // Process the data to handle potential Supabase query errors
         const processedTrucks = processTruckMapData(filteredData);
+        console.log("useTruckMap: Processed trucks data:", processedTrucks);
         setTrucks(processedTrucks as TruckWithLocation[]);
       } catch (error: any) {
-        console.error("Error fetching trucks for map:", error);
+        console.error("useTruckMap: Error fetching trucks for map:", error);
         toast({
           title: "Error",
-          description: "No se pudieron cargar los camiones en el mapa",
+          description: `No se pudieron cargar los camiones en el mapa: ${error.message || 'Error desconocido'}`,
           variant: "destructive",
         });
+        // Set empty array on error to avoid infinite loading
+        setTrucks([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTrucks();
-  }, [filters, toast, systemConfig.camiones_extra_days]);
+    // Only fetch when config is loaded or after a reasonable timeout
+    if (!configLoading) {
+      fetchTrucks();
+    }
+  }, [filters, systemConfig, configLoading, toast]);
 
   return {
     trucks,
