@@ -33,8 +33,8 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
     const fetchTrucks = async () => {
       try {
         setLoading(true);
-        console.log("Fetching trucks with filters:", filters);
-        console.log("System config:", systemConfig);
+        console.log("TruckListView: Fetching trucks with filters:", filters);
+        console.log("TruckListView: System config:", systemConfig);
         
         let query = supabase
           .from("camiones_disponibles")
@@ -64,24 +64,24 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
 
         // Use fallback value if config is not loaded yet or missing
         const extraDays = systemConfig.camiones_extra_days || 30;
-        console.log("Using extra days for trucks:", extraDays);
+        console.log("TruckListView: Using extra days for trucks:", extraDays);
 
         // Apply visibility filter with safer approach
         try {
           query = buildVisibilityQuery(query, "fecha_disponible_hasta", extraDays);
         } catch (queryError) {
-          console.warn("Error building visibility query, using basic query:", queryError);
+          console.warn("TruckListView: Error building visibility query, using basic query:", queryError);
           // Fallback: just get available trucks without complex date filtering
         }
 
         const { data, error } = await query;
 
         if (error) {
-          console.error("Supabase query error:", error);
+          console.error("TruckListView: Supabase query error:", error);
           throw error;
         }
 
-        console.log("Raw trucks data:", data);
+        console.log("TruckListView: Raw trucks data:", data);
 
         if (!data) {
           setTrucks([]);
@@ -93,10 +93,10 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
 
         // Process the data to handle potential Supabase query errors
         const processedTrucks = processTruckData(filteredData as TruckAvailabilityRaw[]);
-        console.log("Processed trucks data:", processedTrucks);
+        console.log("TruckListView: Processed trucks data:", processedTrucks);
         setTrucks(processedTrucks);
       } catch (error: any) {
-        console.error("Error fetching trucks:", error);
+        console.error("TruckListView: Error fetching trucks:", error);
         toast({
           title: "Error",
           description: `No se pudieron cargar los camiones disponibles: ${error.message || 'Error desconocido'}`,

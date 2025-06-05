@@ -32,15 +32,12 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
     const fetchCargas = async () => {
       try {
         setLoading(true);
-        console.log("Fetching cargas with filters:", filters);
-        console.log("System config:", systemConfig);
+        console.log("CargoListView: Fetching cargas with filters:", filters);
+        console.log("CargoListView: System config:", systemConfig);
         
         let query = supabase
           .from("cargas")
-          .select(`
-            *,
-            postulaciones_count:cargas_postulaciones(count)
-          `)
+          .select("*")
           .eq("estado", "disponible");
 
         // Apply basic filters first
@@ -50,27 +47,30 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
         if (filters.provinciaDestino) {
           query = query.ilike("destino_provincia", `%${filters.provinciaDestino}%`);
         }
+        if (filters.tipoCamion) {
+          query = query.eq("tipo_camion", filters.tipoCamion);
+        }
 
         // Use fallback value if config is not loaded yet or missing
         const extraDays = systemConfig.cargas_extra_days || 30;
-        console.log("Using extra days for cargas:", extraDays);
+        console.log("CargoListView: Using extra days for cargas:", extraDays);
 
         // Apply visibility filter with safer approach
         try {
           query = buildVisibilityQuery(query, "fecha_carga_hasta", extraDays);
         } catch (queryError) {
-          console.warn("Error building visibility query, using basic query:", queryError);
+          console.warn("CargoListView: Error building visibility query, using basic query:", queryError);
           // Fallback: just get available cargas without complex date filtering
         }
 
         const { data, error } = await query;
 
         if (error) {
-          console.error("Supabase query error:", error);
+          console.error("CargoListView: Supabase query error:", error);
           throw error;
         }
 
-        console.log("Raw cargas data:", data);
+        console.log("CargoListView: Raw cargas data:", data);
 
         if (!data) {
           setCargas([]);
@@ -80,16 +80,33 @@ const CargoListView = ({ filters }: CargoListViewProps) => {
         // Apply additional client-side filtering for robustness
         let filteredData = applyDateFilter(data, "fecha_carga_hasta", extraDays);
 
-        // Process the postulaciones count and cast data to CargaWithPostulaciones[]
-        const processedData = filteredData.map((carga: any) => ({
-          ...carga,
-          postulaciones_count: Array.isArray(carga.postulaciones_count) ? carga.postulaciones_count.length : 0
-        })) as CargaWithPostulaciones[];
+        // Fetch postulaciones count separately to avoid relationship conflicts
+        const cargasWithPostulaciones = await Promise.all(
+          filteredData.map(async (carga: any) => {
+            try {
+              const { count } = await supabase
+                .from("cargas_postulaciones")
+                .select("*", { count: "exact", head: true })
+                .eq("carga_id", carga.id);
+              
+              return {
+                ...carga,
+                postulaciones_count: count || 0
+              };
+            } catch (countError) {
+              console.warn("CargoListView: Error fetching postulaciones count for carga:", carga.id, countError);
+              return {
+                ...carga,
+                postulaciones_count: 0
+              };
+            }
+          })
+        );
 
-        console.log("Processed cargas data:", processedData);
-        setCargas(processedData);
+        console.log("CargoListView: Processed cargas data:", cargasWithPostulaciones);
+        setCargas(cargasWithPostulaciones as CargaWithPostulaciones[]);
       } catch (error: any) {
-        console.error("Error fetching cargas:", error);
+        console.error("CargoListView: Error fetching cargas:", error);
         toast({
           title: "Error",
           description: `No se pudieron cargar las cargas: ${error.message || 'Error desconocido'}`,
