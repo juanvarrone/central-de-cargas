@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,10 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Truck, MapPin, Calendar, Star, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TruckContactModal from "./TruckContactModal";
-import { TruckFilters, TruckAvailability, TruckAvailabilityRaw } from "@/types/truck";
+import { TruckFilters, TruckAvailability } from "@/types/truck";
 import { useAuth } from "@/context/AuthContext";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { processTruckData, applyDateFilter, buildVisibilityQuery } from "@/utils/dataValidation";
+import { applyDateFilter, buildVisibilityQuery } from "@/utils/dataValidation";
 
 interface TruckListViewProps {
   filters: TruckFilters;
@@ -38,14 +39,7 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
         
         let query = supabase
           .from("camiones_disponibles")
-          .select(`
-            *,
-            profiles:usuario_id (
-              id,
-              full_name,
-              phone_number
-            )
-          `)
+          .select("*")
           .eq("estado", "disponible");
         
         // Add filters
@@ -71,7 +65,6 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
           query = buildVisibilityQuery(query, "fecha_disponible_hasta", extraDays);
         } catch (queryError) {
           console.warn("TruckListView: Error building visibility query, using basic query:", queryError);
-          // Fallback: just get available trucks without complex date filtering
         }
 
         const { data, error } = await query;
@@ -91,10 +84,32 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
         // Apply additional client-side filtering for robustness
         let filteredData = applyDateFilter(data, "fecha_disponible_hasta", extraDays);
 
-        // Process the data to handle potential Supabase query errors
-        const processedTrucks = processTruckData(filteredData as TruckAvailabilityRaw[]);
-        console.log("TruckListView: Processed trucks data:", processedTrucks);
-        setTrucks(processedTrucks);
+        // Transform to proper format and fetch user data separately
+        const trucksWithUserData = await Promise.all(
+          filteredData.map(async (truck: any) => {
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from("profiles")
+                .select("id, full_name, phone_number")
+                .eq("id", truck.usuario_id)
+                .single();
+                
+              return {
+                ...truck,
+                profiles: profileError ? null : profileData
+              };
+            } catch (error) {
+              console.warn("TruckListView: Error fetching profile for truck:", truck.id, error);
+              return {
+                ...truck,
+                profiles: null
+              };
+            }
+          })
+        );
+
+        console.log("TruckListView: Processed trucks data:", trucksWithUserData);
+        setTrucks(trucksWithUserData as TruckAvailability[]);
       } catch (error: any) {
         console.error("TruckListView: Error fetching trucks:", error);
         toast({
@@ -102,14 +117,12 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
           description: `No se pudieron cargar los camiones disponibles: ${error.message || 'Error desconocido'}`,
           variant: "destructive",
         });
-        // Set empty array on error to avoid infinite loading
         setTrucks([]);
       } finally {
         setLoading(false);
       }
     };
 
-    // Only fetch when config is loaded or after a reasonable timeout
     if (!configLoading) {
       fetchTrucks();
     }
@@ -117,7 +130,6 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
 
   const handleContactClick = async (truck: TruckAvailability) => {
     try {
-      // Check if user is logged in
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -126,7 +138,6 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
         return;
       }
 
-      // Check permissions
       if (!canContactTransportistas) {
         toast({
           title: "Acceso restringido",
@@ -145,7 +156,6 @@ const TruckListView = ({ filters }: TruckListViewProps) => {
           user_id: truck.profiles.id
         });
       } else {
-        // Fetch user data if not available
         const { data, error } = await supabase
           .from("profiles")
           .select("full_name, phone_number, id")

@@ -6,87 +6,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   Map as MapIcon, 
-  List, 
-  User as UserIcon, 
-  Menu, 
-  LogOut, 
-  Truck, 
-  Bell
+  List
 } from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu";
 import TruckMapFilters from "@/components/truck/TruckMapFilters";
 import TruckListView from "@/components/truck/TruckListView";
 import TrucksMapa from "@/components/truck/TrucksMapa";
 import { TruckFilters } from "@/types/truck";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const BuscarCamiones = () => {
   const [filters, setFilters] = useState<TruckFilters>({});
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"map" | "list">("list");
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo verificar tu sesión. Por favor intenta nuevamente.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null);
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [toast]);
-
   const handleFilterChange = (newFilters: TruckFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/auth');
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <p>Cargando...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -101,46 +38,10 @@ const BuscarCamiones = () => {
             >
               <ArrowLeft size={20} />
             </Button>
-            <Link to="/" className="text-xl font-bold text-primary">
-              Central de Cargas
-            </Link>
+            <h1 className="text-xl font-bold text-primary">
+              Buscar Camiones
+            </h1>
           </div>
-          {!loading && (
-            user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <UserIcon size={16} />
-                    <span className="hidden sm:inline">{user.email?.split('@')[0]}</span>
-                    <Menu size={16} className="ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-white">
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link to="/mis-camiones" className="flex items-center">
-                      <Truck size={16} className="mr-2" />
-                      Mis Camiones
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link to="/mis-alertas" className="flex items-center">
-                      <Bell size={16} className="mr-2" />
-                      Mis Alertas
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
-                    <LogOut size={16} className="mr-2" />
-                    Cerrar sesión
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button asChild variant="outline">
-                <Link to="/auth">Iniciar sesión</Link>
-              </Button>
-            )
-          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4">

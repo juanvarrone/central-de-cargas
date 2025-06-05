@@ -69,67 +69,76 @@ const MisCargas = () => {
       
       if (!user) return;
       
-      // Get cargas with postulaciones count
+      // Get cargas first
       const { data: cargasData, error } = await supabase
         .from("cargas")
-        .select(`
-          id,
-          tipo_carga,
-          origen,
-          destino,
-          fecha_carga_desde,
-          estado,
-          created_at,
-          tarifa,
-          tipo_tarifa,
-          postulacion_asignada_id,
-          cargas_postulaciones(count)
-        `)
+        .select("*")
         .eq("usuario_id", user.id)
         .order("created_at", { ascending: false });
         
       if (error) throw error;
       
-      // Transform the data to extract the count
-      const cargasWithCounts = (cargasData || []).map((carga: any) => ({
-        ...carga,
-        postulaciones: carga.cargas_postulaciones?.[0]?.count || 0
-      }));
-      
-      // For cargas with assigned postulaciones, fetch the transportista details
-      const cargasWithTransportistas = await Promise.all(
-        cargasWithCounts.map(async (carga: Carga) => {
-          if (carga.postulacion_asignada_id) {
-            try {
-              // First get the user_id from the postulacion
-              const { data: postulacion, error: postulacionError } = await supabase
-                .from("cargas_postulaciones")
-                .select("usuario_id")
-                .eq("id", carga.postulacion_asignada_id)
-                .single();
-                
-              if (postulacionError) throw postulacionError;
-              
-              // Then get the transportista details
-              const { data: transportista, error: profileError } = await supabase
-                .from("profiles")
-                .select("full_name, phone_number, id")
-                .eq("id", postulacion.usuario_id)
-                .single();
-                
-              if (profileError) throw profileError;
-              
-              return { ...carga, transportista };
-            } catch (error) {
-              console.error("Error fetching transportista:", error);
-              return carga;
+      if (!cargasData) {
+        setCargas([]);
+        return;
+      }
+
+      // Get postulaciones count and transportista data separately
+      const cargasWithExtraData = await Promise.all(
+        cargasData.map(async (carga: any) => {
+          try {
+            // Get postulaciones count
+            const { count } = await supabase
+              .from("cargas_postulaciones")
+              .select("*", { count: "exact", head: true })
+              .eq("carga_id", carga.id);
+            
+            let transportista = null;
+            
+            // If there's an assigned postulacion, get transportista details
+            if (carga.postulacion_asignada_id) {
+              try {
+                // Get the user_id from the postulacion
+                const { data: postulacion, error: postulacionError } = await supabase
+                  .from("cargas_postulaciones")
+                  .select("usuario_id")
+                  .eq("id", carga.postulacion_asignada_id)
+                  .single();
+                  
+                if (!postulacionError && postulacion) {
+                  // Get the transportista details
+                  const { data: transportistaData, error: profileError } = await supabase
+                    .from("profiles")
+                    .select("full_name, phone_number, id")
+                    .eq("id", postulacion.usuario_id)
+                    .single();
+                    
+                  if (!profileError) {
+                    transportista = transportistaData;
+                  }
+                }
+              } catch (error) {
+                console.error("Error fetching transportista:", error);
+              }
             }
+            
+            return {
+              ...carga,
+              postulaciones: count || 0,
+              transportista
+            };
+          } catch (countError) {
+            console.warn("Error fetching data for carga:", carga.id, countError);
+            return {
+              ...carga,
+              postulaciones: 0,
+              transportista: null
+            };
           }
-          return carga;
         })
       );
       
-      setCargas(cargasWithTransportistas);
+      setCargas(cargasWithExtraData);
     } catch (error: any) {
       console.error("Error fetching cargas:", error);
       toast({
@@ -153,7 +162,6 @@ const MisCargas = () => {
       
       if (error) throw error;
       
-      // Update the UI
       setCargas((prevCargas) =>
         prevCargas.map((carga) =>
           carga.id === cargaId ? { ...carga, estado: "cancelada" } : carga
@@ -288,7 +296,6 @@ const MisCargas = () => {
                       <p>Publicado: {formatDate(carga.created_at)}</p>
                       <p>Tarifa: {formatCurrency(carga.tarifa)} ({getTipoTarifaLabel(carga.tipo_tarifa)})</p>
                       
-                      {/* Mostrar información del transportista asignado si existe */}
                       {carga.transportista && carga.estado === "asignada" && (
                         <div className="mt-2 flex items-center gap-2 text-primary">
                           <CheckCircle size={16} className="fill-green-500 text-white" />

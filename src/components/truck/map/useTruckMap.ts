@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { TruckFilters } from "@/types/truck";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { processTruckMapData, applyDateFilter, buildVisibilityQuery } from "@/utils/dataValidation";
+import { applyDateFilter, buildVisibilityQuery } from "@/utils/dataValidation";
 
 export interface TruckWithLocation {
   id: string;
@@ -58,14 +58,7 @@ export const useTruckMap = (filters: TruckFilters) => {
         
         let query = supabase
           .from("camiones_disponibles")
-          .select(`
-            *,
-            profiles:usuario_id (
-              id,
-              full_name,
-              phone_number
-            )
-          `)
+          .select("*")
           .eq("estado", "disponible")
           .not("origen_lat", "is", null)
           .not("origen_lng", "is", null);
@@ -93,7 +86,6 @@ export const useTruckMap = (filters: TruckFilters) => {
           query = buildVisibilityQuery(query, "fecha_disponible_hasta", extraDays);
         } catch (queryError) {
           console.warn("useTruckMap: Error building visibility query, using basic query:", queryError);
-          // Fallback: just get available trucks without complex date filtering
         }
 
         const { data, error } = await query;
@@ -113,10 +105,32 @@ export const useTruckMap = (filters: TruckFilters) => {
         // Apply additional client-side filtering for robustness
         let filteredData = applyDateFilter(data, "fecha_disponible_hasta", extraDays);
 
-        // Process the data to handle potential Supabase query errors
-        const processedTrucks = processTruckMapData(filteredData);
-        console.log("useTruckMap: Processed trucks data:", processedTrucks);
-        setTrucks(processedTrucks as TruckWithLocation[]);
+        // Fetch user profiles separately to avoid relationship issues
+        const trucksWithProfiles = await Promise.all(
+          filteredData.map(async (truck: any) => {
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from("profiles")
+                .select("id, full_name, phone_number")
+                .eq("id", truck.usuario_id)
+                .single();
+                
+              return {
+                ...truck,
+                profiles: profileError ? null : profileData
+              };
+            } catch (error) {
+              console.warn("useTruckMap: Error fetching profile for truck:", truck.id, error);
+              return {
+                ...truck,
+                profiles: null
+              };
+            }
+          })
+        );
+
+        console.log("useTruckMap: Processed trucks data:", trucksWithProfiles);
+        setTrucks(trucksWithProfiles as TruckWithLocation[]);
       } catch (error: any) {
         console.error("useTruckMap: Error fetching trucks for map:", error);
         toast({
@@ -124,14 +138,12 @@ export const useTruckMap = (filters: TruckFilters) => {
           description: `No se pudieron cargar los camiones en el mapa: ${error.message || 'Error desconocido'}`,
           variant: "destructive",
         });
-        // Set empty array on error to avoid infinite loading
         setTrucks([]);
       } finally {
         setLoading(false);
       }
     };
 
-    // Only fetch when config is loaded or after a reasonable timeout
     if (!configLoading) {
       fetchTrucks();
     }
