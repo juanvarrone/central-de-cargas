@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Edit, Trash2, Eye, CheckCircle, Upload } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Eye, CheckCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,13 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import MisCargasFilters, { MisCargasFilters as FiltersType } from "@/components/cargo/MisCargasFilters";
-import CargaMasivaForm from "@/components/cargo/CargaMasivaForm";
 
 interface Carga {
   id: string;
@@ -51,7 +45,6 @@ const MisCargas = () => {
   const [cargas, setCargas] = useState<Carga[]>([]);
   const [filteredCargas, setFilteredCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCargaMasiva, setShowCargaMasiva] = useState(false);
   const [filters, setFilters] = useState<FiltersType>({
     ordenar: "fecha_desc",
     localidad: "",
@@ -323,20 +316,6 @@ const MisCargas = () => {
           Listado de cargas que has publicado
         </p>
         <div className="flex gap-2">
-          <Dialog open={showCargaMasiva} onOpenChange={setShowCargaMasiva}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Carga Masiva
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-7xl max-h-[90vh]">
-              <CargaMasivaForm 
-                onClose={() => setShowCargaMasiva(false)}
-                onSuccess={fetchCargas}
-              />
-            </DialogContent>
-          </Dialog>
           <Button onClick={() => navigate("/publicar-carga")}>
             Publicar nueva carga
           </Button>

@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
@@ -5,19 +6,28 @@ import { useState, useEffect } from "react";
 import CargoForm from "@/components/cargo/CargoForm";
 import { useCargoSubmission } from "@/hooks/useCargoSubmission";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useAuth } from "@/context/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import CargaMasivaForm from "@/components/cargo/CargaMasivaForm";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const PublicarCarga = () => {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showCargaMasiva, setShowCargaMasiva] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { submitCargo } = useCargoSubmission();
   const { canPublishCarga, isLoading: contextLoading } = useAuth();
+  const { profile } = useUserProfile();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -90,6 +100,13 @@ const PublicarCarga = () => {
     }
   };
 
+  const handleCargaMasivaSuccess = () => {
+    setShowCargaMasiva(false);
+    navigate("/mis-cargas");
+  };
+
+  const isPremium = profile?.subscription_tier === 'premium';
+
   if (authLoading || contextLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -114,6 +131,22 @@ const PublicarCarga = () => {
             <h1 className="text-xl font-bold">Publicar Carga</h1>
           </div>
           
+          {isPremium && (
+            <Dialog open={showCargaMasiva} onOpenChange={setShowCargaMasiva}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Carga Masiva
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-7xl max-h-[90vh]">
+                <CargaMasivaForm 
+                  onClose={() => setShowCargaMasiva(false)}
+                  onSuccess={handleCargaMasivaSuccess}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
         <Card>
           <CardHeader>
