@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Edit, Trash2, Eye, CheckCircle } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Eye, CheckCircle, Upload } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,12 +18,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import MisCargasFilters, { MisCargasFilters as FiltersType } from "@/components/cargo/MisCargasFilters";
+import CargaMasivaForm from "@/components/cargo/CargaMasivaForm";
 
 interface Carga {
   id: string;
   tipo_carga: string;
   origen: string;
+  origen_ciudad?: string;
   destino: string;
+  destino_ciudad?: string;
   fecha_carga_desde: string;
   estado: string;
   created_at: string;
@@ -39,8 +49,14 @@ interface Carga {
 
 const MisCargas = () => {
   const [cargas, setCargas] = useState<Carga[]>([]);
+  const [filteredCargas, setFilteredCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cargaToCancel, setCargaToCancel] = useState<string | null>(null);
+  const [showCargaMasiva, setShowCargaMasiva] = useState(false);
+  const [filters, setFilters] = useState<FiltersType>({
+    ordenar: "fecha_desc",
+    localidad: "",
+    estado: ""
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -62,6 +78,10 @@ const MisCargas = () => {
     checkAuth();
   }, [navigate, toast]);
 
+  useEffect(() => {
+    applyFilters();
+  }, [cargas, filters]);
+
   const fetchCargas = async () => {
     try {
       setLoading(true);
@@ -69,25 +89,32 @@ const MisCargas = () => {
       
       if (!user) return;
       
-      // Get cargas first
+      console.log("Fetching cargas for user:", user.id);
+      
+      // Consulta simple para obtener cargas
       const { data: cargasData, error } = await supabase
         .from("cargas")
         .select("*")
         .eq("usuario_id", user.id)
         .order("created_at", { ascending: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching cargas:", error);
+        throw error;
+      }
+      
+      console.log("Cargas data:", cargasData);
       
       if (!cargasData) {
         setCargas([]);
         return;
       }
 
-      // Get postulaciones count and transportista data separately
+      // Obtener datos adicionales por separado
       const cargasWithExtraData = await Promise.all(
         cargasData.map(async (carga: any) => {
           try {
-            // Get postulaciones count
+            // Contar postulaciones
             const { count } = await supabase
               .from("cargas_postulaciones")
               .select("*", { count: "exact", head: true })
@@ -95,10 +122,9 @@ const MisCargas = () => {
             
             let transportista = null;
             
-            // If there's an assigned postulacion, get transportista details
+            // Si hay una postulación asignada, obtener datos del transportista
             if (carga.postulacion_asignada_id) {
               try {
-                // Get the user_id from the postulacion
                 const { data: postulacion, error: postulacionError } = await supabase
                   .from("cargas_postulaciones")
                   .select("usuario_id")
@@ -106,7 +132,6 @@ const MisCargas = () => {
                   .single();
                   
                 if (!postulacionError && postulacion) {
-                  // Get the transportista details
                   const { data: transportistaData, error: profileError } = await supabase
                     .from("profiles")
                     .select("full_name, phone_number, id")
@@ -138,6 +163,7 @@ const MisCargas = () => {
         })
       );
       
+      console.log("Processed cargas:", cargasWithExtraData);
       setCargas(cargasWithExtraData);
     } catch (error: any) {
       console.error("Error fetching cargas:", error);
@@ -146,9 +172,46 @@ const MisCargas = () => {
         description: "Hubo un problema al cargar sus cargas",
         variant: "destructive",
       });
+      setCargas([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...cargas];
+
+    // Filtrar por localidad
+    if (filters.localidad.trim()) {
+      const localidadLower = filters.localidad.toLowerCase();
+      filtered = filtered.filter(carga => 
+        carga.origen.toLowerCase().includes(localidadLower) ||
+        carga.destino.toLowerCase().includes(localidadLower) ||
+        (carga.origen_ciudad && carga.origen_ciudad.toLowerCase().includes(localidadLower)) ||
+        (carga.destino_ciudad && carga.destino_ciudad.toLowerCase().includes(localidadLower))
+      );
+    }
+
+    // Filtrar por estado
+    if (filters.estado) {
+      filtered = filtered.filter(carga => carga.estado === filters.estado);
+    }
+
+    // Ordenar
+    filtered.sort((a, b) => {
+      switch (filters.ordenar) {
+        case "fecha_asc":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "fecha_desc":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "estado":
+          return a.estado.localeCompare(b.estado);
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredCargas(filtered);
   };
 
   const cancelarCarga = async (cargaId: string) => {
@@ -182,33 +245,16 @@ const MisCargas = () => {
       });
     } finally {
       setLoading(false);
-      setCargaToCancel(null);
     }
   };
 
-  const handleEditClick = (cargaId: string) => {
-    navigate(`/editar-carga/${cargaId}`);
-  };
-
-  const handleViewClick = (cargaId: string) => {
-    navigate(`/ver-carga/${cargaId}`);
-  };
-
-  const getEstadoBadgeColor = (estado: string) => {
-    switch (estado.toLowerCase()) {
-      case 'disponible':
-        return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'pendiente':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-      case 'asignada':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-      case 'completada':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-      case 'cancelada':
-        return 'bg-red-100 text-red-800 hover:bg-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+  const extractCityFromLocation = (location: string): string => {
+    // Si ya tenemos la ciudad separada, usarla
+    const parts = location.split(',');
+    if (parts.length > 0) {
+      return parts[0].trim();
     }
+    return location;
   };
 
   const formatDate = (dateString: string) => {
@@ -240,6 +286,23 @@ const MisCargas = () => {
     }).format(value);
   };
 
+  const getEstadoBadgeColor = (estado: string) => {
+    switch (estado.toLowerCase()) {
+      case 'disponible':
+        return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'pendiente':
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      case 'asignada':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'completada':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'cancelada':
+        return 'bg-red-100 text-red-800 hover:bg-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center space-x-2 mb-6">
@@ -259,25 +322,52 @@ const MisCargas = () => {
         <p className="text-muted-foreground">
           Listado de cargas que has publicado
         </p>
-        <Button onClick={() => navigate("/publicar-carga")}>
-          Publicar nueva carga
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={showCargaMasiva} onOpenChange={setShowCargaMasiva}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Carga Masiva
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-7xl max-h-[90vh]">
+              <CargaMasivaForm 
+                onClose={() => setShowCargaMasiva(false)}
+                onSuccess={fetchCargas}
+              />
+            </DialogContent>
+          </Dialog>
+          <Button onClick={() => navigate("/publicar-carga")}>
+            Publicar nueva carga
+          </Button>
+        </div>
       </div>
+
+      <MisCargasFilters 
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
 
       {loading ? (
         <div className="py-12 text-center">Cargando sus cargas...</div>
-      ) : cargas.length === 0 ? (
+      ) : filteredCargas.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="mb-4">No has publicado ninguna carga todavía.</p>
-            <Button onClick={() => navigate("/publicar-carga")}>
-              Publicar primera carga
-            </Button>
+            {cargas.length === 0 ? (
+              <>
+                <p className="mb-4">No has publicado ninguna carga todavía.</p>
+                <Button onClick={() => navigate("/publicar-carga")}>
+                  Publicar primera carga
+                </Button>
+              </>
+            ) : (
+              <p>No se encontraron cargas con los filtros aplicados.</p>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {cargas.map((carga) => (
+          {filteredCargas.map((carga) => (
             <Card key={carga.id}>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
@@ -289,7 +379,7 @@ const MisCargas = () => {
                       </Badge>
                     </div>
                     <h3 className="font-medium text-lg">
-                      {carga.origen} → {carga.destino}
+                      {extractCityFromLocation(carga.origen)} → {extractCityFromLocation(carga.destino)}
                     </h3>
                     <div className="text-sm text-muted-foreground">
                       <p>Fecha de carga: {formatDate(carga.fecha_carga_desde)}</p>
@@ -310,7 +400,7 @@ const MisCargas = () => {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => handleViewClick(carga.id)}
+                        onClick={() => navigate(`/ver-carga/${carga.id}`)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Ver
@@ -318,7 +408,7 @@ const MisCargas = () => {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => handleEditClick(carga.id)}
+                        onClick={() => navigate(`/editar-carga/${carga.id}`)}
                         disabled={carga.estado === "cancelada" || carga.estado === "completada" || carga.estado === "asignada"}
                       >
                         <Edit className="h-4 w-4 mr-1" />
