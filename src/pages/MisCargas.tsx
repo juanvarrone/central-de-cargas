@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +44,7 @@ const MisCargas = () => {
   const [cargas, setCargas] = useState<Carga[]>([]);
   const [filteredCargas, setFilteredCargas] = useState<Carga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<FiltersType>({
     ordenar: "fecha_desc",
     localidad: "",
@@ -55,17 +55,23 @@ const MisCargas = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data?.user) {
-        toast({
-          title: "Acceso restringido",
-          description: "Debe iniciar sesión para ver sus cargas",
-          variant: "destructive",
-        });
-        navigate("/auth", { state: { from: "/mis-cargas" } });
-        return;
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (!data?.user) {
+          toast({
+            title: "Acceso restringido",
+            description: "Debe iniciar sesión para ver sus cargas",
+            variant: "destructive",
+          });
+          navigate("/auth", { state: { from: "/mis-cargas" } });
+          return;
+        }
+        await fetchCargas();
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        setError("Error de autenticación");
+        setLoading(false);
       }
-      fetchCargas();
     };
 
     checkAuth();
@@ -78,13 +84,17 @@ const MisCargas = () => {
   const fetchCargas = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      setError(null);
       
-      if (!user) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError("Usuario no autenticado");
+        return;
+      }
       
       console.log("Fetching cargas for user:", user.id);
       
-      // Consulta simple para obtener cargas
+      // Consulta simplificada solo para cargas básicas
       const { data: cargasData, error } = await supabase
         .from("cargas")
         .select("*")
@@ -96,15 +106,16 @@ const MisCargas = () => {
         throw error;
       }
       
-      console.log("Cargas data:", cargasData);
+      console.log("Basic cargas data:", cargasData);
       
-      if (!cargasData) {
+      if (!cargasData || cargasData.length === 0) {
         setCargas([]);
+        setLoading(false);
         return;
       }
 
-      // Obtener datos adicionales por separado
-      const cargasWithExtraData = await Promise.all(
+      // Enriquecer datos de forma no bloqueante
+      const enrichedCargas = await Promise.allSettled(
         cargasData.map(async (carga: any) => {
           try {
             // Contar postulaciones
@@ -118,25 +129,25 @@ const MisCargas = () => {
             // Si hay una postulación asignada, obtener datos del transportista
             if (carga.postulacion_asignada_id) {
               try {
-                const { data: postulacion, error: postulacionError } = await supabase
+                const { data: postulacion } = await supabase
                   .from("cargas_postulaciones")
                   .select("usuario_id")
                   .eq("id", carga.postulacion_asignada_id)
                   .single();
                   
-                if (!postulacionError && postulacion) {
-                  const { data: transportistaData, error: profileError } = await supabase
+                if (postulacion) {
+                  const { data: transportistaData } = await supabase
                     .from("profiles")
                     .select("full_name, phone_number, id")
                     .eq("id", postulacion.usuario_id)
                     .single();
                     
-                  if (!profileError) {
+                  if (transportistaData) {
                     transportista = transportistaData;
                   }
                 }
               } catch (error) {
-                console.error("Error fetching transportista:", error);
+                console.warn("Error fetching transportista for carga:", carga.id, error);
               }
             }
             
@@ -145,8 +156,8 @@ const MisCargas = () => {
               postulaciones: count || 0,
               transportista
             };
-          } catch (countError) {
-            console.warn("Error fetching data for carga:", carga.id, countError);
+          } catch (error) {
+            console.warn("Error enriching carga:", carga.id, error);
             return {
               ...carga,
               postulaciones: 0,
@@ -156,55 +167,75 @@ const MisCargas = () => {
         })
       );
       
-      console.log("Processed cargas:", cargasWithExtraData);
-      setCargas(cargasWithExtraData);
+      // Procesar resultados, incluso si algunos fallaron
+      const processedCargas = enrichedCargas.map((result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value;
+        } else {
+          console.warn("Failed to enrich carga:", cargasData[index].id, result.reason);
+          return {
+            ...cargasData[index],
+            postulaciones: 0,
+            transportista: null
+          };
+        }
+      });
+      
+      console.log("Final processed cargas:", processedCargas);
+      setCargas(processedCargas);
+      
     } catch (error: any) {
-      console.error("Error fetching cargas:", error);
+      console.error("Error in fetchCargas:", error);
+      setError(error.message || "Error al cargar las cargas");
       toast({
         title: "Error",
         description: "Hubo un problema al cargar sus cargas",
         variant: "destructive",
       });
-      setCargas([]);
     } finally {
       setLoading(false);
     }
   };
 
   const applyFilters = () => {
-    let filtered = [...cargas];
+    try {
+      let filtered = [...cargas];
 
-    // Filtrar por localidad
-    if (filters.localidad.trim()) {
-      const localidadLower = filters.localidad.toLowerCase();
-      filtered = filtered.filter(carga => 
-        carga.origen.toLowerCase().includes(localidadLower) ||
-        carga.destino.toLowerCase().includes(localidadLower) ||
-        (carga.origen_ciudad && carga.origen_ciudad.toLowerCase().includes(localidadLower)) ||
-        (carga.destino_ciudad && carga.destino_ciudad.toLowerCase().includes(localidadLower))
-      );
-    }
-
-    // Filtrar por estado
-    if (filters.estado) {
-      filtered = filtered.filter(carga => carga.estado === filters.estado);
-    }
-
-    // Ordenar
-    filtered.sort((a, b) => {
-      switch (filters.ordenar) {
-        case "fecha_asc":
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case "fecha_desc":
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case "estado":
-          return a.estado.localeCompare(b.estado);
-        default:
-          return 0;
+      // Filtrar por localidad
+      if (filters.localidad.trim()) {
+        const localidadLower = filters.localidad.toLowerCase();
+        filtered = filtered.filter(carga => 
+          carga.origen.toLowerCase().includes(localidadLower) ||
+          carga.destino.toLowerCase().includes(localidadLower) ||
+          (carga.origen_ciudad && carga.origen_ciudad.toLowerCase().includes(localidadLower)) ||
+          (carga.destino_ciudad && carga.destino_ciudad.toLowerCase().includes(localidadLower))
+        );
       }
-    });
 
-    setFilteredCargas(filtered);
+      // Filtrar por estado
+      if (filters.estado) {
+        filtered = filtered.filter(carga => carga.estado === filters.estado);
+      }
+
+      // Ordenar
+      filtered.sort((a, b) => {
+        switch (filters.ordenar) {
+          case "fecha_asc":
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          case "fecha_desc":
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          case "estado":
+            return a.estado.localeCompare(b.estado);
+          default:
+            return 0;
+        }
+      });
+
+      setFilteredCargas(filtered);
+    } catch (error) {
+      console.error("Error applying filters:", error);
+      setFilteredCargas(cargas);
+    }
   };
 
   const cancelarCarga = async (cargaId: string) => {
@@ -242,7 +273,6 @@ const MisCargas = () => {
   };
 
   const extractCityFromLocation = (location: string): string => {
-    // Si ya tenemos la ciudad separada, usarla
     const parts = location.split(',');
     if (parts.length > 0) {
       return parts[0].trim();
@@ -296,6 +326,35 @@ const MisCargas = () => {
     }
   };
 
+  // Mostrar estado de error si existe
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex items-center space-x-2 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate(-1)} 
+            className="mr-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Volver
+          </Button>
+          <h1 className="text-2xl font-bold">Mis Cargas</h1>
+        </div>
+        
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-red-600 mb-4">Error: {error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Recargar página
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center space-x-2 mb-6">
@@ -328,7 +387,9 @@ const MisCargas = () => {
       />
 
       {loading ? (
-        <div className="py-12 text-center">Cargando sus cargas...</div>
+        <div className="py-12 text-center">
+          <p>Cargando sus cargas...</p>
+        </div>
       ) : filteredCargas.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
