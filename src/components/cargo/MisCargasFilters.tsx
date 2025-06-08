@@ -73,16 +73,16 @@ const MisCargasFilters = ({ filters, onFiltersChange }: MisCargasFiltersProps) =
           <div>
             <Label htmlFor="estado">Estado</Label>
             <Select 
-              value={tempFilters.estado} 
+              value={tempFilters.estado || "todos"} 
               onValueChange={(value) => 
-                setTempFilters(prev => ({ ...prev, estado: value }))
+                setTempFilters(prev => ({ ...prev, estado: value === "todos" ? "" : value }))
               }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos los estados" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los estados</SelectItem>
+                <SelectItem value="todos">Todos los estados</SelectItem>
                 <SelectItem value="disponible">Disponible</SelectItem>
                 <SelectItem value="asignada">Asignada</SelectItem>
                 <SelectItem value="completada">Completada</SelectItem>
