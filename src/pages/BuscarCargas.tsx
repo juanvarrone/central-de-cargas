@@ -56,8 +56,8 @@ const BuscarCargas = () => {
         </TabsContent>
         
         <TabsContent value="map" className="w-full mt-0">
-          <div className="h-[60vh] w-full rounded-md overflow-hidden border">
-            <CargasMapa filters={filters} />
+          <div className="h-[60vh] w-full rounded-md overflow-hidden border relative">
+            <CargasMapa filters={filters} showSearchBox={true} />
           </div>
         </TabsContent>
       </Tabs>

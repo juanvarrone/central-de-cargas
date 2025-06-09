@@ -1,82 +1,122 @@
 
-import React, { useMemo, useState, useEffect } from "react";
-import { LoadScript, Libraries } from "@react-google-maps/api";
-import { useCargoMap } from "./map/useCargoMap";
+import React, { useState, useEffect, useCallback } from "react";
+import { useLoadScript } from "@react-google-maps/api";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import GoogleMapContainer from "./map/GoogleMapContainer";
 import CargoMarkers from "./map/CargoMarkers";
-import CargoInfoWindow from "./map/CargoInfoWindow";
-import { Filters } from "@/types/mapa-cargas";
-import { useApiConfiguration } from "@/hooks/useApiConfiguration";
-import { Loader2 } from "lucide-react";
+import { useCargoMap } from "./map/useCargoMap";
+
+const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
 interface CargasMapaProps {
-  filters: Filters;
+  filters?: Record<string, any>;
+  showSearchBox?: boolean;
 }
 
-const CargasMapa = ({ filters }: CargasMapaProps) => {
-  const libraries: Libraries = useMemo(() => ["places"], []);
-  const { 
-    cargas, 
-    loading: cargasLoading, 
-    selectedCarga, 
-    setSelectedCarga, 
-    handleMapLoad 
-  } = useCargoMap(filters);
+const CargasMapa = ({ filters = {}, showSearchBox = false }: CargasMapaProps) => {
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
 
-  const { config, loading: apiKeyLoading } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
-  const [mapApiKey, setMapApiKey] = useState<string>("");
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: "AIzaSyBEcPYcF9RoIHVEYd6j_7c3vBWGylgTdUE",
+    libraries,
+  });
 
-  useEffect(() => {
-    if (config?.value) {
-      setMapApiKey(config.value);
+  const { filteredCargas, isLoading, error } = useCargoMap(filters);
+
+  const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+
+    if (showSearchBox && isLoaded) {
+      // Create search box
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Buscar ubicación...';
+      input.style.cssText = `
+        box-sizing: border-box;
+        border: 1px solid transparent;
+        width: 240px;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 3px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        font-size: 14px;
+        outline: none;
+        text-overflow: ellipses;
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        background: white;
+      `;
+
+      mapInstance.getDiv().appendChild(input);
+
+      const searchBoxInstance = new google.maps.places.SearchBox(input);
+      setSearchBox(searchBoxInstance);
+
+      // Bias the SearchBox results towards current map's viewport
+      mapInstance.addListener('bounds_changed', () => {
+        searchBoxInstance.setBounds(mapInstance.getBounds() as google.maps.LatLngBounds);
+      });
+
+      searchBoxInstance.addListener('places_changed', () => {
+        const places = searchBoxInstance.getPlaces();
+
+        if (places && places.length === 0) {
+          return;
+        }
+
+        const bounds = new google.maps.LatLngBounds();
+        places?.forEach((place) => {
+          if (!place.geometry || !place.geometry.location) {
+            console.log('Returned place contains no geometry');
+            return;
+          }
+
+          if (place.geometry.viewport) {
+            bounds.union(place.geometry.viewport);
+          } else {
+            bounds.extend(place.geometry.location);
+          }
+        });
+
+        mapInstance.fitBounds(bounds);
+      });
     }
-  }, [config]);
+  }, [isLoaded, showSearchBox]);
 
-  if (apiKeyLoading || cargasLoading) {
+  if (loadError) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <p>Cargando mapa...</p>
-        </div>
+      <div className="h-full flex items-center justify-center">
+        <p className="text-red-500">Error al cargar Google Maps</p>
       </div>
     );
   }
 
-  if (!mapApiKey) {
+  if (!isLoaded) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <p className="text-muted-foreground">
-          No se ha configurado la API key de Google Maps.
-        </p>
+      <div className="h-full flex items-center justify-center">
+        <p>Cargando mapa...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-red-500">Error: {error}</p>
       </div>
     );
   }
 
   return (
-    <LoadScript 
-      googleMapsApiKey={mapApiKey}
-      libraries={libraries}
-      loadingElement={
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p>Cargando API de Google Maps...</p>
-          </div>
-        </div>
-      }
-    >
-      <GoogleMapContainer onLoad={handleMapLoad}>
-        <CargoMarkers 
-          cargas={cargas} 
-          onSelectCarga={setSelectedCarga} 
-        />
-        <CargoInfoWindow 
-          selectedCarga={selectedCarga} 
-          onClose={() => setSelectedCarga(null)}
-        />
-      </GoogleMapContainer>
-    </LoadScript>
+    <GoogleMapContainer onLoad={onMapLoad}>
+      <CargoMarkers cargas={filteredCargas} />
+    </GoogleMapContainer>
   );
 };
 

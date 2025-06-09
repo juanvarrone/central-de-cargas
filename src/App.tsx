@@ -47,6 +47,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/complete-profile" element={<CompleteProfile />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/perfil" element={<Profile />} />
                 <Route path="/publicar-carga" element={<PublicarCarga />} />
                 <Route path="/editar-carga/:id" element={<EditarCarga />} />
                 <Route path="/ver-carga/:id" element={<VerCarga />} />
@@ -61,6 +62,7 @@ const App = () => (
                 <Route path="/publicar-camion" element={<PublicarCamion />} />
                 <Route path="/buscar-camiones" element={<BuscarCamiones />} />
                 <Route path="/configurar-alertas" element={<ConfigurarAlertas />} />
+                <Route path="/mis-alertas" element={<ConfigurarAlertas />} />
                 <Route path="/premium" element={<Premium />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/terminos-condiciones" element={<TerminosCondiciones />} />

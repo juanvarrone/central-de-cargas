@@ -411,19 +411,20 @@ const PublicarCamion = () => {
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>{tips.location}</p>
+                                  <p>Sé específico con tu ubicación para mejor visibilidad.</p>
                                 </TooltipContent>
                               </Tooltip>
                             </div>
                             <FormControl>
-                              <MapLocationInput
-                                id="origen_provincia"
-                                label=""
-                                value={field.value}
-                                onChange={field.onChange}
-                                placeholder="Ingrese la ubicación donde estará disponible el camión"
-                                required
-                              />
+                              <div className="relative">
+                                <Input
+                                  id="autocomplete-input"
+                                  placeholder="Ingrese la ubicación donde estará disponible el camión"
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  className="w-full"
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -608,6 +609,42 @@ const PublicarCamion = () => {
           </Form>
         </div>
       </div>
+
+      {/* Google Places Autocomplete Script */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            function initAutocomplete() {
+              const input = document.getElementById('autocomplete-input');
+              if (input && window.google && window.google.maps) {
+                const autocomplete = new google.maps.places.Autocomplete(input, {
+                  types: ['geocode'],
+                  componentRestrictions: { country: 'ar' }
+                });
+                
+                autocomplete.addListener('place_changed', function() {
+                  const place = autocomplete.getPlace();
+                  if (place && place.formatted_address) {
+                    input.value = place.formatted_address;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+                });
+              }
+            }
+            
+            if (window.google && window.google.maps) {
+              initAutocomplete();
+            } else {
+              window.initAutocomplete = initAutocomplete;
+            }
+          `,
+        }}
+      />
+      <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEcPYcF9RoIHVEYd6j_7c3vBWGylgTdUE&libraries=places&callback=initAutocomplete"
+        async
+        defer
+      />
     </div>
   );
 };

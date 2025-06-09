@@ -1,187 +1,349 @@
 
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useLocation } from "react-router-dom";
-import CargoMap from "@/components/CargoMap";
-import CargoLocationFields from "@/components/CargoLocationFields";
-import CargoDetailsFields from "@/components/CargoDetailsFields";
-import CargoDateTypeField from "./CargoDateTypeField";
-import CargoDateFields from "./CargoDateFields";
-import { useState, useEffect } from "react";
-import { geocodeAddress } from "@/utils/geocoding";
-import { CargaFormData, cargaSchema } from "@/types/cargo";
+import React, { useState, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CalendarIcon, Clock, Loader2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { cargoSchema, type CargoFormData } from '@/types/cargo';
+import { usePlacesAutocomplete } from '@/utils/geocoding';
 
 interface CargoFormProps {
-  onSubmit: (data: CargaFormData) => Promise<void>;
+  onSubmit: (data: CargoFormData) => Promise<void>;
   loading: boolean;
+  defaultValues?: Partial<CargoFormData>;
 }
 
-type Coordinates = {
-  lat: number;
-  lng: number;
-} | null;
+const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
+  const [showTimeFrom, setShowTimeFrom] = useState(false);
+  const [showTimeTo, setShowTimeTo] = useState(false);
+  const origenRef = useRef<HTMLInputElement>(null);
+  const destinoRef = useRef<HTMLInputElement>(null);
 
-const CargoForm = ({ onSubmit, loading }: CargoFormProps) => {
-  const [origenCoords, setOrigenCoords] = useState<Coordinates>(null);
-  const [destinoCoords, setDestinoCoords] = useState<Coordinates>(null);
-  const [distanciaKm, setDistanciaKm] = useState<number | undefined>(undefined);
-  const location = useLocation();
-  const savedFormData = location.state?.formData || null;
+  const { place: origenPlace } = usePlacesAutocomplete(origenRef);
+  const { place: destinoPlace } = usePlacesAutocomplete(destinoRef);
 
-  const form = useForm<CargaFormData>({
-    resolver: zodResolver(cargaSchema),
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+    getValues,
+  } = useForm<CargoFormData>({
+    resolver: zodResolver(cargoSchema),
     defaultValues: {
-      origen: "",
-      origen_detalle: "",
-      destino: "",
-      destino_detalle: "",
-      tipo_fecha: "exacta" as const,
-      fecha_carga_desde: "",
-      fecha_carga_hasta: "",
-      cantidadCargas: 1,
-      tipoCarga: "",
-      tipoCamion: "",
-      tarifa: "",
-      tipo_tarifa: "por_viaje" as const,
-      observaciones: "",
+      cantidad_cargas: 1,
+      tipo_tarifa: 'por_viaje',
+      tarifa_aproximada: false,
+      modo_pago: '',
+      ...defaultValues,
     },
   });
 
-  // Restore saved form data if available
-  useEffect(() => {
-    if (savedFormData) {
-      console.log("Restoring saved form data:", savedFormData);
-      
-      // Populate the form with saved data
-      Object.entries(savedFormData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          // @ts-ignore
-          form.setValue(key, value);
-        }
-      });
-      
-      // Restore coordinates if available
-      if (savedFormData.origen_lat && savedFormData.origen_lng) {
-        setOrigenCoords({
-          lat: savedFormData.origen_lat,
-          lng: savedFormData.origen_lng
-        });
-      }
-      
-      if (savedFormData.destino_lat && savedFormData.destino_lng) {
-        setDestinoCoords({
-          lat: savedFormData.destino_lat,
-          lng: savedFormData.destino_lng
-        });
-      }
+  const watchedValues = watch();
+
+  const handleFormSubmit = async (data: CargoFormData) => {
+    // Add geocoding information if available
+    if (origenPlace?.geometry?.location) {
+      data.origen_lat = origenPlace.geometry.location.lat();
+      data.origen_lng = origenPlace.geometry.location.lng();
     }
-  }, [savedFormData, form]);
-
-  // Calcular distancia cuando cambien las coordenadas
-  useEffect(() => {
-    if (origenCoords && destinoCoords) {
-      const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-        const R = 6371; // Radio de la Tierra en km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const a = 
-          Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-          Math.sin(dLng/2) * Math.sin(dLng/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-      };
-
-      const distancia = calculateDistance(
-        origenCoords.lat, 
-        origenCoords.lng, 
-        destinoCoords.lat, 
-        destinoCoords.lng
-      );
-      setDistanciaKm(distancia);
-    } else {
-      setDistanciaKm(undefined);
-    }
-  }, [origenCoords, destinoCoords]);
-
-  const handleOrigenChange = async (value: string) => {
-    const coords = await geocodeAddress(value);
-    setOrigenCoords(coords);
-    if (coords) {
-      form.setValue("origen_lat", coords.lat);
-      form.setValue("origen_lng", coords.lng);
-    }
-  };
-
-  const handleDestinoChange = async (value: string) => {
-    const coords = await geocodeAddress(value);
-    setDestinoCoords(coords);
-    if (coords) {
-      form.setValue("destino_lat", coords.lat);
-      form.setValue("destino_lng", coords.lng);
-    }
-  };
-
-  const handleSubmit = async (data: CargaFormData) => {
-    if (!origenCoords || !destinoCoords) {
-      return;
+    if (destinoPlace?.geometry?.location) {
+      data.destino_lat = destinoPlace.geometry.location.lat();
+      data.destino_lng = destinoPlace.geometry.location.lng();
     }
 
     await onSubmit(data);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <CargoLocationFields
-          form={form}
-          onOrigenChange={handleOrigenChange}
-          onDestinoChange={handleDestinoChange}
-        />
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Información de la Carga</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="tipo_carga">Tipo de Carga *</Label>
+              <Select onValueChange={(value) => setValue('tipo_carga', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione tipo de carga" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cereales">Cereales</SelectItem>
+                  <SelectItem value="Hacienda">Hacienda</SelectItem>
+                  <SelectItem value="Maquinaria">Maquinaria</SelectItem>
+                  <SelectItem value="Combustible">Combustible</SelectItem>
+                  <SelectItem value="Alimentos">Alimentos</SelectItem>
+                  <SelectItem value="Construccion">Construcción</SelectItem>
+                  <SelectItem value="Quimicos">Químicos</SelectItem>
+                  <SelectItem value="Textiles">Textiles</SelectItem>
+                  <SelectItem value="Electrodomesticos">Electrodomésticos</SelectItem>
+                  <SelectItem value="Otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.tipo_carga && (
+                <p className="text-sm text-red-500">{errors.tipo_carga.message}</p>
+              )}
+            </div>
 
-        <CargoMap
-          origenCoords={origenCoords}
-          destinoCoords={destinoCoords}
-          onOrigenChange={setOrigenCoords}
-          onDestinoChange={setDestinoCoords}
-        />
+            <div>
+              <Label htmlFor="tipo_camion">Tipo de Camión Requerido *</Label>
+              <Select onValueChange={(value) => setValue('tipo_camion', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione tipo de camión" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Furgon">Furgón</SelectItem>
+                  <SelectItem value="Chasis">Chasis</SelectItem>
+                  <SelectItem value="Semirremolque">Semirremolque</SelectItem>
+                  <SelectItem value="Bitrén">Bitrén</SelectItem>
+                  <SelectItem value="Camioneta">Camioneta</SelectItem>
+                  <SelectItem value="Otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.tipo_camion && (
+                <p className="text-sm text-red-500">{errors.tipo_camion.message}</p>
+              )}
+            </div>
+          </div>
 
-        <CargoDateTypeField form={form} />
-        <CargoDateFields form={form} />
-        <CargoDetailsFields form={form} distanciaKm={distanciaKm} />
+          <div>
+            <Label htmlFor="cantidad_cargas">Cantidad de Cargas</Label>
+            <Input
+              type="number"
+              min="1"
+              {...register('cantidad_cargas', { valueAsNumber: true })}
+            />
+            {errors.cantidad_cargas && (
+              <p className="text-sm text-red-500">{errors.cantidad_cargas.message}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-        <FormField
-          control={form.control}
-          name="observaciones"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observaciones</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Detalles adicionales, requisitos especiales, etc."
-                  className="min-h-[100px]"
-                  {...field}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ubicaciones</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="origen">Origen *</Label>
+            <Input
+              ref={origenRef}
+              placeholder="Ingrese dirección de origen"
+              {...register('origen')}
+            />
+            {errors.origen && (
+              <p className="text-sm text-red-500">{errors.origen.message}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="destino">Destino *</Label>
+            <Input
+              ref={destinoRef}
+              placeholder="Ingrese dirección de destino"
+              {...register('destino')}
+            />
+            {errors.destino && (
+              <p className="text-sm text-red-500">{errors.destino.message}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Fechas</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Fecha de Carga Desde *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !watchedValues.fecha_carga_desde && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {watchedValues.fecha_carga_desde ? (
+                    format(new Date(watchedValues.fecha_carga_desde), "PPP", { locale: es })
+                  ) : (
+                    <span>Seleccione fecha</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={watchedValues.fecha_carga_desde ? new Date(watchedValues.fecha_carga_desde) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      setValue('fecha_carga_desde', format(date, 'yyyy-MM-dd'));
+                    }
+                  }}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              </PopoverContent>
+            </Popover>
+            {errors.fecha_carga_desde && (
+              <p className="text-sm text-red-500">{errors.fecha_carga_desde.message}</p>
+            )}
+          </div>
 
-        <div className="flex justify-end space-x-4">
-          <Link to="/listado-cargas">
-            <Button variant="outline">Cancelar</Button>
-          </Link>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Publicando..." : "Publicar Carga"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          <div>
+            <Label>Fecha de Carga Hasta (opcional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !watchedValues.fecha_carga_hasta && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {watchedValues.fecha_carga_hasta ? (
+                    format(new Date(watchedValues.fecha_carga_hasta), "PPP", { locale: es })
+                  ) : (
+                    <span>Seleccione fecha final (opcional)</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={watchedValues.fecha_carga_hasta ? new Date(watchedValues.fecha_carga_hasta) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      setValue('fecha_carga_hasta', format(date, 'yyyy-MM-dd'));
+                    } else {
+                      setValue('fecha_carga_hasta', undefined);
+                    }
+                  }}
+                  disabled={(date) => {
+                    const fromDate = watchedValues.fecha_carga_desde ? new Date(watchedValues.fecha_carga_desde) : new Date();
+                    return date < fromDate;
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tarifa y Pago</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="tarifa">Tarifa *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                {...register('tarifa', { valueAsNumber: true })}
+              />
+              {errors.tarifa && (
+                <p className="text-sm text-red-500">{errors.tarifa.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="tipo_tarifa">Tipo de Tarifa *</Label>
+              <Select onValueChange={(value) => setValue('tipo_tarifa', value as 'por_viaje' | 'por_tonelada')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="por_viaje">Por Viaje</SelectItem>
+                  <SelectItem value="por_tonelada">Por Tonelada</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.tipo_tarifa && (
+                <p className="text-sm text-red-500">{errors.tipo_tarifa.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="modo_pago">Modo de Pago</Label>
+              <Input
+                placeholder="Ej: Efectivo, Transferencia, etc."
+                {...register('modo_pago')}
+              />
+              {errors.modo_pago && (
+                <p className="text-sm text-red-500">{errors.modo_pago.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="tarifa_aproximada"
+              checked={watchedValues.tarifa_aproximada}
+              onCheckedChange={(checked) => setValue('tarifa_aproximada', checked as boolean)}
+            />
+            <Label htmlFor="tarifa_aproximada">
+              La tarifa es aproximada (sujeta a negociación)
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Observaciones</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="Agregue información adicional sobre la carga..."
+            className="resize-none"
+            rows={4}
+            {...register('observaciones')}
+          />
+          {errors.observaciones && (
+            <p className="text-sm text-red-500">{errors.observaciones.message}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button type="submit" disabled={loading} className="w-full md:w-auto">
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {loading ? 'Publicando...' : 'Publicar Carga'}
+        </Button>
+      </div>
+    </form>
   );
 };
 
