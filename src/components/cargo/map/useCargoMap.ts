@@ -34,7 +34,7 @@ export const useCargoMap = (filters: Filters) => {
       }
 
       // Use fallback value if config is not loaded yet or missing
-      const extraDays = systemConfig.cargas_extra_days || 30;
+      const extraDays = systemConfig?.cargas_extra_days || 30;
       console.log("useCargoMap: Using extra days for cargas:", extraDays);
 
       // Apply visibility filter with safer approach
@@ -63,7 +63,7 @@ export const useCargoMap = (filters: Filters) => {
       const filteredData = applyDateFilter(data, "fecha_carga_hasta", extraDays);
 
       console.log("useCargoMap: Processed cargas data:", filteredData);
-      setCargas(filteredData as Carga[]);
+      setCargas(Array.isArray(filteredData) ? filteredData as Carga[] : []);
     } catch (error: any) {
       console.error("useCargoMap: Error fetching cargas:", error);
       setCargas([]);
@@ -85,7 +85,7 @@ export const useCargoMap = (filters: Filters) => {
   };
 
   return {
-    cargas,
+    cargas: cargas || [],
     loading,
     selectedCarga,
     setSelectedCarga,

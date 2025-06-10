@@ -9,6 +9,11 @@ interface CargoMarkersProps {
 }
 
 const CargoMarkers = ({ cargas, onSelectCarga }: CargoMarkersProps) => {
+  // Return early if cargas is not an array or is empty
+  if (!Array.isArray(cargas) || cargas.length === 0) {
+    return null;
+  }
+
   // Marker options function with proper anchor point for consistent display at all zoom levels
   const getMarkerOptions = (isOrigin: boolean) => ({
     icon: {
