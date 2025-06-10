@@ -1,11 +1,10 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useLoadScript } from "@react-google-maps/api";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useApiConfiguration } from "@/hooks/useApiConfiguration";
 import GoogleMapContainer from "./map/GoogleMapContainer";
 import CargoMarkers from "./map/CargoMarkers";
+import CargoInfoWindow from "./map/CargoInfoWindow";
 import { useCargoMap } from "./map/useCargoMap";
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
@@ -18,9 +17,12 @@ interface CargasMapaProps {
 const CargasMapa = ({ filters = {}, showSearchBox = false }: CargasMapaProps) => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
+  
+  const { config, loading: apiKeyLoading } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
+  const apiKey = config?.value || "";
 
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: "AIzaSyBEcPYcF9RoIHVEYd6j_7c3vBWGylgTdUE",
+    googleMapsApiKey: apiKey,
     libraries,
   });
 
@@ -90,6 +92,22 @@ const CargasMapa = ({ filters = {}, showSearchBox = false }: CargasMapaProps) =>
     }
   }, [isLoaded, showSearchBox, handleMapLoad]);
 
+  if (apiKeyLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p>Cargando configuración...</p>
+      </div>
+    );
+  }
+
+  if (!apiKey) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-red-500">No se ha configurado la API key de Google Maps</p>
+      </div>
+    );
+  }
+
   if (loadError) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -117,6 +135,7 @@ const CargasMapa = ({ filters = {}, showSearchBox = false }: CargasMapaProps) =>
   return (
     <GoogleMapContainer onLoad={onMapLoad}>
       <CargoMarkers cargas={cargas || []} onSelectCarga={setSelectedCarga} />
+      <CargoInfoWindow selectedCarga={selectedCarga} onClose={() => setSelectedCarga(null)} />
     </GoogleMapContainer>
   );
 };

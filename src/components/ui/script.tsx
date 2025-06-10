@@ -20,30 +20,16 @@ export const Script: React.FC<ScriptProps> = ({
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // For beforeInteractive, we load immediately
-    if (strategy === 'lazyOnload') {
-      // For lazy loading, we only load when idle
-      const handleLoad = () => {
-        if (window.requestIdleCallback) {
-          window.requestIdleCallback(() => loadScript());
-        } else {
-          // Fallback for browsers that don't support requestIdleCallback
-          setTimeout(loadScript, 1000);
-        }
-      };
-
-      if (document.readyState === 'complete') {
-        handleLoad();
-      } else {
-        window.addEventListener('load', handleLoad);
-        return () => window.removeEventListener('load', handleLoad);
-      }
-    } else {
-      // For afterInteractive (default) or beforeInteractive
-      loadScript();
+    // Check if we're trying to load Google Maps
+    const isGoogleMaps = src.includes('maps.googleapis.com');
+    
+    // For Google Maps, check if it's already loaded globally
+    if (isGoogleMaps && window.google && window.google.maps) {
+      setLoaded(true);
+      if (onLoad) onLoad();
+      return;
     }
     
-    // Script loading logic
     function loadScript() {
       // Check if script already exists
       const scriptId = id || src.replace(/[^\w\s]/g, '_');
@@ -51,7 +37,7 @@ export const Script: React.FC<ScriptProps> = ({
       
       if (existingScript) {
         // Script exists, check if it's loaded
-        if (existingScript.dataset.loaded === 'true') {
+        if (existingScript.dataset.loaded === 'true' || (isGoogleMaps && window.google)) {
           setLoaded(true);
           if (onLoad) onLoad();
         } else {
@@ -62,7 +48,7 @@ export const Script: React.FC<ScriptProps> = ({
           };
           
           existingScript.addEventListener('load', handleExistingLoad);
-          existingScript.addEventListener('error', (e) => setError(new Error(`Failed to load script: ${src}`)));
+          existingScript.addEventListener('error', () => setError(new Error(`Failed to load script: ${src}`)));
           
           return () => {
             existingScript.removeEventListener('load', handleExistingLoad);
@@ -84,22 +70,40 @@ export const Script: React.FC<ScriptProps> = ({
         if (onLoad) onLoad();
       };
       
-      script.onerror = (e) => {
+      script.onerror = () => {
         setError(new Error(`Failed to load script: ${src}`));
-        console.error(`Failed to load script: ${src}`, e);
+        console.error(`Failed to load script: ${src}`);
       };
       
-      // Add to document
-      document.body.appendChild(script);
+      // Add to document head instead of body for better compatibility
+      document.head.appendChild(script);
       
-      // Cleanup
+      // Cleanup function
       return () => {
-        // Don't remove Google Maps script as it might be used elsewhere
-        // Only remove if it's a custom script that won't be reused
-        if (!src.includes('maps.googleapis.com') && document.body.contains(script)) {
-          document.body.removeChild(script);
+        if (document.head.contains(script)) {
+          document.head.removeChild(script);
         }
       };
+    }
+
+    // Load based on strategy
+    if (strategy === 'lazyOnload') {
+      const handleLoad = () => {
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(() => loadScript());
+        } else {
+          setTimeout(loadScript, 1000);
+        }
+      };
+
+      if (document.readyState === 'complete') {
+        handleLoad();
+      } else {
+        window.addEventListener('load', handleLoad);
+        return () => window.removeEventListener('load', handleLoad);
+      }
+    } else {
+      return loadScript();
     }
   }, [src, onLoad, id, async, strategy]);
   
