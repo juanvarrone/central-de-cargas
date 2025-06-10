@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, X, Eye } from "lucide-react";
+import { Loader2, CheckCircle, MessageCircle } from "lucide-react";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,13 +42,31 @@ const CargaPostulaciones = ({ cargaId, isLoading }: CargaPostulacionesProps) => 
   const [postulaciones, setPostulaciones] = useState<Postulacion[]>([]);
   const [loading, setLoading] = useState(true);
   const [asignando, setAsignando] = useState<string | null>(null);
+  const [carga, setCarga] = useState<any>(null);
   const { toast } = useToast();
+  const { generateCargoWhatsAppMessage, openWhatsApp } = useWhatsApp();
 
   useEffect(() => {
     if (cargaId && !isLoading) {
       fetchPostulaciones();
+      fetchCarga();
     }
   }, [cargaId, isLoading]);
+
+  const fetchCarga = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("cargas")
+        .select("*")
+        .eq("id", cargaId)
+        .single();
+
+      if (error) throw error;
+      setCarga(data);
+    } catch (error) {
+      console.error("Error fetching carga:", error);
+    }
+  };
 
   const fetchPostulaciones = async () => {
     try {
@@ -162,6 +181,13 @@ const CargaPostulaciones = ({ cargaId, isLoading }: CargaPostulacionesProps) => 
     }
   };
 
+  const handleWhatsAppContact = (transportista: any) => {
+    if (!transportista?.phone_number || !carga) return;
+    
+    const message = generateCargoWhatsAppMessage(carga, false); // false porque es para el dador de carga
+    openWhatsApp(transportista.phone_number, message);
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-AR', {
@@ -219,7 +245,17 @@ const CargaPostulaciones = ({ cargaId, isLoading }: CargaPostulacionesProps) => 
                     {postulacion.transportista && (
                       <div className="text-sm text-muted-foreground">
                         {postulacion.transportista.phone_number && (
-                          <p>Teléfono: {postulacion.transportista.phone_number}</p>
+                          <div className="flex items-center gap-2">
+                            <p>Teléfono: {postulacion.transportista.phone_number}</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleWhatsAppContact(postulacion.transportista)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <MessageCircle className="h-4 w-4 text-green-600" />
+                            </Button>
+                          </div>
                         )}
                         {postulacion.transportista.total_reviews > 0 && (
                           <p>
