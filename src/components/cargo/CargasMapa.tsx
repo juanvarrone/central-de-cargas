@@ -24,11 +24,10 @@ const CargasMapa = ({ filters = {}, showSearchBox = false }: CargasMapaProps) =>
     libraries,
   });
 
-  const { cargas, loading, selectedCarga, setSelectedCarga, handleMapLoad } = useCargoMap(filters);
+  const { filteredCargas, isLoading, error } = useCargoMap(filters);
 
   const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
-    handleMapLoad(mapInstance);
 
     if (showSearchBox && isLoaded) {
       // Create search box
@@ -88,11 +87,7 @@ const CargasMapa = ({ filters = {}, showSearchBox = false }: CargasMapaProps) =>
         mapInstance.fitBounds(bounds);
       });
     }
-  }, [isLoaded, showSearchBox, handleMapLoad]);
-
-  const handleSelectCarga = (selectedCarga: any) => {
-    setSelectedCarga(selectedCarga);
-  };
+  }, [isLoaded, showSearchBox]);
 
   if (loadError) {
     return (
@@ -110,17 +105,17 @@ const CargasMapa = ({ filters = {}, showSearchBox = false }: CargasMapaProps) =>
     );
   }
 
-  if (loading) {
+  if (error) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p>Cargando cargas...</p>
+        <p className="text-red-500">Error: {error}</p>
       </div>
     );
   }
 
   return (
     <GoogleMapContainer onLoad={onMapLoad}>
-      <CargoMarkers cargas={cargas} onSelectCarga={handleSelectCarga} />
+      <CargoMarkers cargas={filteredCargas} />
     </GoogleMapContainer>
   );
 };

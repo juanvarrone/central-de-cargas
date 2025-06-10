@@ -168,7 +168,6 @@ export type Database = {
           fecha_carga_desde: string
           fecha_carga_hasta: string | null
           id: string
-          modo_pago: string | null
           observaciones: string | null
           origen: string
           origen_ciudad: string | null
@@ -199,7 +198,6 @@ export type Database = {
           fecha_carga_desde: string
           fecha_carga_hasta?: string | null
           id?: string
-          modo_pago?: string | null
           observaciones?: string | null
           origen: string
           origen_ciudad?: string | null
@@ -230,7 +228,6 @@ export type Database = {
           fecha_carga_desde?: string
           fecha_carga_hasta?: string | null
           id?: string
-          modo_pago?: string | null
           observaciones?: string | null
           origen?: string
           origen_ciudad?: string | null

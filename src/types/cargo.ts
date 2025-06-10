@@ -30,9 +30,4 @@ export interface Cargo extends CargoFormData {
   updated_at: string;
   postulacion_asignada_id?: string;
   fecha_asignacion?: string;
-  // Additional properties from database
-  origen_ciudad?: string;
-  origen_provincia?: string;
-  destino_ciudad?: string;
-  destino_provincia?: string;
 }
