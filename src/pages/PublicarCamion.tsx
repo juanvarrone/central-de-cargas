@@ -416,15 +416,14 @@ const PublicarCamion = () => {
                               </Tooltip>
                             </div>
                             <FormControl>
-                              <div className="relative">
-                                <Input
-                                  id="autocomplete-input"
-                                  placeholder="Ingrese la ubicación donde estará disponible el camión"
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  className="w-full"
-                                />
-                              </div>
+                              <MapLocationInput
+                                id="origen_provincia"
+                                label=""
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Ingrese la ubicación donde estará disponible el camión"
+                                className="w-full"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

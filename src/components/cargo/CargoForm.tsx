@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Clock, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -26,7 +26,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { cargoSchema, type CargoFormData } from '@/types/cargo';
-import { usePlacesAutocomplete } from '@/utils/geocoding';
+import MapLocationInput from '@/components/MapLocationInput';
+import PublishCargoMap from './PublishCargoMap';
 
 interface CargoFormProps {
   onSubmit: (data: CargoFormData) => Promise<void>;
@@ -37,11 +38,6 @@ interface CargoFormProps {
 const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
   const [showTimeFrom, setShowTimeFrom] = useState(false);
   const [showTimeTo, setShowTimeTo] = useState(false);
-  const origenRef = useRef<HTMLInputElement>(null);
-  const destinoRef = useRef<HTMLInputElement>(null);
-
-  const { place: origenPlace } = usePlacesAutocomplete(origenRef);
-  const { place: destinoPlace } = usePlacesAutocomplete(destinoRef);
 
   const {
     register,
@@ -57,293 +53,310 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
       tipo_tarifa: 'por_viaje',
       tarifa_aproximada: false,
       modo_pago: '',
+      origen: '',
+      destino: '',
       ...defaultValues,
     },
   });
 
   const watchedValues = watch();
+  const origen = watch('origen');
+  const destino = watch('destino');
 
   const handleFormSubmit = async (data: CargoFormData) => {
-    // Add geocoding information if available
-    if (origenPlace?.geometry?.location) {
-      data.origen_lat = origenPlace.geometry.location.lat();
-      data.origen_lng = origenPlace.geometry.location.lng();
-    }
-    if (destinoPlace?.geometry?.location) {
-      data.destino_lat = destinoPlace.geometry.location.lat();
-      data.destino_lng = destinoPlace.geometry.location.lng();
-    }
-
     await onSubmit(data);
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Información de la Carga</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="tipo_carga">Tipo de Carga *</Label>
-              <Select onValueChange={(value) => setValue('tipo_carga', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione tipo de carga" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Cereales">Cereales</SelectItem>
-                  <SelectItem value="Hacienda">Hacienda</SelectItem>
-                  <SelectItem value="Maquinaria">Maquinaria</SelectItem>
-                  <SelectItem value="Combustible">Combustible</SelectItem>
-                  <SelectItem value="Alimentos">Alimentos</SelectItem>
-                  <SelectItem value="Construccion">Construcción</SelectItem>
-                  <SelectItem value="Quimicos">Químicos</SelectItem>
-                  <SelectItem value="Textiles">Textiles</SelectItem>
-                  <SelectItem value="Electrodomesticos">Electrodomésticos</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.tipo_carga && (
-                <p className="text-sm text-red-500">{errors.tipo_carga.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="tipo_camion">Tipo de Camión Requerido *</Label>
-              <Select onValueChange={(value) => setValue('tipo_camion', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione tipo de camión" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Furgon">Furgón</SelectItem>
-                  <SelectItem value="Chasis">Chasis</SelectItem>
-                  <SelectItem value="Semirremolque">Semirremolque</SelectItem>
-                  <SelectItem value="Bitrén">Bitrén</SelectItem>
-                  <SelectItem value="Camioneta">Camioneta</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.tipo_camion && (
-                <p className="text-sm text-red-500">{errors.tipo_camion.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="cantidad_cargas">Cantidad de Cargas</Label>
-            <Input
-              type="number"
-              min="1"
-              {...register('cantidad_cargas', { valueAsNumber: true })}
-            />
-            {errors.cantidad_cargas && (
-              <p className="text-sm text-red-500">{errors.cantidad_cargas.message}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Ubicaciones</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="origen">Origen *</Label>
-            <Input
-              ref={origenRef}
-              placeholder="Ingrese dirección de origen"
-              {...register('origen')}
-            />
-            {errors.origen && (
-              <p className="text-sm text-red-500">{errors.origen.message}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="destino">Destino *</Label>
-            <Input
-              ref={destinoRef}
-              placeholder="Ingrese dirección de destino"
-              {...register('destino')}
-            />
-            {errors.destino && (
-              <p className="text-sm text-red-500">{errors.destino.message}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Fechas</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label>Fecha de Carga Desde *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !watchedValues.fecha_carga_desde && "text-muted-foreground"
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Form Section */}
+      <div>
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Información de la Carga</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="tipo_carga">Tipo de Carga *</Label>
+                  <Select onValueChange={(value) => setValue('tipo_carga', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione tipo de carga" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cereales">Cereales</SelectItem>
+                      <SelectItem value="Hacienda">Hacienda</SelectItem>
+                      <SelectItem value="Maquinaria">Maquinaria</SelectItem>
+                      <SelectItem value="Combustible">Combustible</SelectItem>
+                      <SelectItem value="Alimentos">Alimentos</SelectItem>
+                      <SelectItem value="Construccion">Construcción</SelectItem>
+                      <SelectItem value="Quimicos">Químicos</SelectItem>
+                      <SelectItem value="Textiles">Textiles</SelectItem>
+                      <SelectItem value="Electrodomesticos">Electrodomésticos</SelectItem>
+                      <SelectItem value="Otro">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.tipo_carga && (
+                    <p className="text-sm text-red-500">{errors.tipo_carga.message}</p>
                   )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watchedValues.fecha_carga_desde ? (
-                    format(new Date(watchedValues.fecha_carga_desde), "PPP", { locale: es })
-                  ) : (
-                    <span>Seleccione fecha</span>
+                </div>
+
+                <div>
+                  <Label htmlFor="tipo_camion">Tipo de Camión Requerido *</Label>
+                  <Select onValueChange={(value) => setValue('tipo_camion', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione tipo de camión" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Furgon">Furgón</SelectItem>
+                      <SelectItem value="Chasis">Chasis</SelectItem>
+                      <SelectItem value="Semirremolque">Semirremolque</SelectItem>
+                      <SelectItem value="Bitrén">Bitrén</SelectItem>
+                      <SelectItem value="Camioneta">Camioneta</SelectItem>
+                      <SelectItem value="Otro">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.tipo_camion && (
+                    <p className="text-sm text-red-500">{errors.tipo_camion.message}</p>
                   )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={watchedValues.fecha_carga_desde ? new Date(watchedValues.fecha_carga_desde) : undefined}
-                  onSelect={(date) => {
-                    if (date) {
-                      setValue('fecha_carga_desde', format(date, 'yyyy-MM-dd'));
-                    }
-                  }}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="cantidad_cargas">Cantidad de Cargas</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  {...register('cantidad_cargas', { valueAsNumber: true })}
                 />
-              </PopoverContent>
-            </Popover>
-            {errors.fecha_carga_desde && (
-              <p className="text-sm text-red-500">{errors.fecha_carga_desde.message}</p>
-            )}
-          </div>
+                {errors.cantidad_cargas && (
+                  <p className="text-sm text-red-500">{errors.cantidad_cargas.message}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-          <div>
-            <Label>Fecha de Carga Hasta (opcional)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !watchedValues.fecha_carga_hasta && "text-muted-foreground"
+          <Card>
+            <CardHeader>
+              <CardTitle>Ubicaciones</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <MapLocationInput
+                id="origen"
+                label="Origen"
+                value={origen}
+                onChange={(value) => setValue('origen', value)}
+                placeholder="Ingrese dirección de origen"
+                required
+              />
+              {errors.origen && (
+                <p className="text-sm text-red-500">{errors.origen.message}</p>
+              )}
+
+              <MapLocationInput
+                id="destino"
+                label="Destino"
+                value={destino}
+                onChange={(value) => setValue('destino', value)}
+                placeholder="Ingrese dirección de destino"
+                required
+              />
+              {errors.destino && (
+                <p className="text-sm text-red-500">{errors.destino.message}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Fechas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Fecha de Carga Desde *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !watchedValues.fecha_carga_desde && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {watchedValues.fecha_carga_desde ? (
+                        format(new Date(watchedValues.fecha_carga_desde), "PPP", { locale: es })
+                      ) : (
+                        <span>Seleccione fecha</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={watchedValues.fecha_carga_desde ? new Date(watchedValues.fecha_carga_desde) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setValue('fecha_carga_desde', format(date, 'yyyy-MM-dd'));
+                        }
+                      }}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {errors.fecha_carga_desde && (
+                  <p className="text-sm text-red-500">{errors.fecha_carga_desde.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label>Fecha de Carga Hasta (opcional)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !watchedValues.fecha_carga_hasta && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {watchedValues.fecha_carga_hasta ? (
+                        format(new Date(watchedValues.fecha_carga_hasta), "PPP", { locale: es })
+                      ) : (
+                        <span>Seleccione fecha final (opcional)</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={watchedValues.fecha_carga_hasta ? new Date(watchedValues.fecha_carga_hasta) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setValue('fecha_carga_hasta', format(date, 'yyyy-MM-dd'));
+                        } else {
+                          setValue('fecha_carga_hasta', undefined);
+                        }
+                      }}
+                      disabled={(date) => {
+                        const fromDate = watchedValues.fecha_carga_desde ? new Date(watchedValues.fecha_carga_desde) : new Date();
+                        return date < fromDate;
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tarifa y Pago</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="tarifa">Tarifa *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...register('tarifa', { valueAsNumber: true })}
+                  />
+                  {errors.tarifa && (
+                    <p className="text-sm text-red-500">{errors.tarifa.message}</p>
                   )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watchedValues.fecha_carga_hasta ? (
-                    format(new Date(watchedValues.fecha_carga_hasta), "PPP", { locale: es })
-                  ) : (
-                    <span>Seleccione fecha final (opcional)</span>
+                </div>
+
+                <div>
+                  <Label htmlFor="tipo_tarifa">Tipo de Tarifa *</Label>
+                  <Select onValueChange={(value) => setValue('tipo_tarifa', value as 'por_viaje' | 'por_tonelada')}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="por_viaje">Por Viaje</SelectItem>
+                      <SelectItem value="por_tonelada">Por Tonelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.tipo_tarifa && (
+                    <p className="text-sm text-red-500">{errors.tipo_tarifa.message}</p>
                   )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={watchedValues.fecha_carga_hasta ? new Date(watchedValues.fecha_carga_hasta) : undefined}
-                  onSelect={(date) => {
-                    if (date) {
-                      setValue('fecha_carga_hasta', format(date, 'yyyy-MM-dd'));
-                    } else {
-                      setValue('fecha_carga_hasta', undefined);
-                    }
-                  }}
-                  disabled={(date) => {
-                    const fromDate = watchedValues.fecha_carga_desde ? new Date(watchedValues.fecha_carga_desde) : new Date();
-                    return date < fromDate;
-                  }}
-                  initialFocus
+                </div>
+
+                <div>
+                  <Label htmlFor="modo_pago">Modo de Pago</Label>
+                  <Input
+                    placeholder="Ej: Efectivo, Transferencia, etc."
+                    {...register('modo_pago')}
+                  />
+                  {errors.modo_pago && (
+                    <p className="text-sm text-red-500">{errors.modo_pago.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="tarifa_aproximada"
+                  checked={watchedValues.tarifa_aproximada}
+                  onCheckedChange={(checked) => setValue('tarifa_aproximada', checked as boolean)}
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </CardContent>
-      </Card>
+                <Label htmlFor="tarifa_aproximada">
+                  La tarifa es aproximada (sujeta a negociación)
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Tarifa y Pago</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="tarifa">Tarifa *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                {...register('tarifa', { valueAsNumber: true })}
+          <Card>
+            <CardHeader>
+              <CardTitle>Observaciones</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Agregue información adicional sobre la carga..."
+                className="resize-none"
+                rows={4}
+                {...register('observaciones')}
               />
-              {errors.tarifa && (
-                <p className="text-sm text-red-500">{errors.tarifa.message}</p>
+              {errors.observaciones && (
+                <p className="text-sm text-red-500">{errors.observaciones.message}</p>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            <div>
-              <Label htmlFor="tipo_tarifa">Tipo de Tarifa *</Label>
-              <Select onValueChange={(value) => setValue('tipo_tarifa', value as 'por_viaje' | 'por_tonelada')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="por_viaje">Por Viaje</SelectItem>
-                  <SelectItem value="por_tonelada">Por Tonelada</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.tipo_tarifa && (
-                <p className="text-sm text-red-500">{errors.tipo_tarifa.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="modo_pago">Modo de Pago</Label>
-              <Input
-                placeholder="Ej: Efectivo, Transferencia, etc."
-                {...register('modo_pago')}
-              />
-              {errors.modo_pago && (
-                <p className="text-sm text-red-500">{errors.modo_pago.message}</p>
-              )}
-            </div>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={loading} className="w-full md:w-auto">
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? 'Publicando...' : 'Publicar Carga'}
+            </Button>
           </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="tarifa_aproximada"
-              checked={watchedValues.tarifa_aproximada}
-              onCheckedChange={(checked) => setValue('tarifa_aproximada', checked as boolean)}
-            />
-            <Label htmlFor="tarifa_aproximada">
-              La tarifa es aproximada (sujeta a negociación)
-            </Label>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Observaciones</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Agregue información adicional sobre la carga..."
-            className="resize-none"
-            rows={4}
-            {...register('observaciones')}
-          />
-          {errors.observaciones && (
-            <p className="text-sm text-red-500">{errors.observaciones.message}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-        <Button type="submit" disabled={loading} className="w-full md:w-auto">
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {loading ? 'Publicando...' : 'Publicar Carga'}
-        </Button>
+        </form>
       </div>
-    </form>
+
+      {/* Map Section */}
+      <div className="lg:sticky lg:top-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Vista Previa del Recorrido</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <PublishCargoMap
+                origen={origen}
+                destino={destino}
+                className="h-full rounded-lg"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 
