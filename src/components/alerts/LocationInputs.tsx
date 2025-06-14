@@ -13,38 +13,54 @@ interface LocationInputsProps {
 
 const LocationInputs = ({ value = [], onChange, maxLocations = 5 }: LocationInputsProps) => {
   const [locations, setLocations] = useState<string[]>(value.length > 0 ? value : [""]);
+  const [validationStates, setValidationStates] = useState<boolean[]>([false]);
 
   useEffect(() => {
     if (value.length > 0) {
       setLocations(value);
+      setValidationStates(new Array(value.length).fill(true)); // Assume existing values are valid
     }
   }, [value]);
 
-  const handleLocationChange = (index: number, location: string) => {
+  const handleLocationChange = (index: number, location: string, placeData?: google.maps.places.PlaceResult) => {
     const newLocations = [...locations];
     newLocations[index] = location;
     setLocations(newLocations);
     
-    // Filter out empty locations before sending to parent
-    const filteredLocations = newLocations.filter(loc => loc.trim() !== "");
-    onChange(filteredLocations);
+    // Only include valid locations
+    const validLocations = newLocations.filter((loc, i) => loc.trim() !== "" && validationStates[i]);
+    onChange(validLocations);
+  };
+
+  const handleValidationChange = (index: number, isValid: boolean) => {
+    const newValidationStates = [...validationStates];
+    newValidationStates[index] = isValid;
+    setValidationStates(newValidationStates);
+    
+    // Update onChange with only valid locations
+    const validLocations = locations.filter((loc, i) => loc.trim() !== "" && newValidationStates[i]);
+    onChange(validLocations);
   };
 
   const addLocation = () => {
     if (locations.length < maxLocations) {
       const newLocations = [...locations, ""];
+      const newValidationStates = [...validationStates, false];
       setLocations(newLocations);
+      setValidationStates(newValidationStates);
     }
   };
 
   const removeLocation = (index: number) => {
     if (locations.length > 1) {
       const newLocations = locations.filter((_, i) => i !== index);
+      const newValidationStates = validationStates.filter((_, i) => i !== index);
       setLocations(newLocations);
+      setValidationStates(newValidationStates);
       
-      // Filter out empty locations before sending to parent
-      const filteredLocations = newLocations.filter(loc => loc.trim() !== "");
-      onChange(filteredLocations);
+      // Update onChange with only valid locations
+      const validLocations = newLocations.filter((loc, i) => loc.trim() !== "" && newValidationStates[i]);
+      onChange(validLocations);
     }
   };
 
@@ -76,9 +92,11 @@ const LocationInputs = ({ value = [], onChange, maxLocations = 5 }: LocationInpu
                 id={`location-${index}`}
                 label=""
                 value={location}
-                onChange={(value) => handleLocationChange(index, value)}
+                onChange={(value, placeData) => handleLocationChange(index, value, placeData)}
+                onValidationChange={(isValid) => handleValidationChange(index, isValid)}
                 placeholder={`Ubicación ${index + 1}`}
                 className="w-full"
+                required
               />
             </div>
             {locations.length > 1 && (

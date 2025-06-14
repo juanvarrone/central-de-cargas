@@ -50,6 +50,7 @@ const PublicarCamion = () => {
   const [selectedTrucks, setSelectedTrucks] = useState<string[]>([]);
   const [loadingTrucks, setLoadingTrucks] = useState(true);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [locationValid, setLocationValid] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { submitTruck } = useTruckSubmission();
@@ -153,6 +154,15 @@ const PublicarCamion = () => {
       return;
     }
 
+    if (!locationValid) {
+      toast({
+        title: "Error",
+        description: "Debe seleccionar una ubicación válida de la lista de Google Places",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       // Add selected trucks to data
@@ -203,6 +213,38 @@ const PublicarCamion = () => {
   const handleAvailabilityChange = () => {
     // This will trigger a re-render of the availability cards
     // by updating a timestamp or similar state if needed
+  };
+
+  const handleLocationChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
+    form.setValue("origen_provincia", location);
+    
+    if (placeData && placeData.address_components) {
+      // Extract province and city from address components
+      let provincia = '';
+      let ciudad = '';
+      
+      for (const component of placeData.address_components) {
+        const types = component.types;
+        
+        if (types.includes('administrative_area_level_1')) {
+          provincia = component.long_name;
+        }
+        
+        if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+          ciudad = component.long_name;
+        }
+      }
+      
+      form.setValue('origen_ciudad', ciudad);
+      
+      // Set coordinates
+      if (placeData.geometry?.location) {
+        const lat = placeData.geometry.location.lat();
+        const lng = placeData.geometry.location.lng();
+        form.setValue('origen_lat', lat);
+        form.setValue('origen_lng', lng);
+      }
+    }
   };
 
   if (loadingTrucks) {
@@ -397,38 +439,31 @@ const PublicarCamion = () => {
                 <CardContent className="pt-6">
                   <div className="space-y-6">
                     <TooltipProvider>
-                      <FormField
-                        control={form.control}
-                        name="origen_provincia"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center">
-                              <FormLabel>Lugar donde tendrá el camión disponible *</FormLabel>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" className="p-0 h-auto ml-2">
-                                    <Info className="h-4 w-4 text-muted-foreground" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Sé específico con tu ubicación para mejor visibilidad.</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                            <FormControl>
-                              <MapLocationInput
-                                id="origen_provincia"
-                                label=""
-                                value={field.value}
-                                onChange={field.onChange}
-                                placeholder="Ingrese la ubicación donde estará disponible el camión"
-                                className="w-full"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div>
+                        <div className="flex items-center">
+                          <Label>Lugar donde tendrá el camión disponible *</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" className="p-0 h-auto ml-2">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Sé específico con tu ubicación para mejor visibilidad.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <MapLocationInput
+                          id="origen_provincia"
+                          label=""
+                          value={form.watch("origen_provincia")}
+                          onChange={handleLocationChange}
+                          onValidationChange={setLocationValid}
+                          placeholder="Ingrese la ubicación donde estará disponible el camión"
+                          className="w-full mt-2"
+                          required
+                        />
+                      </div>
 
                       <div className="space-y-2">
                         <div className="flex items-center">
@@ -593,7 +628,7 @@ const PublicarCamion = () => {
                       <Button
                         type="submit"
                         className="w-full"
-                        disabled={loading || selectedTrucks.length === 0}
+                        disabled={loading || selectedTrucks.length === 0 || !locationValid}
                       >
                         {loading && (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

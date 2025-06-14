@@ -37,6 +37,8 @@ interface CargoFormProps {
 const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
   const [showTimeFrom, setShowTimeFrom] = useState(false);
   const [showTimeTo, setShowTimeTo] = useState(false);
+  const [origenValid, setOrigenValid] = useState(false);
+  const [destinoValid, setDestinoValid] = useState(false);
 
   const {
     register,
@@ -63,7 +65,84 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
   const destino = watch('destino');
 
   const handleFormSubmit = async (data: CargoFormData) => {
+    // Validate Google Places selections before submitting
+    if (!origenValid) {
+      alert('Debe seleccionar un origen válido de la lista de Google Places');
+      return;
+    }
+    
+    if (!destinoValid) {
+      alert('Debe seleccionar un destino válido de la lista de Google Places');
+      return;
+    }
+
     await onSubmit(data);
+  };
+
+  const handleOrigenChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
+    setValue('origen', location);
+    
+    if (placeData && placeData.address_components) {
+      // Extract province and city from address components
+      let provincia = '';
+      let ciudad = '';
+      
+      for (const component of placeData.address_components) {
+        const types = component.types;
+        
+        if (types.includes('administrative_area_level_1')) {
+          provincia = component.long_name;
+        }
+        
+        if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+          ciudad = component.long_name;
+        }
+      }
+      
+      setValue('origen_provincia', provincia);
+      setValue('origen_ciudad', ciudad);
+      
+      // Set coordinates
+      if (placeData.geometry?.location) {
+        const lat = placeData.geometry.location.lat();
+        const lng = placeData.geometry.location.lng();
+        setValue('origen_lat', lat);
+        setValue('origen_lng', lng);
+      }
+    }
+  };
+
+  const handleDestinoChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
+    setValue('destino', location);
+    
+    if (placeData && placeData.address_components) {
+      // Extract province and city from address components
+      let provincia = '';
+      let ciudad = '';
+      
+      for (const component of placeData.address_components) {
+        const types = component.types;
+        
+        if (types.includes('administrative_area_level_1')) {
+          provincia = component.long_name;
+        }
+        
+        if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+          ciudad = component.long_name;
+        }
+      }
+      
+      setValue('destino_provincia', provincia);
+      setValue('destino_ciudad', ciudad);
+      
+      // Set coordinates
+      if (placeData.geometry?.location) {
+        const lat = placeData.geometry.location.lat();
+        const lng = placeData.geometry.location.lng();
+        setValue('destino_lat', lat);
+        setValue('destino_lng', lng);
+      }
+    }
   };
 
   return (
@@ -71,6 +150,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
       {/* Form Section */}
       <div className="space-y-6">
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          {/* ... keep existing code (Información de la Carga card) */}
           <Card>
             <CardHeader>
               <CardTitle>Información de la Carga</CardTitle>
@@ -130,7 +210,8 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                 id="origen"
                 label="Origen"
                 value={origen}
-                onChange={(value) => setValue('origen', value)}
+                onChange={handleOrigenChange}
+                onValidationChange={setOrigenValid}
                 placeholder="Ingrese dirección de origen"
                 required
               />
@@ -142,7 +223,8 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                 id="destino"
                 label="Destino"
                 value={destino}
-                onChange={(value) => setValue('destino', value)}
+                onChange={handleDestinoChange}
+                onValidationChange={setDestinoValid}
                 placeholder="Ingrese dirección de destino"
                 required
               />
@@ -152,6 +234,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
             </CardContent>
           </Card>
 
+          {/* ... keep existing code (Fechas, Tarifa y Pago, Observaciones cards) */}
           <Card>
             <CardHeader>
               <CardTitle>Fechas</CardTitle>
@@ -319,7 +402,11 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={loading} className="w-full md:w-auto">
+            <Button 
+              type="submit" 
+              disabled={loading || !origenValid || !destinoValid} 
+              className="w-full md:w-auto"
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? 'Publicando...' : 'Publicar Carga'}
             </Button>
