@@ -84,7 +84,7 @@ const MapLocationInput = ({
           placeholder={placeholder}
           className="w-full"
           required={required}
-          disabled={apiKeyLoading || !apiKey || loadError}
+          disabled={apiKeyLoading || !apiKey || !!loadError}
         />
 
         {(apiKeyLoading || (!isLoaded && apiKey && !loadError)) && (
