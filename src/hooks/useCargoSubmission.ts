@@ -15,7 +15,20 @@ export const useCargoSubmission = () => {
     // Added error handling and more detailed error messages
     try {
       console.log("Submitting cargo with user ID:", userData.user.id);
+      console.log("Data received:", data);
       
+      // Handle tarifa properly - it comes as a number from the form
+      let tarifaValue: number;
+      if (typeof data.tarifa === 'string') {
+        // If it's a string (formatted currency), remove non-numeric characters
+        tarifaValue = parseFloat(data.tarifa.replace(/\D/g, ""));
+      } else if (typeof data.tarifa === 'number') {
+        // If it's already a number, use it directly
+        tarifaValue = data.tarifa;
+      } else {
+        throw new Error("Formato de tarifa inválido");
+      }
+
       const { error } = await supabase.from("cargas").insert({
         origen: data.origen,
         origen_detalle: data.origen_detalle,
@@ -27,11 +40,13 @@ export const useCargoSubmission = () => {
         destino_ciudad: data.destino_ciudad,
         fecha_carga_desde: new Date(data.fecha_carga_desde).toISOString(),
         fecha_carga_hasta: data.fecha_carga_hasta ? new Date(data.fecha_carga_hasta).toISOString() : null,
-        cantidad_cargas: data.cantidadCargas,
-        tipo_carga: data.tipoCarga,
-        tipo_camion: data.tipoCamion,
-        tarifa: parseFloat(data.tarifa.replace(/\D/g, "")),
+        cantidad_cargas: data.cantidad_cargas,
+        tipo_carga: data.tipo_carga,
+        tipo_camion: data.tipo_camion,
+        tarifa: tarifaValue,
         tipo_tarifa: data.tipo_tarifa,
+        tarifa_aproximada: data.tarifa_aproximada,
+        modo_pago: data.modo_pago,
         observaciones: data.observaciones || null,
         origen_lat: data.origen_lat,
         origen_lng: data.origen_lng,
