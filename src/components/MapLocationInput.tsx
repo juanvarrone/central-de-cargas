@@ -29,8 +29,9 @@ const MapLocationInput = ({
   className = "",
 }: MapLocationInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [initializationError, setInitializationError] = useState<string | null>(null);
+  const [autocompleteReady, setAutocompleteReady] = useState(false);
   const { config, loading: apiKeyLoading, error: configError } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
   const apiKey = config?.value || "";
 
@@ -39,39 +40,59 @@ const MapLocationInput = ({
     libraries,
   });
 
-  // Initialize autocomplete when Google Maps is loaded
+  // Initialize autocomplete when everything is ready
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || !window.google || autocomplete || !apiKey) return;
+    if (!isLoaded || !inputRef.current || !window.google?.maps?.places || !apiKey || autocompleteRef.current) {
+      return;
+    }
 
     try {
-      console.log("Initializing Google Places Autocomplete for", id);
+      console.log("Initializing Google Places Autocomplete for", id, "with API key:", apiKey.substring(0, 10) + "...");
       
       const autocompleteInstance = new google.maps.places.Autocomplete(inputRef.current, {
         types: ['geocode'],
         componentRestrictions: { country: 'ar' },
+        fields: ['formatted_address', 'geometry', 'place_id']
       });
 
       autocompleteInstance.addListener('place_changed', () => {
         const place = autocompleteInstance.getPlace();
+        console.log("Place selected:", place);
+        
         if (place && place.formatted_address) {
           onChange(place.formatted_address);
+        } else {
+          console.warn("No formatted address in selected place");
         }
       });
 
-      setAutocomplete(autocompleteInstance);
+      autocompleteRef.current = autocompleteInstance;
+      setAutocompleteReady(true);
       setInitializationError(null);
-      console.log("Autocomplete initialized successfully for", id);
+      console.log("✓ Autocomplete initialized successfully for", id);
     } catch (error) {
       console.error("Error initializing autocomplete:", error);
       setInitializationError("Error al inicializar el autocompletado de Google Places");
+      setAutocompleteReady(false);
     }
 
     return () => {
-      if (autocomplete) {
-        google.maps.event.clearInstanceListeners(autocomplete);
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        autocompleteRef.current = null;
+        setAutocompleteReady(false);
       }
     };
-  }, [isLoaded, onChange, id, autocomplete, apiKey]);
+  }, [isLoaded, onChange, id, apiKey]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
+  }, []);
 
   // Show configuration error
   if (configError) {
@@ -213,9 +234,15 @@ const MapLocationInput = ({
         )}
       </div>
       
-      {isLoaded && apiKey && !loadError && !initializationError && (
+      {isLoaded && apiKey && !loadError && !initializationError && autocompleteReady && (
         <p className="text-xs text-green-600 mt-1">
           ✓ Google Places habilitado
+        </p>
+      )}
+      
+      {isLoaded && apiKey && !loadError && !initializationError && !autocompleteReady && (
+        <p className="text-xs text-yellow-600 mt-1">
+          ⚠️ Inicializando Google Places...
         </p>
       )}
     </div>
