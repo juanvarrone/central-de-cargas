@@ -82,66 +82,22 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
   const handleOrigenChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
     setValue('origen', location);
     
-    if (placeData && placeData.address_components) {
-      // Extract province and city from address components
-      let provincia = '';
-      let ciudad = '';
-      
-      for (const component of placeData.address_components) {
-        const types = component.types;
-        
-        if (types.includes('administrative_area_level_1')) {
-          provincia = component.long_name;
-        }
-        
-        if (types.includes('locality') || types.includes('administrative_area_level_2')) {
-          ciudad = component.long_name;
-        }
-      }
-      
-      setValue('origen_provincia', provincia);
-      setValue('origen_ciudad', ciudad);
-      
-      // Set coordinates
-      if (placeData.geometry?.location) {
-        const lat = placeData.geometry.location.lat();
-        const lng = placeData.geometry.location.lng();
-        setValue('origen_lat', lat);
-        setValue('origen_lng', lng);
-      }
+    if (placeData && placeData.geometry?.location) {
+      const lat = placeData.geometry.location.lat();
+      const lng = placeData.geometry.location.lng();
+      setValue('origen_lat', lat);
+      setValue('origen_lng', lng);
     }
   };
 
   const handleDestinoChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
     setValue('destino', location);
     
-    if (placeData && placeData.address_components) {
-      // Extract province and city from address components
-      let provincia = '';
-      let ciudad = '';
-      
-      for (const component of placeData.address_components) {
-        const types = component.types;
-        
-        if (types.includes('administrative_area_level_1')) {
-          provincia = component.long_name;
-        }
-        
-        if (types.includes('locality') || types.includes('administrative_area_level_2')) {
-          ciudad = component.long_name;
-        }
-      }
-      
-      setValue('destino_provincia', provincia);
-      setValue('destino_ciudad', ciudad);
-      
-      // Set coordinates
-      if (placeData.geometry?.location) {
-        const lat = placeData.geometry.location.lat();
-        const lng = placeData.geometry.location.lng();
-        setValue('destino_lat', lat);
-        setValue('destino_lng', lng);
-      }
+    if (placeData && placeData.geometry?.location) {
+      const lat = placeData.geometry.location.lat();
+      const lng = placeData.geometry.location.lng();
+      setValue('destino_lat', lat);
+      setValue('destino_lng', lng);
     }
   };
 
