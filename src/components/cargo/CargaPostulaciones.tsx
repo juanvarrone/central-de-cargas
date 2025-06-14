@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -142,6 +141,35 @@ const CargaPostulaciones = ({ cargaId, isLoading }: CargaPostulacionesProps) => 
         .update({ estado: "rechazada" })
         .eq("carga_id", cargaId)
         .neq("id", postulacionId);
+
+      // Enviar notificación al transportista asignado
+      const postulacion = postulaciones.find(p => p.id === postulacionId);
+      if (postulacion) {
+        // Crear notificación en la base de datos
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: postulacion.usuario_id,
+            type: "carga_asignada",
+            title: "¡Carga asignada!",
+            message: "Te han asignado una carga. Revisa los detalles.",
+            link: `/ver-carga/${cargaId}`
+          });
+
+        // Enviar push notification
+        try {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              user_id: postulacion.usuario_id,
+              title: "¡Carga asignada!",
+              body: "Te han asignado una carga. Revisa los detalles.",
+              link: `/ver-carga/${cargaId}`
+            }
+          });
+        } catch (pushError) {
+          console.error("Error sending push notification:", pushError);
+        }
+      }
 
       toast({
         title: "Transportista asignado",

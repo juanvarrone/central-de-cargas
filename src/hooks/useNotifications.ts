@@ -15,26 +15,6 @@ interface Notification {
   updated_at: string;
 }
 
-// Función helper para enviar push notification
-const sendPushNotification = async (userId: string, title: string, message: string, link?: string) => {
-  try {
-    const { error } = await supabase.functions.invoke('send-push-notification', {
-      body: {
-        user_id: userId,
-        title,
-        body: message,
-        link
-      }
-    });
-
-    if (error) {
-      console.error('Error sending push notification:', error);
-    }
-  } catch (error) {
-    console.error('Error invoking push notification function:', error);
-  }
-};
-
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -130,16 +110,33 @@ export const useNotifications = () => {
             },
             (payload) => {
               console.log('New notification received:', payload);
-              fetchNotifications();
-              
-              // Enviar push notification si el payload contiene los datos necesarios
               const newNotification = payload.new as Notification;
-              sendPushNotification(
-                newNotification.user_id,
-                newNotification.title,
-                newNotification.message,
-                newNotification.link
-              );
+              
+              // Agregar la nueva notificación al estado
+              setNotifications(prev => [newNotification, ...prev]);
+              setUnreadCount(prev => prev + 1);
+              
+              // Mostrar toast solo si la app está en foreground
+              toast({
+                title: newNotification.title,
+                description: newNotification.message,
+              });
+
+              // Enviar push notification automáticamente
+              setTimeout(async () => {
+                try {
+                  await supabase.functions.invoke('send-push-notification', {
+                    body: {
+                      user_id: newNotification.user_id,
+                      title: newNotification.title,
+                      body: newNotification.message,
+                      link: newNotification.link
+                    }
+                  });
+                } catch (error) {
+                  console.error('Error sending push notification:', error);
+                }
+              }, 1000); // Pequeño delay para asegurar que la notificación esté guardada
             }
           )
           .subscribe();
@@ -151,7 +148,7 @@ export const useNotifications = () => {
     };
 
     setupRealtimeSubscription();
-  }, []);
+  }, [toast]);
 
   return {
     notifications,
