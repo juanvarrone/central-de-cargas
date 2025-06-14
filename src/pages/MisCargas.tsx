@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Edit, Trash2, Eye, CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Eye, Edit, Trash2, MapPin, Calendar, Truck, DollarSign } from "lucide-react";
+import { User } from "@supabase/supabase-js";
+import MisCargasFilters from "@/components/cargo/MisCargasFilters";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,267 +19,150 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import MisCargasFilters, { MisCargasFilters as FiltersType } from "@/components/cargo/MisCargasFilters";
+import CopyButton from "@/components/ui/copy-button";
 
-interface Carga {
+interface Cargo {
   id: string;
   tipo_carga: string;
   origen: string;
-  origen_ciudad?: string;
   destino: string;
-  destino_ciudad?: string;
   fecha_carga_desde: string;
-  estado: string;
-  created_at: string;
+  fecha_carga_hasta?: string;
+  tipo_camion: string;
   tarifa: number;
   tipo_tarifa: string;
-  postulaciones?: number;
-  postulacion_asignada_id?: string | null;
-  transportista?: {
-    full_name: string;
-    phone_number: string;
-    id: string;
-  } | null;
+  tarifa_aproximada: boolean;
+  modo_pago?: string;
+  cantidad_cargas: number;
+  observaciones?: string;
+  estado: string;
+  created_at: string;
+  origen_lat?: number;
+  origen_lng?: number;
+  destino_lat?: number;
+  destino_lng?: number;
 }
 
 const MisCargas = () => {
-  const [cargas, setCargas] = useState<Carga[]>([]);
-  const [filteredCargas, setFilteredCargas] = useState<Carga[]>([]);
+  const [cargas, setCargas] = useState<Cargo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<FiltersType>({
-    ordenar: "fecha_desc",
-    localidad: "",
-    estado: ""
+  const [user, setUser] = useState<User | null>(null);
+  const [filters, setFilters] = useState({
+    estado: '',
+    fechaDesde: '',
+    fechaHasta: '',
+    origen: '',
+    destino: ''
   });
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const fetchUser = async () => {
       try {
-        const { data } = await supabase.auth.getUser();
-        if (!data?.user) {
-          toast({
-            title: "Acceso restringido",
-            description: "Debe iniciar sesión para ver sus cargas",
-            variant: "destructive",
-          });
-          navigate("/auth", { state: { from: "/mis-cargas" } });
-          return;
-        }
-        await fetchCargas();
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
       } catch (error) {
-        console.error("Error checking auth:", error);
-        setError("Error de autenticación");
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    const fetchCargas = async (userId: string) => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("cargas")
+          .select("*")
+          .eq("usuario_id", userId)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        setCargas(data || []);
+      } catch (error: any) {
+        console.error("Error fetching cargas:", error);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
         setLoading(false);
       }
     };
 
-    checkAuth();
+    fetchUser();
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchCargas(session.user.id);
+      } else {
+        setUser(null);
+        setCargas([]);
+      }
+    });
   }, [navigate, toast]);
 
   useEffect(() => {
-    applyFilters();
-  }, [cargas, filters]);
-
-  const fetchCargas = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError("Usuario no autenticado");
-        return;
-      }
-      
-      console.log("Fetching cargas for user:", user.id);
-      
-      // Consulta simplificada solo para cargas básicas
-      const { data: cargasData, error } = await supabase
-        .from("cargas")
-        .select("*")
-        .eq("usuario_id", user.id)
-        .order("created_at", { ascending: false });
-        
-      if (error) {
-        console.error("Error fetching cargas:", error);
-        throw error;
-      }
-      
-      console.log("Basic cargas data:", cargasData);
-      
-      if (!cargasData || cargasData.length === 0) {
-        setCargas([]);
-        setLoading(false);
-        return;
-      }
-
-      // Enriquecer datos de forma no bloqueante
-      const enrichedCargas = await Promise.allSettled(
-        cargasData.map(async (carga: any) => {
-          try {
-            // Contar postulaciones
-            const { count } = await supabase
-              .from("cargas_postulaciones")
-              .select("*", { count: "exact", head: true })
-              .eq("carga_id", carga.id);
-            
-            let transportista = null;
-            
-            // Si hay una postulación asignada, obtener datos del transportista
-            if (carga.postulacion_asignada_id) {
-              try {
-                const { data: postulacion } = await supabase
-                  .from("cargas_postulaciones")
-                  .select("usuario_id")
-                  .eq("id", carga.postulacion_asignada_id)
-                  .single();
-                  
-                if (postulacion) {
-                  const { data: transportistaData } = await supabase
-                    .from("profiles")
-                    .select("full_name, phone_number, id")
-                    .eq("id", postulacion.usuario_id)
-                    .single();
-                    
-                  if (transportistaData) {
-                    transportista = transportistaData;
-                  }
-                }
-              } catch (error) {
-                console.warn("Error fetching transportista for carga:", carga.id, error);
-              }
-            }
-            
-            return {
-              ...carga,
-              postulaciones: count || 0,
-              transportista
-            };
-          } catch (error) {
-            console.warn("Error enriching carga:", carga.id, error);
-            return {
-              ...carga,
-              postulaciones: 0,
-              transportista: null
-            };
-          }
-        })
-      );
-      
-      // Procesar resultados, incluso si algunos fallaron
-      const processedCargas = enrichedCargas.map((result, index) => {
-        if (result.status === 'fulfilled') {
-          return result.value;
-        } else {
-          console.warn("Failed to enrich carga:", cargasData[index].id, result.reason);
-          return {
-            ...cargasData[index],
-            postulaciones: 0,
-            transportista: null
-          };
-        }
-      });
-      
-      console.log("Final processed cargas:", processedCargas);
-      setCargas(processedCargas);
-      
-    } catch (error: any) {
-      console.error("Error in fetchCargas:", error);
-      setError(error.message || "Error al cargar las cargas");
-      toast({
-        title: "Error",
-        description: "Hubo un problema al cargar sus cargas",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (user) {
+      fetchCargas(user.id);
     }
+  }, [user, navigate, toast]);
+
+  const handleCopyCarga = (carga: Cargo) => {
+    // Prepare the data for copying, excluding id and metadata
+    const cargoData = {
+      tipo_carga: carga.tipo_carga,
+      origen: carga.origen,
+      destino: carga.destino,
+      tipo_camion: carga.tipo_camion,
+      tarifa: carga.tarifa,
+      tipo_tarifa: carga.tipo_tarifa,
+      tarifa_aproximada: carga.tarifa_aproximada,
+      modo_pago: carga.modo_pago || '',
+      cantidad_cargas: carga.cantidad_cargas,
+      observaciones: carga.observaciones || '',
+      origen_lat: carga.origen_lat,
+      origen_lng: carga.origen_lng,
+      destino_lat: carga.destino_lat,
+      destino_lng: carga.destino_lng,
+      // Set new dates for the copy
+      fecha_carga_desde: '',
+      fecha_carga_hasta: carga.fecha_carga_hasta || ''
+    };
+
+    // Navigate to publish page with pre-filled data
+    navigate('/publicar-carga', { 
+      state: { 
+        defaultValues: cargoData,
+        isCopy: true 
+      } 
+    });
   };
 
-  const applyFilters = () => {
+  const handleDeleteCarga = async (cargoId: string) => {
     try {
-      let filtered = [...cargas];
-
-      // Filtrar por localidad
-      if (filters.localidad.trim()) {
-        const localidadLower = filters.localidad.toLowerCase();
-        filtered = filtered.filter(carga => 
-          carga.origen.toLowerCase().includes(localidadLower) ||
-          carga.destino.toLowerCase().includes(localidadLower) ||
-          (carga.origen_ciudad && carga.origen_ciudad.toLowerCase().includes(localidadLower)) ||
-          (carga.destino_ciudad && carga.destino_ciudad.toLowerCase().includes(localidadLower))
-        );
-      }
-
-      // Filtrar por estado
-      if (filters.estado) {
-        filtered = filtered.filter(carga => carga.estado === filters.estado);
-      }
-
-      // Ordenar
-      filtered.sort((a, b) => {
-        switch (filters.ordenar) {
-          case "fecha_asc":
-            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-          case "fecha_desc":
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          case "estado":
-            return a.estado.localeCompare(b.estado);
-          default:
-            return 0;
-        }
-      });
-
-      setFilteredCargas(filtered);
-    } catch (error) {
-      console.error("Error applying filters:", error);
-      setFilteredCargas(cargas);
-    }
-  };
-
-  const cancelarCarga = async (cargaId: string) => {
-    try {
-      setLoading(true);
-      
       const { error } = await supabase
         .from("cargas")
-        .update({ estado: "cancelada" })
-        .eq("id", cargaId);
-      
+        .delete()
+        .eq("id", cargoId);
+
       if (error) throw error;
-      
-      setCargas((prevCargas) =>
-        prevCargas.map((carga) =>
-          carga.id === cargaId ? { ...carga, estado: "cancelada" } : carga
-        )
-      );
-      
+
+      setCargas(prev => prev.filter(c => c.id !== cargoId));
       toast({
-        title: "Carga cancelada",
-        description: "La carga ha sido cancelada exitosamente",
+        title: "Carga eliminada",
+        description: "La carga ha sido eliminada correctamente"
       });
-      
-    } catch (error: any) {
-      console.error("Error canceling carga:", error);
+    } catch (err: any) {
+      console.error("Error deleting carga:", err);
       toast({
         title: "Error",
-        description: "No se pudo cancelar la carga",
-        variant: "destructive",
+        description: err.message || "Error al eliminar la carga",
+        variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const extractCityFromLocation = (location: string): string => {
-    const parts = location.split(',');
-    if (parts.length > 0) {
-      return parts[0].trim();
-    }
-    return location;
   };
 
   const formatDate = (dateString: string) => {
@@ -289,36 +174,14 @@ const MisCargas = () => {
     });
   };
 
-  const getTipoTarifaLabel = (tipo: string) => {
-    switch (tipo) {
-      case 'por_viaje':
-        return 'por viaje';
-      case 'por_tonelada':
-        return 'por tn';
-      default:
-        return '';
-    }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   const getEstadoBadgeColor = (estado: string) => {
     switch (estado.toLowerCase()) {
       case 'disponible':
         return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'pendiente':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
       case 'asignada':
         return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
       case 'completada':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
       case 'cancelada':
         return 'bg-red-100 text-red-800 hover:bg-red-200';
       default:
@@ -326,83 +189,51 @@ const MisCargas = () => {
     }
   };
 
-  // Mostrar estado de error si existe
-  if (error) {
+  const filteredCargas = cargas.filter(carga => {
+    const estadoFilter = filters.estado ? carga.estado === filters.estado : true;
+    const fechaDesdeFilter = filters.fechaDesde ? new Date(carga.fecha_carga_desde) >= new Date(filters.fechaDesde) : true;
+    const fechaHastaFilter = filters.fechaHasta ? new Date(carga.fecha_carga_desde) <= new Date(filters.fechaHasta) : true;
+    const origenFilter = filters.origen ? carga.origen.toLowerCase().includes(filters.origen.toLowerCase()) : true;
+    const destinoFilter = filters.destino ? carga.destino.toLowerCase().includes(filters.destino.toLowerCase()) : true;
+
+    return estadoFilter && fechaDesdeFilter && fechaHastaFilter && origenFilter && destinoFilter;
+  });
+
+  if (loading) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <div className="flex items-center space-x-2 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate(-1)} 
-            className="mr-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Volver
-          </Button>
-          <h1 className="text-2xl font-bold">Mis Cargas</h1>
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-        
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-red-600 mb-4">Error: {error}</p>
-            <Button onClick={() => window.location.reload()}>
-              Recargar página
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="flex items-center space-x-2 mb-6">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate(-1)} 
-          className="mr-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Volver
-        </Button>
-        <h1 className="text-2xl font-bold">Mis Cargas</h1>
-      </div>
-
       <div className="flex justify-between items-center mb-6">
-        <p className="text-muted-foreground">
-          Listado de cargas que has publicado
-        </p>
-        <div className="flex gap-2">
-          <Button onClick={() => navigate("/publicar-carga")}>
-            Publicar nueva carga
-          </Button>
-        </div>
+        <h1 className="text-2xl font-bold">Mis Cargas</h1>
+        <Button onClick={() => navigate("/publicar-carga")}>
+          Publicar Nueva Carga
+        </Button>
       </div>
 
-      <MisCargasFilters 
-        filters={filters}
-        onFiltersChange={setFilters}
-      />
+      <MisCargasFilters filters={filters} onFiltersChange={setFilters} />
 
-      {loading ? (
-        <div className="py-12 text-center">
-          <p>Cargando sus cargas...</p>
-        </div>
-      ) : filteredCargas.length === 0 ? (
+      {filteredCargas.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            {cargas.length === 0 ? (
-              <>
-                <p className="mb-4">No has publicado ninguna carga todavía.</p>
-                <Button onClick={() => navigate("/publicar-carga")}>
-                  Publicar primera carga
-                </Button>
-              </>
-            ) : (
-              <p>No se encontraron cargas con los filtros aplicados.</p>
-            )}
+            <Truck className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-medium mb-2">No hay cargas publicadas</h2>
+            <p className="text-muted-foreground mb-6">
+              {cargas.length === 0 
+                ? "Aún no has publicado ninguna carga."
+                : "No se encontraron cargas con los filtros aplicados."
+              }
+            </p>
+            <Button onClick={() => navigate("/publicar-carga")}>
+              Publicar mi primera carga
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -410,88 +241,125 @@ const MisCargas = () => {
           {filteredCargas.map((carga) => (
             <Card key={carga.id}>
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{carga.tipo_carga}</Badge>
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                  <div className="space-y-3 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Badge className={getEstadoBadgeColor(carga.estado)}>
                         {carga.estado.charAt(0).toUpperCase() + carga.estado.slice(1)}
                       </Badge>
+                      <Badge variant="outline">{carga.tipo_carga}</Badge>
+                      <Badge variant="outline">{carga.tipo_camion}</Badge>
+                      {carga.cantidad_cargas > 1 && (
+                        <Badge variant="secondary">{carga.cantidad_cargas} cargas</Badge>
+                      )}
                     </div>
-                    <h3 className="font-medium text-lg">
-                      {extractCityFromLocation(carga.origen)} → {extractCityFromLocation(carga.destino)}
-                    </h3>
-                    <div className="text-sm text-muted-foreground">
-                      <p>Fecha de carga: {formatDate(carga.fecha_carga_desde)}</p>
-                      <p>Publicado: {formatDate(carga.created_at)}</p>
-                      <p>Tarifa: {formatCurrency(carga.tarifa)} ({getTipoTarifaLabel(carga.tipo_tarifa)})</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-sm">Origen → Destino</p>
+                          <p className="text-sm text-muted-foreground">{carga.origen} → {carga.destino}</p>
+                        </div>
+                      </div>
                       
-                      {carga.transportista && carga.estado === "asignada" && (
-                        <div className="mt-2 flex items-center gap-2 text-primary">
-                          <CheckCircle size={16} className="fill-green-500 text-white" />
-                          <span>Asignada a: <strong>{carga.transportista.full_name}</strong></span>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-sm">Fecha de carga</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(carga.fecha_carga_desde)}
+                            {carga.fecha_carga_hasta && ` - ${formatDate(carga.fecha_carga_hasta)}`}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-sm">Tarifa</p>
+                          <p className="text-sm text-muted-foreground">
+                            ${carga.tarifa.toLocaleString()} {carga.tipo_tarifa.replace('_', ' ')}
+                            {carga.tarifa_aproximada && " (aprox.)"}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {carga.modo_pago && (
+                        <div>
+                          <p className="font-medium text-sm">Modo de pago</p>
+                          <p className="text-sm text-muted-foreground">{carga.modo_pago}</p>
                         </div>
                       )}
                     </div>
+                    
+                    {carga.observaciones && (
+                      <div>
+                        <p className="font-medium text-sm">Observaciones</p>
+                        <p className="text-sm text-muted-foreground">{carga.observaciones}</p>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground">
+                      Publicado: {formatDate(carga.created_at)}
+                    </p>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2 md:flex-col md:items-end">
-                    <div className="w-full md:w-auto flex gap-2 justify-end">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => navigate(`/ver-carga/${carga.id}`)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Ver
-                      </Button>
+                  <div className="flex flex-wrap gap-2 lg:flex-col lg:w-auto">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => navigate(`/ver-carga/${carga.id}`)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver
+                    </Button>
+                    
+                    {carga.estado === 'disponible' && (
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={() => navigate(`/editar-carga/${carga.id}`)}
-                        disabled={carga.estado === "cancelada" || carga.estado === "completada" || carga.estado === "asignada"}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Editar
                       </Button>
-                      
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            disabled={carga.estado === "cancelada" || carga.estado === "completada"}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Cancelar
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta acción no se puede deshacer. Cancelar la carga la marcará como no disponible para los transportistas.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => cancelarCarga(carga.id)}
-                              className="bg-red-600 hover:bg-red-700 text-white"
-                            >
-                              Sí, cancelar carga
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                    
-                    {typeof carga.postulaciones === 'number' && (
-                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 ml-auto mt-2 md:mt-0">
-                        {carga.postulaciones} Postulaciones
-                      </Badge>
                     )}
+                    
+                    <CopyButton 
+                      onCopy={() => handleCopyCarga(carga)}
+                      size="sm"
+                    />
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Eliminar
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta acción no se puede deshacer. Se eliminará permanentemente esta carga.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteCarga(carga.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                          >
+                            Sí, eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardContent>

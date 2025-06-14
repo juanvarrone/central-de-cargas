@@ -1,7 +1,6 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import CargoForm from "@/components/cargo/CargoForm";
 import { useCargoSubmission } from "@/hooks/useCargoSubmission";
@@ -25,9 +24,15 @@ const PublicarCarga = () => {
   const [showCargaMasiva, setShowCargaMasiva] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const { submitCargo } = useCargoSubmission();
   const { canPublishCarga, isLoading: contextLoading } = useAuth();
   const { profile } = useUserProfile();
+
+  // Get data from location state (for copy functionality)
+  const locationState = location.state as { defaultValues?: any; isCopy?: boolean } | null;
+  const defaultValues = locationState?.defaultValues;
+  const isCopy = locationState?.isCopy || false;
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -85,8 +90,10 @@ const PublicarCarga = () => {
     try {
       await submitCargo(data);
       toast({
-        title: "Carga publicada",
-        description: "Tu carga ha sido publicada exitosamente",
+        title: isCopy ? "Carga copiada y publicada" : "Carga publicada",
+        description: isCopy 
+          ? "Tu carga ha sido copiada y publicada exitosamente" 
+          : "Tu carga ha sido publicada exitosamente",
       });
       navigate("/mis-cargas");
     } catch (error: any) {
@@ -128,7 +135,9 @@ const PublicarCarga = () => {
             >
               <ArrowLeft size={20} />
             </Button>
-            <h1 className="text-xl font-bold">Publicar Carga</h1>
+            <h1 className="text-xl font-bold">
+              {isCopy ? "Copiar y Publicar Carga" : "Publicar Carga"}
+            </h1>
           </div>
           
           {isPremium && (
@@ -148,7 +157,12 @@ const PublicarCarga = () => {
             </Dialog>
           )}
         </div>
-        <CargoForm onSubmit={handleSubmit} loading={loading} />
+        <CargoForm 
+          onSubmit={handleSubmit} 
+          loading={loading} 
+          defaultValues={defaultValues}
+          isCopy={isCopy}
+        />
       </div>
     </div>
   );

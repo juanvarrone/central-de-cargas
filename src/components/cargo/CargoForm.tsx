@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -27,14 +27,17 @@ import { cn } from '@/lib/utils';
 import { cargoSchema, type CargoFormData } from '@/types/cargo';
 import MapLocationInput from '@/components/MapLocationInput';
 import PublishCargoMap from './PublishCargoMap';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 interface CargoFormProps {
   onSubmit: (data: CargoFormData) => Promise<void>;
   loading: boolean;
   defaultValues?: Partial<CargoFormData>;
+  isCopy?: boolean;
 }
 
-const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
+const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFormProps) => {
   const [showTimeFrom, setShowTimeFrom] = useState(false);
   const [showTimeTo, setShowTimeTo] = useState(false);
   const [origenValid, setOrigenValid] = useState(false);
@@ -47,6 +50,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
     setValue,
     watch,
     getValues,
+    reset,
   } = useForm<CargoFormData>({
     resolver: zodResolver(cargoSchema),
     defaultValues: {
@@ -59,6 +63,29 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
       ...defaultValues,
     },
   });
+
+  // Reset form with default values when they change (for copy functionality)
+  useEffect(() => {
+    if (defaultValues) {
+      reset({
+        cantidad_cargas: 1,
+        tipo_tarifa: 'por_viaje',
+        tarifa_aproximada: false,
+        modo_pago: '',
+        origen: '',
+        destino: '',
+        ...defaultValues,
+      });
+      
+      // If copying and we have coordinates, mark locations as valid
+      if (isCopy && defaultValues.origen && defaultValues.origen_lat && defaultValues.origen_lng) {
+        setOrigenValid(true);
+      }
+      if (isCopy && defaultValues.destino && defaultValues.destino_lat && defaultValues.destino_lng) {
+        setDestinoValid(true);
+      }
+    }
+  }, [defaultValues, reset, isCopy]);
 
   const watchedValues = watch();
   const origen = watch('origen');
@@ -105,6 +132,15 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* Form Section */}
       <div className="space-y-6">
+        {isCopy && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Se han copiado los datos de una carga existente. Modifique las fechas y cualquier otro dato según sea necesario antes de publicar.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           {/* ... keep existing code (Información de la Carga card) */}
           <Card>

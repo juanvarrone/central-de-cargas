@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import CopyButton from "@/components/ui/copy-button";
 
 interface Disponibilidad {
   id: string;
@@ -106,6 +107,30 @@ const DisponibilidadesCamion = () => {
 
     fetchData();
   }, [truckId, navigate]);
+
+  const handleCopyDisponibilidad = (disponibilidad: Disponibilidad) => {
+    // Prepare the data for copying
+    const disponibilidadData = {
+      origen: disponibilidad.origen,
+      origen_provincia: disponibilidad.origen_provincia,
+      origen_ciudad: disponibilidad.origen_ciudad,
+      radio_km: disponibilidad.radio_km,
+      observaciones: disponibilidad.observaciones || '',
+      es_permanente: disponibilidad.es_permanente,
+      // Clear dates for new availability
+      fecha_disponible_desde: '',
+      fecha_disponible_hasta: '',
+    };
+
+    // Navigate to publish truck page with pre-filled data
+    navigate('/publicar-camion', { 
+      state: { 
+        defaultValues: disponibilidadData,
+        isCopy: true,
+        truckId: truckId
+      } 
+    });
+  };
 
   const handleDeleteDisponibilidad = async (disponibilidadId: string) => {
     try {
@@ -286,6 +311,11 @@ const DisponibilidadesCamion = () => {
                   </div>
                   
                   <div className="flex gap-2 md:flex-col">
+                    <CopyButton 
+                      onCopy={() => handleCopyDisponibilidad(disponibilidad)}
+                      size="sm"
+                    />
+                    
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button 
