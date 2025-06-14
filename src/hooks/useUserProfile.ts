@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +20,7 @@ export interface UserProfile {
   created_at?: string;
   updated_at?: string;
   is_admin?: boolean | null;
+  email_notifications?: boolean | null;
 }
 
 export interface UseUserProfileResult {

@@ -34,7 +34,7 @@ export const useEmailNotifications = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ email_notifications: enabled })
+        .update({ email_notifications: enabled } as any)
         .eq('id', userId);
 
       if (error) throw error;

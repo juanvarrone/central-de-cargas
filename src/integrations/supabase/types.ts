@@ -378,6 +378,7 @@ export type Database = {
           blocked_reason: string | null
           created_at: string
           email: string | null
+          email_notifications: boolean | null
           full_name: string | null
           id: string
           is_admin: boolean | null
@@ -398,6 +399,7 @@ export type Database = {
           blocked_reason?: string | null
           created_at?: string
           email?: string | null
+          email_notifications?: boolean | null
           full_name?: string | null
           id: string
           is_admin?: boolean | null
@@ -418,6 +420,7 @@ export type Database = {
           blocked_reason?: string | null
           created_at?: string
           email?: string | null
+          email_notifications?: boolean | null
           full_name?: string | null
           id?: string
           is_admin?: boolean | null

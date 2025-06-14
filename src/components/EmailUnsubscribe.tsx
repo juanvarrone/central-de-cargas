@@ -33,7 +33,7 @@ const EmailUnsubscribe = () => {
       // Actualizar las preferencias del usuario
       const { error } = await supabase
         .from('profiles')
-        .update({ email_notifications: false })
+        .update({ email_notifications: false } as any)
         .eq('id', userId);
 
       if (error) throw error;

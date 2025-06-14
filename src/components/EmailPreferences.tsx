@@ -32,7 +32,7 @@ const EmailPreferences = () => {
 
       if (error) throw error;
       
-      setEmailNotifications(data.email_notifications || false);
+      setEmailNotifications((data as any).email_notifications || false);
     } catch (error) {
       console.error('Error fetching email preferences:', error);
     } finally {
