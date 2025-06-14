@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,23 +79,13 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="tipo_carga">Tipo de Carga *</Label>
-                  <Select onValueChange={(value) => setValue('tipo_carga', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione tipo de carga" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Cereales">Cereales</SelectItem>
-                      <SelectItem value="Hacienda">Hacienda</SelectItem>
-                      <SelectItem value="Maquinaria">Maquinaria</SelectItem>
-                      <SelectItem value="Combustible">Combustible</SelectItem>
-                      <SelectItem value="Alimentos">Alimentos</SelectItem>
-                      <SelectItem value="Construccion">Construcción</SelectItem>
-                      <SelectItem value="Quimicos">Químicos</SelectItem>
-                      <SelectItem value="Textiles">Textiles</SelectItem>
-                      <SelectItem value="Electrodomesticos">Electrodomésticos</SelectItem>
-                      <SelectItem value="Otro">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="tipo_carga"
+                    placeholder="Ej: Cereales, Hacienda, Maquinaria..."
+                    maxLength={50}
+                    className="mt-2"
+                    {...register('tipo_carga')}
+                  />
                   {errors.tipo_carga && (
                     <p className="text-sm text-red-500 mt-1">{errors.tipo_carga.message}</p>
                   )}
@@ -104,19 +93,13 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
 
                 <div>
                   <Label htmlFor="tipo_camion">Tipo de Camión Requerido *</Label>
-                  <Select onValueChange={(value) => setValue('tipo_camion', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione tipo de camión" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Furgon">Furgón</SelectItem>
-                      <SelectItem value="Chasis">Chasis</SelectItem>
-                      <SelectItem value="Semirremolque">Semirremolque</SelectItem>
-                      <SelectItem value="Bitrén">Bitrén</SelectItem>
-                      <SelectItem value="Camioneta">Camioneta</SelectItem>
-                      <SelectItem value="Otro">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="tipo_camion"
+                    placeholder="Ej: Furgón, Chasis, Semirremolque..."
+                    maxLength={50}
+                    className="mt-2"
+                    {...register('tipo_camion')}
+                  />
                   {errors.tipo_camion && (
                     <p className="text-sm text-red-500 mt-1">{errors.tipo_camion.message}</p>
                   )}

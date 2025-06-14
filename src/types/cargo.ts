@@ -2,12 +2,12 @@
 import { z } from "zod";
 
 export const cargoSchema = z.object({
-  tipo_carga: z.string().min(1, "Debe seleccionar un tipo de carga"),
+  tipo_carga: z.string().min(1, "Debe especificar el tipo de carga").max(50, "Máximo 50 caracteres"),
   origen: z.string().min(1, "Debe especificar el origen"),
   destino: z.string().min(1, "Debe especificar el destino"),
   fecha_carga_desde: z.string().min(1, "Debe especificar la fecha de carga"),
   fecha_carga_hasta: z.string().optional(),
-  tipo_camion: z.string().min(1, "Debe seleccionar un tipo de camión"),
+  tipo_camion: z.string().min(1, "Debe especificar el tipo de camión").max(50, "Máximo 50 caracteres"),
   tarifa: z.number().min(0, "La tarifa debe ser mayor a 0"),
   tipo_tarifa: z.enum(["por_viaje", "por_tonelada"]),
   tarifa_aproximada: z.boolean().default(false),
