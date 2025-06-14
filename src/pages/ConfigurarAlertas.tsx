@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import Layout from "@/components/layout";
 import { useUserAlerts, UserAlert } from "@/hooks/useUserAlerts";
 import AlertForm from "@/components/alerts/AlertForm";
 import AlertsList from "@/components/alerts/AlertsList";
@@ -62,11 +61,11 @@ const ConfigurarAlertas = () => {
         
         await updateAlert.mutateAsync(updatedAlert);
       } else {
-        // Convert locations from comma-separated string to array and date objects to strings
+        // Convert locations array to locations array
         const newAlert = {
           name: data.name,
           radius_km: data.radius_km,
-          locations: data.selectedLocations ? data.selectedLocations.split(',').map((s: string) => s.trim()) : [],
+          locations: data.locations || [],
           date_from: data.date_from ? data.date_from.toISOString() : null,
           date_to: data.date_to ? data.date_to.toISOString() : null,
           notify_new_loads: data.notify_new_loads,
@@ -87,7 +86,6 @@ const ConfigurarAlertas = () => {
       ...alert,
       date_from: alert.date_from ? new Date(alert.date_from) : undefined,
       date_to: alert.date_to ? new Date(alert.date_to) : undefined,
-      selectedLocations: alert.locations ? alert.locations.join(', ') : ''
     };
     
     setCurrentAlert(alert);
@@ -109,64 +107,60 @@ const ConfigurarAlertas = () => {
 
   if (!user) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Mis Alertas</h1>
-          {!showForm && (
-            <Button 
-              onClick={() => setShowForm(true)}
-              className="flex items-center"
-            >
-              <Plus className="mr-1 h-4 w-4" /> Nueva Alerta
-            </Button>
-          )}
-        </div>
-
-        {showForm ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>{currentAlert ? 'Editar Alerta' : 'Nueva Alerta'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AlertForm
-                defaultValues={currentAlert ? {
-                  name: currentAlert.name,
-                  radius_km: currentAlert.radius_km,
-                  selectedLocations: currentAlert.locations?.join(', '),
-                  date_from: currentAlert.date_from ? new Date(currentAlert.date_from) : undefined,
-                  date_to: currentAlert.date_to ? new Date(currentAlert.date_to) : undefined,
-                  notify_new_loads: currentAlert.notify_new_loads,
-                  notify_available_trucks: currentAlert.notify_available_trucks,
-                } : undefined}
-                onSubmit={handleSubmit}
-                loading={isCreating || isEditing}
-              />
-            </CardContent>
-          </Card>
-        ) : isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : (
-          <AlertsList
-            alerts={alerts || []}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isDeleting={isDeleting}
-          />
+    <div className="container max-w-4xl mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Mis Alertas</h1>
+        {!showForm && (
+          <Button 
+            onClick={() => setShowForm(true)}
+            className="flex items-center"
+          >
+            <Plus className="mr-1 h-4 w-4" /> Nueva Alerta
+          </Button>
         )}
       </div>
-    </Layout>
+
+      {showForm ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{currentAlert ? 'Editar Alerta' : 'Nueva Alerta'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AlertForm
+              defaultValues={currentAlert ? {
+                name: currentAlert.name,
+                radius_km: currentAlert.radius_km,
+                locations: currentAlert.locations || [],
+                date_from: currentAlert.date_from ? new Date(currentAlert.date_from) : undefined,
+                date_to: currentAlert.date_to ? new Date(currentAlert.date_to) : undefined,
+                notify_new_loads: currentAlert.notify_new_loads,
+                notify_available_trucks: currentAlert.notify_available_trucks,
+              } : undefined}
+              onSubmit={handleSubmit}
+              loading={isCreating || isEditing}
+            />
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      ) : (
+        <AlertsList
+          alerts={alerts || []}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          isDeleting={isDeleting}
+        />
+      )}
+    </div>
   );
 };
 

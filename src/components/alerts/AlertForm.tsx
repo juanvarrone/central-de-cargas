@@ -33,7 +33,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { PopoverClose } from "@radix-ui/react-popover";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import LocationInputs from "./LocationInputs";
 
 const alertFormSchema = z.object({
   name: z.string().min(2, {
@@ -42,12 +42,13 @@ const alertFormSchema = z.object({
   radius_km: z.coerce.number().min(1).max(500, {
     message: "El radio debe estar entre 1 y 500 km.",
   }),
-  selectedLocations: z.string().optional(),
+  locations: z.array(z.string()).min(1, {
+    message: "Debe agregar al menos una ubicación.",
+  }),
   date_from: z.date().optional(),
   date_to: z.date().optional(),
   notify_new_loads: z.boolean().default(true),
   notify_available_trucks: z.boolean().default(true),
-  comments: z.string().optional(),
 });
 
 type AlertFormValues = z.infer<typeof alertFormSchema>;
@@ -60,7 +61,7 @@ interface AlertFormProps {
 
 const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
   const { toast } = useToast();
-  const [selectedLocations, setSelectedLocations] = useState<string>("");
+  const [locations, setLocations] = useState<string[]>(defaultValues?.locations || []);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(defaultValues?.date_from);
   const [dateTo, setDateTo] = useState<Date | undefined>(defaultValues?.date_to);
 
@@ -69,12 +70,11 @@ const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
     defaultValues: {
       name: defaultValues?.name || "",
       radius_km: defaultValues?.radius_km || 50,
-      selectedLocations: defaultValues?.selectedLocations || "",
+      locations: defaultValues?.locations || [],
       date_from: defaultValues?.date_from,
       date_to: defaultValues?.date_to,
       notify_new_loads: defaultValues?.notify_new_loads ?? true,
       notify_available_trucks: defaultValues?.notify_available_trucks ?? true,
-      comments: defaultValues?.comments || "",
     },
     mode: "onChange",
   });
@@ -82,7 +82,7 @@ const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
   useEffect(() => {
     if (defaultValues) {
       form.reset(defaultValues);
-      setSelectedLocations(defaultValues.selectedLocations || "");
+      setLocations(defaultValues.locations || []);
       setDateFrom(defaultValues.date_from);
       setDateTo(defaultValues.date_to);
     }
@@ -104,7 +104,7 @@ const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-4"
+        className="space-y-6"
       >
         <FormField
           control={form.control}
@@ -140,19 +140,14 @@ const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
 
         <FormField
           control={form.control}
-          name="selectedLocations"
+          name="locations"
           render={({ field }) => (
             <FormItem>
-              <Label>Ubicaciones (separadas por coma)</Label>
               <FormControl>
-                <Textarea
-                  placeholder="Ej: Buenos Aires, Cordoba, Rosario"
-                  {...field}
-                  value={selectedLocations}
-                  onChange={(e) => {
-                    setSelectedLocations(e.target.value);
-                    field.onChange(e);
-                  }}
+                <LocationInputs
+                  value={field.value}
+                  onChange={field.onChange}
+                  maxLocations={5}
                 />
               </FormControl>
               <FormMessage />
@@ -302,9 +297,14 @@ const AlertForm = ({ onSubmit, loading, defaultValues }: AlertFormProps) => {
           />
         </div>
 
-        <Button type="submit" disabled={loading}>
-          {loading ? "Cargando..." : "Guardar Alerta"}
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit" disabled={loading}>
+            {loading ? "Guardando..." : "Guardar Alerta"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => window.history.back()}>
+            Cancelar
+          </Button>
+        </div>
       </form>
     </Form>
   );

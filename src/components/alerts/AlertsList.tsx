@@ -52,6 +52,30 @@ const AlertsList = ({ alerts, onEdit, onDelete, isDeleting }: AlertsListProps) =
     return date.toLocaleDateString();
   };
 
+  const renderLocations = (locations: string[] | string) => {
+    if (!locations) return '-';
+    
+    // Handle both array and string formats for backward compatibility
+    const locationArray = Array.isArray(locations) ? locations : [locations];
+    
+    if (locationArray.length === 0) return '-';
+    
+    return (
+      <div className="space-y-1">
+        {locationArray.slice(0, 5).map((location, index) => (
+          <div key={index} className="text-sm">
+            {location}
+          </div>
+        ))}
+        {locationArray.length > 5 && (
+          <div className="text-xs text-muted-foreground">
+            +{locationArray.length - 5} más...
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="mt-6">
       <Table>
@@ -59,6 +83,7 @@ const AlertsList = ({ alerts, onEdit, onDelete, isDeleting }: AlertsListProps) =
           <TableRow>
             <TableHead>Nombre</TableHead>
             <TableHead>Ubicaciones</TableHead>
+            <TableHead>Radio (km)</TableHead>
             <TableHead>Período</TableHead>
             <TableHead>Creada</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
@@ -68,7 +93,10 @@ const AlertsList = ({ alerts, onEdit, onDelete, isDeleting }: AlertsListProps) =
           {alerts.map((alert) => (
             <TableRow key={alert.id}>
               <TableCell className="font-medium">{alert.name}</TableCell>
-              <TableCell>{Array.isArray(alert.locations) ? alert.locations.join(', ') : alert.locations}</TableCell>
+              <TableCell className="max-w-xs">
+                {renderLocations(alert.locations)}
+              </TableCell>
+              <TableCell>{alert.radius_km}</TableCell>
               <TableCell>
                 {alert.date_from || alert.date_to ? (
                   `${formatDate(alert.date_from)} a ${formatDate(alert.date_to)}`
@@ -77,7 +105,7 @@ const AlertsList = ({ alerts, onEdit, onDelete, isDeleting }: AlertsListProps) =
                 )}
               </TableCell>
               <TableCell>
-                {alert.id && formatDistanceToNow(new Date(alert.id), { 
+                {alert.created_at && formatDistanceToNow(new Date(alert.created_at), { 
                   addSuffix: true,
                   locale: es 
                 })}
