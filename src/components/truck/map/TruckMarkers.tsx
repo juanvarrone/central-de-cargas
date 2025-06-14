@@ -15,17 +15,17 @@ const TruckMarkers = ({ trucks, onSelectTruck }: TruckMarkersProps) => {
     fillOpacity: 1,
     strokeWeight: 2,
     strokeColor: "#ffffff",
-    scale: 2,
+    scale: 0.5, // Reducido de 2 a 0.5 (25% del tamaño original)
     anchor: new google.maps.Point(12, 24),
   });
 
   const getDestinationIcon = () => ({
-    path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+    path: "M2 3h20v1H2V3zm0 2h20v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5zm2 2v10h16V7H4zm2 2h4v2H6V9zm6 0h4v2h-4V9zm-6 4h4v2H6v-2zm6 0h4v2h-4v-2z", // Ícono de bandera corregido
     fillColor: "#ef4444",
     fillOpacity: 1,
     strokeWeight: 1,
     strokeColor: "#991b1b",
-    scale: 1.5,
+    scale: 0.375, // Reducido de 1.5 a 0.375 (25% del tamaño original)
     anchor: new google.maps.Point(12, 24),
   });
 

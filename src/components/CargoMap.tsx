@@ -74,7 +74,7 @@ const CargoMap = ({
       fillOpacity: 1,
       strokeWeight: 1,
       strokeColor: isOrigin ? "#166534" : "#991b1b",
-      scale: 2,
+      scale: 0.5, // Reducido de 2 a 0.5 (25% del tamaño original)
       anchor: new google.maps.Point(12, 17),
     },
   });
