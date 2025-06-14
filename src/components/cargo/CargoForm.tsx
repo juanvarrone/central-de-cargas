@@ -68,16 +68,16 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* Form Section */}
-      <div>
+      <div className="space-y-6">
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Información de la Carga</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="tipo_carga">Tipo de Carga *</Label>
                   <Select onValueChange={(value) => setValue('tipo_carga', value)}>
@@ -98,7 +98,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                     </SelectContent>
                   </Select>
                   {errors.tipo_carga && (
-                    <p className="text-sm text-red-500">{errors.tipo_carga.message}</p>
+                    <p className="text-sm text-red-500 mt-1">{errors.tipo_carga.message}</p>
                   )}
                 </div>
 
@@ -118,7 +118,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                     </SelectContent>
                   </Select>
                   {errors.tipo_camion && (
-                    <p className="text-sm text-red-500">{errors.tipo_camion.message}</p>
+                    <p className="text-sm text-red-500 mt-1">{errors.tipo_camion.message}</p>
                   )}
                 </div>
               </div>
@@ -128,10 +128,11 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                 <Input
                   type="number"
                   min="1"
+                  className="mt-2"
                   {...register('cantidad_cargas', { valueAsNumber: true })}
                 />
                 {errors.cantidad_cargas && (
-                  <p className="text-sm text-red-500">{errors.cantidad_cargas.message}</p>
+                  <p className="text-sm text-red-500 mt-1">{errors.cantidad_cargas.message}</p>
                 )}
               </div>
             </CardContent>
@@ -141,7 +142,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
             <CardHeader>
               <CardTitle>Ubicaciones</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <MapLocationInput
                 id="origen"
                 label="Origen"
@@ -172,7 +173,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
             <CardHeader>
               <CardTitle>Fechas</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div>
                 <Label>Fecha de Carga Desde *</Label>
                 <Popover>
@@ -180,7 +181,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal mt-2",
                         !watchedValues.fecha_carga_desde && "text-muted-foreground"
                       )}
                     >
@@ -207,7 +208,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                   </PopoverContent>
                 </Popover>
                 {errors.fecha_carga_desde && (
-                  <p className="text-sm text-red-500">{errors.fecha_carga_desde.message}</p>
+                  <p className="text-sm text-red-500 mt-1">{errors.fecha_carga_desde.message}</p>
                 )}
               </div>
 
@@ -218,7 +219,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal mt-2",
                         !watchedValues.fecha_carga_hasta && "text-muted-foreground"
                       )}
                     >
@@ -257,58 +258,62 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
             <CardHeader>
               <CardTitle>Tarifa y Pago</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="tarifa">Tarifa *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    {...register('tarifa', { valueAsNumber: true })}
-                  />
-                  {errors.tarifa && (
-                    <p className="text-sm text-red-500">{errors.tarifa.message}</p>
-                  )}
-                </div>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="tarifa">Tarifa *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="mt-2"
+                      {...register('tarifa', { valueAsNumber: true })}
+                    />
+                    {errors.tarifa && (
+                      <p className="text-sm text-red-500 mt-1">{errors.tarifa.message}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <Label htmlFor="tipo_tarifa">Tipo de Tarifa *</Label>
-                  <Select onValueChange={(value) => setValue('tipo_tarifa', value as 'por_viaje' | 'por_tonelada')}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="por_viaje">Por Viaje</SelectItem>
-                      <SelectItem value="por_tonelada">Por Tonelada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.tipo_tarifa && (
-                    <p className="text-sm text-red-500">{errors.tipo_tarifa.message}</p>
-                  )}
+                  <div>
+                    <Label htmlFor="tipo_tarifa">Tipo de Tarifa *</Label>
+                    <Select onValueChange={(value) => setValue('tipo_tarifa', value as 'por_viaje' | 'por_tonelada')}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Seleccione tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="por_viaje">Por Viaje</SelectItem>
+                        <SelectItem value="por_tonelada">Por Tonelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.tipo_tarifa && (
+                      <p className="text-sm text-red-500 mt-1">{errors.tipo_tarifa.message}</p>
+                    )}
+                  </div>
                 </div>
 
                 <div>
                   <Label htmlFor="modo_pago">Modo de Pago</Label>
                   <Input
                     placeholder="Ej: Efectivo, Transferencia, etc."
+                    className="mt-2"
                     {...register('modo_pago')}
                   />
                   {errors.modo_pago && (
-                    <p className="text-sm text-red-500">{errors.modo_pago.message}</p>
+                    <p className="text-sm text-red-500 mt-1">{errors.modo_pago.message}</p>
                   )}
                 </div>
-              </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="tarifa_aproximada"
-                  checked={watchedValues.tarifa_aproximada}
-                  onCheckedChange={(checked) => setValue('tarifa_aproximada', checked as boolean)}
-                />
-                <Label htmlFor="tarifa_aproximada">
-                  La tarifa es aproximada (sujeta a negociación)
-                </Label>
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="tarifa_aproximada"
+                    checked={watchedValues.tarifa_aproximada}
+                    onCheckedChange={(checked) => setValue('tarifa_aproximada', checked as boolean)}
+                  />
+                  <Label htmlFor="tarifa_aproximada">
+                    La tarifa es aproximada (sujeta a negociación)
+                  </Label>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -325,7 +330,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues }: CargoFormProps) => {
                 {...register('observaciones')}
               />
               {errors.observaciones && (
-                <p className="text-sm text-red-500">{errors.observaciones.message}</p>
+                <p className="text-sm text-red-500 mt-2">{errors.observaciones.message}</p>
               )}
             </CardContent>
           </Card>
