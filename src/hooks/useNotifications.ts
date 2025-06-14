@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useEmailNotifications } from './useEmailNotifications';
 
 interface Notification {
   id: string;
@@ -20,6 +21,7 @@ export const useNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { sendEmailNotification } = useEmailNotifications();
 
   const fetchNotifications = async () => {
     try {
@@ -108,7 +110,7 @@ export const useNotifications = () => {
               table: 'notifications',
               filter: `user_id=eq.${user.id}`
             },
-            (payload) => {
+            async (payload) => {
               console.log('New notification received:', payload);
               const newNotification = payload.new as Notification;
               
@@ -136,7 +138,22 @@ export const useNotifications = () => {
                 } catch (error) {
                   console.error('Error sending push notification:', error);
                 }
-              }, 1000); // Pequeño delay para asegurar que la notificación esté guardada
+              }, 1000);
+
+              // Enviar email notification automáticamente
+              setTimeout(async () => {
+                try {
+                  await sendEmailNotification({
+                    user_id: newNotification.user_id,
+                    type: newNotification.type,
+                    title: newNotification.title,
+                    message: newNotification.message,
+                    link: newNotification.link
+                  });
+                } catch (error) {
+                  console.error('Error sending email notification:', error);
+                }
+              }, 2000);
             }
           )
           .subscribe();
@@ -148,7 +165,7 @@ export const useNotifications = () => {
     };
 
     setupRealtimeSubscription();
-  }, [toast]);
+  }, [toast, sendEmailNotification]);
 
   return {
     notifications,
