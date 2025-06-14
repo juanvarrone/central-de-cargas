@@ -19,6 +19,7 @@ export const useApiConfiguration = (configKey: string) => {
     const fetchConfig = async () => {
       try {
         setLoading(true);
+        setError(null);
         console.log(`Fetching API configuration for key: ${configKey}`);
         
         // With RLS policies now in place, all users can read API configurations
@@ -35,26 +36,33 @@ export const useApiConfiguration = (configKey: string) => {
           throw error;
         }
 
-        console.log(`Config data for ${configKey}:`, data);
-        
         if (data) {
           setConfig({
             key: data.key,
             value: data.value, // Using the value field for the API key
             url: data.url
           });
-          console.log(`Configuration loaded for ${configKey}, value present:`, !!data.value);
+          console.log(`Configuration loaded for ${configKey}:`, {
+            hasValue: !!data.value,
+            valueLength: data.value ? data.value.length : 0,
+            url: data.url
+          });
         } else {
           console.warn(`No configuration found for key: ${configKey}`);
+          setConfig(null);
         }
       } catch (err: any) {
         console.error(`Error getting API configuration ${configKey}:`, err);
         setError(err);
-        toast({
-          title: "Error",
-          description: `No se pudo cargar la configuración: ${err.message}`,
-          variant: "destructive"
-        });
+        
+        // Only show toast for critical errors, not missing configs
+        if (err.message && !err.message.includes('No rows')) {
+          toast({
+            title: "Error de configuración",
+            description: `No se pudo cargar la configuración de ${configKey}: ${err.message}`,
+            variant: "destructive"
+          });
+        }
       } finally {
         setLoading(false);
       }
