@@ -95,8 +95,8 @@ export const useNotifications = () => {
     fetchNotifications();
 
     // Subscribe to realtime changes
-    const { data: { user } } = supabase.auth.getUser();
-    user?.then(({ data: { user } }) => {
+    const setupRealtimeSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const channel = supabase
           .channel('notifications-changes')
@@ -118,7 +118,9 @@ export const useNotifications = () => {
           supabase.removeChannel(channel);
         };
       }
-    });
+    };
+
+    setupRealtimeSubscription();
   }, []);
 
   return {
