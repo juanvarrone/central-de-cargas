@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Eye, Edit, Trash2, MapPin, Calendar, Truck, DollarSign } from "lucide-react";
 import { User } from "@supabase/supabase-js";
-import MisCargasFilters from "@/components/cargo/MisCargasFilters";
+import MisCargasFilters, { MisCargasFilters as MisCargasFiltersType } from "@/components/cargo/MisCargasFilters";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,15 +48,37 @@ const MisCargas = () => {
   const [cargas, setCargas] = useState<Cargo[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
-  const [filters, setFilters] = useState({
-    estado: '',
-    fechaDesde: '',
-    fechaHasta: '',
-    origen: '',
-    destino: ''
+  const [filters, setFilters] = useState<MisCargasFiltersType>({
+    ordenar: 'fecha_desc',
+    localidad: '',
+    estado: ''
   });
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const fetchCargas = async (userId: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("cargas")
+        .select("*")
+        .eq("usuario_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setCargas(data || []);
+    } catch (error: any) {
+      console.error("Error fetching cargas:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -64,30 +87,6 @@ const MisCargas = () => {
         setUser(user);
       } catch (error) {
         console.error("Error fetching user:", error);
-      }
-    };
-
-    const fetchCargas = async (userId: string) => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("cargas")
-          .select("*")
-          .eq("usuario_id", userId)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        setCargas(data || []);
-      } catch (error: any) {
-        console.error("Error fetching cargas:", error);
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -191,12 +190,22 @@ const MisCargas = () => {
 
   const filteredCargas = cargas.filter(carga => {
     const estadoFilter = filters.estado ? carga.estado === filters.estado : true;
-    const fechaDesdeFilter = filters.fechaDesde ? new Date(carga.fecha_carga_desde) >= new Date(filters.fechaDesde) : true;
-    const fechaHastaFilter = filters.fechaHasta ? new Date(carga.fecha_carga_desde) <= new Date(filters.fechaHasta) : true;
-    const origenFilter = filters.origen ? carga.origen.toLowerCase().includes(filters.origen.toLowerCase()) : true;
-    const destinoFilter = filters.destino ? carga.destino.toLowerCase().includes(filters.destino.toLowerCase()) : true;
+    const localidadFilter = filters.localidad ? 
+      carga.origen.toLowerCase().includes(filters.localidad.toLowerCase()) ||
+      carga.destino.toLowerCase().includes(filters.localidad.toLowerCase()) : true;
 
-    return estadoFilter && fechaDesdeFilter && fechaHastaFilter && origenFilter && destinoFilter;
+    return estadoFilter && localidadFilter;
+  }).sort((a, b) => {
+    switch (filters.ordenar) {
+      case 'fecha_asc':
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      case 'fecha_desc':
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case 'estado':
+        return a.estado.localeCompare(b.estado);
+      default:
+        return 0;
+    }
   });
 
   if (loading) {
