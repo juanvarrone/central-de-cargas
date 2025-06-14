@@ -15,6 +15,26 @@ interface Notification {
   updated_at: string;
 }
 
+// Función helper para enviar push notification
+const sendPushNotification = async (userId: string, title: string, message: string, link?: string) => {
+  try {
+    const { error } = await supabase.functions.invoke('send-push-notification', {
+      body: {
+        user_id: userId,
+        title,
+        body: message,
+        link
+      }
+    });
+
+    if (error) {
+      console.error('Error sending push notification:', error);
+    }
+  } catch (error) {
+    console.error('Error invoking push notification function:', error);
+  }
+};
+
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -108,8 +128,18 @@ export const useNotifications = () => {
               table: 'notifications',
               filter: `user_id=eq.${user.id}`
             },
-            () => {
+            (payload) => {
+              console.log('New notification received:', payload);
               fetchNotifications();
+              
+              // Enviar push notification si el payload contiene los datos necesarios
+              const newNotification = payload.new as Notification;
+              sendPushNotification(
+                newNotification.user_id,
+                newNotification.title,
+                newNotification.message,
+                newNotification.link
+              );
             }
           )
           .subscribe();
