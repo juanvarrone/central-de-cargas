@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageCircle } from "lucide-react";
 import CargaPostulaciones from "@/components/cargo/CargaPostulaciones";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +17,7 @@ const VerCarga = () => {
   const [carga, setCarga] = useState<Carga | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [dadorInfo, setDadorInfo] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile } = useUserProfile();
@@ -56,6 +57,19 @@ const VerCarga = () => {
       
       setCarga(data);
       setIsOwner(data.usuario_id === userId);
+
+      // Fetch dador information
+      if (data.usuario_id) {
+        const { data: dadorData, error: dadorError } = await supabase
+          .from("profiles")
+          .select("full_name, phone_number")
+          .eq("id", data.usuario_id)
+          .single();
+
+        if (!dadorError && dadorData) {
+          setDadorInfo(dadorData);
+        }
+      }
     } catch (error: any) {
       console.error("Error fetching carga:", error);
       toast({
@@ -173,6 +187,16 @@ const VerCarga = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const formatPhoneForWhatsApp = (phone: string) => {
+    // Remove any non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Add country code if not present (assuming Argentina +54)
+    if (!cleanPhone.startsWith('54')) {
+      return `54${cleanPhone}`;
+    }
+    return cleanPhone;
   };
 
   if (loading) {
@@ -306,6 +330,32 @@ const VerCarga = () => {
               )}
             </div>
           </div>
+
+          {/* Información del dador (solo si la carga está asignada y no es el dueño) */}
+          {!isOwner && carga.estado === "asignada" && dadorInfo && (
+            <div className="mt-8 p-4 bg-blue-50 rounded-lg border">
+              <h3 className="font-medium text-lg mb-4">Contacto del Dador de Carga</h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{dadorInfo.full_name || "Dador de carga"}</p>
+                  {dadorInfo.phone_number && (
+                    <p className="text-sm text-muted-foreground">
+                      Teléfono: {dadorInfo.phone_number}
+                    </p>
+                  )}
+                </div>
+                {dadorInfo.phone_number && (
+                  <Button
+                    onClick={() => window.open(`https://wa.me/${formatPhoneForWhatsApp(dadorInfo.phone_number)}`, '_blank')}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           {isOwner && (
             <div className="mt-8">

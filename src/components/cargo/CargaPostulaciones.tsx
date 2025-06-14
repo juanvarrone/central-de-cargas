@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, X, Eye } from "lucide-react";
+import { Loader2, CheckCircle, X, Eye, MessageCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -173,6 +173,16 @@ const CargaPostulaciones = ({ cargaId, isLoading }: CargaPostulacionesProps) => 
     });
   };
 
+  const formatPhoneForWhatsApp = (phone: string) => {
+    // Remove any non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Add country code if not present (assuming Argentina +54)
+    if (!cleanPhone.startsWith('54')) {
+      return `54${cleanPhone}`;
+    }
+    return cleanPhone;
+  };
+
   if (loading) {
     return (
       <Card>
@@ -219,7 +229,20 @@ const CargaPostulaciones = ({ cargaId, isLoading }: CargaPostulacionesProps) => 
                     {postulacion.transportista && (
                       <div className="text-sm text-muted-foreground">
                         {postulacion.transportista.phone_number && (
-                          <p>Teléfono: {postulacion.transportista.phone_number}</p>
+                          <div className="flex items-center gap-2">
+                            <p>Teléfono: {postulacion.transportista.phone_number}</p>
+                            {postulacion.estado === "asignada" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.open(`https://wa.me/${formatPhoneForWhatsApp(postulacion.transportista!.phone_number)}`, '_blank')}
+                                className="text-green-600 border-green-600 hover:bg-green-50"
+                              >
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                WhatsApp
+                              </Button>
+                            )}
+                          </div>
                         )}
                         {postulacion.transportista.total_reviews > 0 && (
                           <p>
