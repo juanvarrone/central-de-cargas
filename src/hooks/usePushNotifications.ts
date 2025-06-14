@@ -101,18 +101,29 @@ export const usePushNotifications = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase
-        .from('push_tokens')
-        .upsert({
-          user_id: user.id,
-          token: pushToken,
-          platform: Capacitor.getPlatform(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,platform'
-        });
+      // Usar una consulta SQL raw para insertar/actualizar
+      const { error } = await supabase.rpc('handle_push_token_upsert', {
+        p_user_id: user.id,
+        p_token: pushToken,
+        p_platform: Capacitor.getPlatform()
+      });
 
-      if (error) throw error;
+      if (error) {
+        // Si la función no existe, usar el método directo
+        const { error: insertError } = await supabase
+          .from('push_tokens')
+          .upsert({
+            user_id: user.id,
+            token: pushToken,
+            platform: Capacitor.getPlatform(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,platform'
+          });
+
+        if (insertError) throw insertError;
+      }
+
       console.log('Push token saved successfully');
     } catch (error) {
       console.error('Error saving push token:', error);
@@ -126,11 +137,15 @@ export const usePushNotifications = () => {
       // Eliminar token de la base de datos
       const { data: { user } } = await supabase.auth.getUser();
       if (user && token) {
-        await supabase
+        const { error } = await supabase
           .from('push_tokens')
           .delete()
           .eq('user_id', user.id)
           .eq('token', token);
+
+        if (error) {
+          console.error('Error deleting push token:', error);
+        }
       }
       
       setIsRegistered(false);
