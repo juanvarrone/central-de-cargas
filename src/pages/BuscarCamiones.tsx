@@ -27,7 +27,7 @@ const BuscarCamiones = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <div className="container mx-auto px-4 py-2">
+      <div className="container max-w-7xl mx-auto px-4 py-2">
         <div className="flex justify-between items-center mb-4 py-2">
           <div className="flex items-center gap-2">
             <Button 
@@ -44,7 +44,7 @@ const BuscarCamiones = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
           <div>
             <Card className="p-4 sticky top-4">
               <TruckMapFilters onFilterChange={handleFilterChange} />

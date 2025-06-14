@@ -42,7 +42,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/40 bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-3">
+        <div className="container max-w-7xl mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             <Link to="/" className="text-xl font-bold text-primary">
               <Logo size="medium" />
@@ -92,12 +92,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </header>
       
-      <main className="container mx-auto px-4 py-6">
+      <main className="container max-w-7xl mx-auto px-4 py-6">
         {children}
       </main>
       
       <footer className="border-t mt-auto py-6 bg-white/50">
-        <div className="container mx-auto px-4">
+        <div className="container max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
               <Logo size="small" />

@@ -117,7 +117,7 @@ const PublicarCarga = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50 py-8">
-      <div className="container max-w-2xl mx-auto px-4">
+      <div className="container max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <Button 
@@ -148,14 +148,7 @@ const PublicarCarga = () => {
             </Dialog>
           )}
         </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Publicar Nueva Carga</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CargoForm onSubmit={handleSubmit} loading={loading} />
-          </CardContent>
-        </Card>
+        <CargoForm onSubmit={handleSubmit} loading={loading} />
       </div>
     </div>
   );

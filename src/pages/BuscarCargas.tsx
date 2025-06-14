@@ -19,7 +19,7 @@ const BuscarCargas = () => {
   };
 
   return (
-    <div className="container mx-auto py-4 px-4">
+    <div className="container max-w-7xl mx-auto py-4 px-4">
       <div className="flex items-center mb-4">
         <Button 
           variant="ghost" 
