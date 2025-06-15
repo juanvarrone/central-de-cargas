@@ -31,6 +31,14 @@ const Logo = ({ size = "medium", withText = true }: LogoProps) => {
   return (
     <div className={`logo-container ${containerClass}`}>
       <div className="relative">
+        {/* Bandera argentina como fondo del ícono */}
+        <div className="absolute inset-0 rounded-lg overflow-hidden">
+          <div className="w-full h-1/3 bg-blue-400"></div>
+          <div className="w-full h-1/3 bg-white"></div>
+          <div className="w-full h-1/3 bg-blue-400"></div>
+        </div>
+        
+        {/* Camión con efecto de profundidad */}
         <div className="absolute inset-0 text-secondary blur-[1px]">
           <Truck size={iconSize} strokeWidth={2.5} />
         </div>
@@ -39,9 +47,8 @@ const Logo = ({ size = "medium", withText = true }: LogoProps) => {
 
       {withText && (
         <div className={`app-title ${textClass} flex items-center`}>
-          <span className="text-primary">Central</span>
-          <span className="text-secondary mx-1">de</span>
           <span className="text-primary">Cargas</span>
+          <span className="text-secondary mx-1">Argentinas</span>
         </div>
       )}
     </div>
