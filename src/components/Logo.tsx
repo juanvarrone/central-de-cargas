@@ -32,7 +32,7 @@ const Logo = ({ size = "medium", withText = true }: LogoProps) => {
           <span className="text-white mx-1">ARGENTINAS</span>
         </div>
       )}
-      <img src="/images/logo-cargas.png" alt="Logo Cargas Argentinas" className="h-full object-contain ml-2" />
+      <img src="/images/logo1.png" alt="Logo Cargas Argentinas" className="h-full object-contain ml-2" />
     </div>
   );
 };
