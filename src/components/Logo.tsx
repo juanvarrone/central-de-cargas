@@ -35,17 +35,7 @@ const Logo = ({ size = "medium", withText = true }: LogoProps) => {
           <span className="text-white mx-1">ARGENTINAS</span>
         </div>
       )}
-      <svg
-        className="h-full ml-2"
-        width={iconSize}
-        height={iconSize}
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path d="M18 12C18 15.3137 15.3137 18 12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C13.6569 6 15.1571 6.63214 16.3145 7.65685" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-        <circle cx="15" cy="12" r="2" fill="white"/>
-      </svg>
+<img src="/images/logo1.png" alt="Logo Cargas Argentinas" className="h-full ml-2" />
     </div>
   );
 };
