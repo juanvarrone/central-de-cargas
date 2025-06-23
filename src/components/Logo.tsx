@@ -5,7 +5,7 @@ interface LogoProps {
   withText?: boolean;
 }
 
-const Logo = ({ size = "medium", withText = false }: LogoProps) => {
+const Logo = ({ size = "medium", withText = true }: LogoProps) => {
   // Size mapping
   const sizeMap = {
     small: {
@@ -25,14 +25,14 @@ const Logo = ({ size = "medium", withText = false }: LogoProps) => {
   const { textClass, containerClass } = sizeMap[size];
 
   return (
-    <div className={`logo-container ${containerClass} flex items-center bg-argentina-blue text-white p-1 rounded overflow-hidden`}>
+    <div className={`logo-container ${containerClass} flex items-center`}>
       {withText && (
         <div className={`app-title ${textClass} flex items-center`}>
-          <span className="text-black font-bold">CARGAS</span>
-          <span className="text-white mx-1">ARGENTINAS</span>
+          <span className="text-black font-bold uppercase">CARGAS</span>
+          <span className="ml-2 text-blue-600 font-light uppercase">ARGENTINAS</span>
         </div>
       )}
-      <img src="/images/logo1.png" alt="Logo Cargas Argentinas" className="h-full object-contain ml-2" />
+      {/* <img src="/images/logo1.png" alt="Logo Cargas Argentinas" className="h-full object-contain ml-2" /> */}
     </div>
   );
 };
