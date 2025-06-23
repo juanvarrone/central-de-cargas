@@ -155,10 +155,6 @@
 .app-title {
   font-weight: 700;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .highway-divider {

@@ -29,7 +29,7 @@ const Logo = ({ size = "medium", withText = true }: LogoProps) => {
       {withText && (
         <div className={`app-title ${textClass} flex items-center`}>
           <span className="text-black font-bold uppercase">CARGAS</span>
-          <span className="ml-2 text-blue-600 font-light uppercase">ARGENTINAS</span>
+          <span className="ml-2 text-white font-light uppercase">ARGENTINAS</span>
         </div>
       )}
       {/* <img src="/images/logo1.png" alt="Logo Cargas Argentinas" className="h-full object-contain ml-2" /> */}
