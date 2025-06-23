@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { User as UserIcon, Menu, LogOut, Truck, Bell, Settings, CreditCard, MapPin, Map, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,10 +40,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/40 bg-white shadow-sm">
-        <div className="container max-w-7xl mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
-            <Link to="/" className="text-xl font-bold text-primary">
+      <header className="border-b border-border/40 bg-logo-bg shadow-sm">
+        <div className="container max-w-7xl mx-auto px-4 py-0 h-20 flex items-center">
+          <div className="flex justify-between items-center w-full">
+            <Link to="/" className="logo-container h-full flex items-center">
               <Logo size="medium" />
             </Link>
             
