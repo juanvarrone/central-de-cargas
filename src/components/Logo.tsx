@@ -5,7 +5,7 @@ interface LogoProps {
   withText?: boolean;
 }
 
-const Logo = ({ size = "medium", withText = true }: LogoProps) => {
+const Logo = ({ size = "medium", withText = false }: LogoProps) => {
   // Size mapping
   const sizeMap = {
     small: {
