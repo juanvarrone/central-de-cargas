@@ -90,10 +90,10 @@
 
   body {
     @apply bg-background text-foreground;
-    background-image: url("/images/fondo1.jpg");
+    /*background-image: url("/images/fondo1.jpg");
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
+    background-repeat: no-repeat;*/
   }
 
   /* Fondo de ruta argentina para el header */
@@ -200,7 +200,7 @@
 main {
   position: relative;
 }
-/*
+
 main::before {
   content: '';
   position: absolute;
@@ -216,7 +216,7 @@ main::before {
   z-index: -1;
   pointer-events: none;
 }
-*/
+
 /* Modern Card Styling */
 .modern-card {
   @apply bg-white rounded-2xl border-0 shadow-md overflow-hidden;
