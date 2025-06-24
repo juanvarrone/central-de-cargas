@@ -81,7 +81,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <Button 
                   asChild 
                   variant="default"
-                  className="bg-primary hover:bg-primary/90 text-white transition-colors"
+                  className="bg-white text-black dark:text-black hover:bg-gray-200 transition-colors"
                 >
                   <Link to="/auth">Iniciar sesión</Link>
                 </Button>
