@@ -39,7 +39,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <header className="border-b border-border/40 bg-logo-bg shadow-sm">
         <div className="container max-w-7xl mx-auto px-4 py-0 h-20 flex items-center">
           <div className="flex justify-between items-center w-full">
@@ -91,8 +91,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </header>
       
-      <main className="relative px-4 py-6">
-        {children}
+      <main className="relative min-h-screen px-4 py-6">
+        <div className="container max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
       
       <footer className="border-t mt-auto py-6 bg-white/50">
