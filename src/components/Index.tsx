@@ -24,7 +24,7 @@ const Index = () => {
   if (isAdmin) {
     return (
       <>
-        <section className="py-1 mb-1">
+        <section className="py-0 mb-0">
           <div className="text-center max-w-3xl mx-auto">
          {/*  <div className="flex justify-center mb-6">
               <Logo size="large" />
