@@ -33,7 +33,7 @@ const Index = () => {
               <span className="text-primary">Sistema de Gestión</span> <br />
               <span className="text-secondary">de Transporte Argentino</span>
             </h1>
-            <p className="text-muted-foreground text-lg mb-8">
+            <p className="text-muted-foreground text-lg mb-0">
               Conectamos cargas con transportistas en toda la Argentina de manera eficiente y segura
             </p>
             <div className="highway-divider max-w-md mx-auto"></div>
@@ -164,7 +164,7 @@ const Index = () => {
             <h1 className="text-4xl font-bold tracking-tight mb-4">
               <span className="text-primary">Portal Transportista</span>
             </h1>
-            <p className="text-muted-foreground text-lg mb-8">
+            <p className="text-muted-foreground text-lg mb-0">
               Encuentra cargas en toda Argentina y gestiona tu flota de manera eficiente
             </p>
             <div className="highway-divider max-w-md mx-auto"></div>
@@ -292,7 +292,7 @@ const Index = () => {
             <h1 className="text-4xl font-bold tracking-tight mb-4">
               <span className="text-primary">Portal Dador de Carga</span>
             </h1>
-            <p className="text-muted-foreground text-lg mb-8">
+            <p className="text-muted-foreground text-lg mb-0">
               Encuentra transportistas confiables en toda Argentina para tus cargas
             </p>
             <div className="highway-divider max-w-md mx-auto"></div>
@@ -394,7 +394,7 @@ const Index = () => {
             <span className="text-primary">Sistema de Gestión</span> <br />
             <span className="text-secondary">de Transporte Argentino</span>
           </h1>
-          <p className="text-muted-foreground text-lg mb-8">
+          <p className="text-muted-foreground text-lg mb-0">
             Conectamos cargas con transportistas en toda la Argentina de manera eficiente y segura
           </p>
           <div className="highway-divider max-w-md mx-auto"></div>
