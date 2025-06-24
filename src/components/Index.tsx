@@ -26,9 +26,9 @@ const Index = () => {
       <>
         <section className="py-12 mb-8">
           <div className="text-center max-w-3xl mx-auto">
-            <div className="flex justify-center mb-6">
+         {/*  <div className="flex justify-center mb-6">
               <Logo size="large" />
-            </div>
+          </div> */}
             <h1 className="text-4xl font-bold tracking-tight mb-4">
               <span className="text-primary">Sistema de Gestión</span> <br />
               <span className="text-secondary">de Transporte Argentino</span>
