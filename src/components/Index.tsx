@@ -156,7 +156,7 @@ const Index = () => {
   if (userType === "camionero") {
     return (
       <>
-        <section className="py-12 mb-8">
+        <section className="py-0 mb-0">
           <div className="text-center max-w-3xl mx-auto">
              {/*<div className="flex justify-center mb-6">
               <Logo size="large" />
@@ -284,7 +284,7 @@ const Index = () => {
   if (userType === "dador") {
     return (
       <>
-        <section className="py-12 mb-8">
+        <section className="py-0 mb-0">
           <div className="text-center max-w-3xl mx-auto">
              {/*<div className="flex justify-center mb-6">
               <Logo size="large" />
@@ -385,7 +385,7 @@ const Index = () => {
   // Default view for non-authenticated users or users without a type
   return (
     <>
-      <section className="py-12 mb-8">
+      <section className="py-0 mb-0">
         <div className="text-center max-w-3xl mx-auto">
            {/* <div className="flex justify-center mb-6">
             <Logo size="large" />
