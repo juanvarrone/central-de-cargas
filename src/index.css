@@ -200,7 +200,7 @@
 main {
   position: relative;
 }
-
+/*
 main::before {
   content: '';
   position: absolute;
@@ -208,15 +208,15 @@ main::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url('/images/fondo1.jpg'); /* <-- aquí el cambio */
+  background-image: url('/images/fondo1.jpg'); 
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  opacity: 0.15; /* Puedes subir la opacidad si quieres que se vea más */
+  opacity: 0.15;
   z-index: -1;
   pointer-events: none;
 }
-
+*/
 /* Modern Card Styling */
 .modern-card {
   @apply bg-white rounded-2xl border-0 shadow-md overflow-hidden;
