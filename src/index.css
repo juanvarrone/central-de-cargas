@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* @tailwind base; */
+/* @tailwind components; */
+/* @tailwind utilities; */
 
 @layer base {
   :root {
@@ -90,24 +90,24 @@
 
   body {
     @apply bg-background text-foreground;
-    /*background-image: url("/images/fondo1.jpg");
+    /* background-image: url("/images/fondo1.jpg");
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;*/
+    background-repeat: no-repeat; */
   }
 
   /* Fondo de ruta argentina para el header */
   header {
-    height: 80px; /* O el alto que prefieras */
+    height: 80px;
     min-height: 80px;
-    background-color: #74aaef; /* O usa el color de fondo de tu logo */
+    background-color: #74aaef;
     display: flex;
     align-items: center;
     position: relative;
     z-index: 10;
   }
 
-  header::before {  header::before {
+  header::before {
     content: '';
     position: absolute;
     top: 0;
@@ -118,22 +118,12 @@
     opacity: 1;
     z-index: -1;
   }
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url('https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?auto=format&fit=crop&w=1920&q=80');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    opacity: 0.1;
-    z-index: -1;
-  }
 
   .logo-container {
     height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .logo-container img,
@@ -149,12 +139,6 @@
 .truck-logo {
   width: 40px;
   height: 40px;
-}
-
-.logo-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .logo-container > div:first-child {
@@ -218,7 +202,7 @@ main::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url('/images/fondo1.jpg'); 
+  background-image: url('/images/fondo1.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -246,8 +230,13 @@ main::before {
 }
 
 .modern-icon {
-  @apply w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
 }
 
 /* Modern Button Styling */
@@ -294,8 +283,16 @@ main::before {
 }
 
 .modern-button-outline {
-  @apply border-2 border-blue-200 text-blue-600 hover:border-blue-300 hover:bg-blue-50;
+  border-width: 2px;
+  border-color: #bfdbfe;
+  color: #2563eb;
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+  background-color: transparent;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.modern-button-outline:hover {
+  border-color: #93c5fd;
+  background-color: #eff6ff;
 }
 
 .modern-button-outline:hover {
