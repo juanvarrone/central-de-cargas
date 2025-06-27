@@ -3,9 +3,10 @@ import { Truck } from "lucide-react";
 interface LogoProps {
   size?: "small" | "medium" | "large";
   withText?: boolean;
+  footer?: boolean;
 }
 
-const Logo = ({ size = "medium", withText = true }: LogoProps) => {
+const Logo = ({ size = "medium", withText = true, footer = false }: LogoProps) => {
   // Size mapping
   const sizeMap = {
     small: {
@@ -24,42 +25,24 @@ const Logo = ({ size = "medium", withText = true }: LogoProps) => {
 
   const { textClass, containerClass } = sizeMap[size];
 
-  return (
+ return (
     <div className={`logo-container ${containerClass} flex items-center`}>
       {withText && (
         <div className={`app-title ${textClass} flex items-center`}>
           <span className="text-black font-bold uppercase">CARGAS</span>
-          <span className="ml-2 text-white font-light uppercase          interface LogoProps {
-            size?: "small" | "medium" | "large";
-            withText?: boolean;
-            footer?: boolean; // <-- agrega esta línea
-          }
-          
-          const Logo = ({ size = "medium", withText = true, footer = false }: LogoProps) => {
-            // ...existing code...
-            return (
-              <div className={`logo-container ${containerClass} flex items-center`}>
-                {withText && (
-                  <div className={`app-title ${textClass} flex items-center`}>
-                    <span className="text-black font-bold uppercase">CARGAS</span>
-                    <span
-                      className={`ml-2 font-light uppercase ${
-                        footer ? "text-blue-600" : "text-white"
-                      }`}
-                    >
-                      ARGENTINAS
-                    </span>
-                  </div>
-                )}
-                {/* <img src="/images/logo1.png" alt="Logo Cargas Argentinas" className="h-full object-contain ml-2" /> */}
-              </div>
-            );
-          };">ARGENTINAS</span>
+          <span
+            className={`ml-2 font-light uppercase ${
+              footer ? "text-blue-600" : "text-white"
+            }`}
+          >
+            ARGENTINAS
+          </span>
         </div>
       )}
       {/* <img src="/images/logo1.png" alt="Logo Cargas Argentinas" className="h-full object-contain ml-2" /> */}
     </div>
   );
 };
+
 
 export default Logo;

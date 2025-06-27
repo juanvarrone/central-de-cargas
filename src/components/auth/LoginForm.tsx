@@ -121,12 +121,6 @@ const LoginForm = ({ form, loading, onForgotPassword }: LoginFormProps) => {
         {loading ? "Cargando..." : "Iniciar sesión"}
       </Button>
       
-      <Alert className="bg-blue-50 border-blue-200">
-        <Info className="h-4 w-4 text-blue-500" />
-        <AlertDescription className="text-sm">
-          Si tienes problemas para iniciar sesión, prueba usando una ventana de incógnito o desactivando extensiones del navegador.
-        </AlertDescription>
-      </Alert>
     </>
   );
 };
