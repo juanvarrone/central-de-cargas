@@ -40,7 +40,7 @@ const Index = () => {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full md:max-w-4xl md:mx-auto">
           <Card className="modern-card group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             <CardHeader className="relative overflow-hidden">
               <div className="modern-icon-container mb-4">
@@ -56,7 +56,7 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-4 w-full md:max-w-4xl md:mx-auto">
                 <Button
                   onClick={() => handleNavigate("/buscar-cargas")}
                   className="modern-button modern-button-primary h-14 text-lg justify-start px-6"
@@ -97,7 +97,7 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-4 w-full md:max-w-4xl md:mx-auto">
                 <Button
                   onClick={() => handleNavigate("/publicar-carga")}
                   className="modern-button modern-button-primary h-14 text-lg justify-start px-6"
@@ -171,7 +171,7 @@ const Index = () => {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full md:max-w-4xl md:mx-auto">
           <Card className="modern-card group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             <CardHeader>
               <div className="modern-icon-container mb-4">
@@ -299,7 +299,7 @@ const Index = () => {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full md:max-w-4xl md:mx-auto">
           <Card className="modern-card group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             <CardHeader>
               <div className="modern-icon-container mb-4">
@@ -401,7 +401,7 @@ const Index = () => {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full md:max-w-4xl md:mx-auto">
         <Card className="modern-card group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
           <CardHeader>
             <div className="modern-icon-container mb-4">
@@ -415,7 +415,7 @@ const Index = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 w-full md:max-w-4xl md:mx-auto">
               <Button
                 onClick={() => handleNavigate("/buscar-cargas")}
                 className="modern-button modern-button-primary h-14 text-lg justify-start px-6"
@@ -460,7 +460,7 @@ const Index = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 w-full md:max-w-4xl md:mx-auto">
               <Button
                 onClick={() => handleNavigate("/publicar-carga")}
                 className="modern-button modern-button-primary h-14 text-lg justify-start px-6"
