@@ -17,16 +17,33 @@ export const useCargoSubmission = () => {
       console.log("Submitting cargo with user ID:", userData.user.id);
       console.log("Data received:", data);
       
-      // Handle tarifa properly - it comes as a number from the form
+      // Handle tarifa properly - ensure it's a valid number
       let tarifaValue: number;
+      if (data.tarifa === null || data.tarifa === undefined || data.tarifa === '') {
+        throw new Error("La tarifa es requerida");
+      }
+      
+      // Convert to number if it's a string
       if (typeof data.tarifa === 'string') {
-        // If it's a string (formatted currency), remove non-numeric characters
-        tarifaValue = parseFloat(data.tarifa.replace(/\D/g, ""));
-      } else if (typeof data.tarifa === 'number') {
-        // If it's already a number, use it directly
-        tarifaValue = data.tarifa;
+        // Remove any non-numeric characters except dots and commas
+        const cleanedTarifa = data.tarifa.replace(/[^\d.,]/g, '').replace(',', '.');
+        tarifaValue = parseFloat(cleanedTarifa);
       } else {
-        throw new Error("Formato de tarifa inválido");
+        tarifaValue = Number(data.tarifa);
+      }
+      
+      // Validate the number
+      if (isNaN(tarifaValue) || tarifaValue <= 0) {
+        throw new Error("La tarifa debe ser un número válido mayor a 0");
+      }
+
+      // Handle cantidad_cargas properly
+      let cantidadCargasValue: number = 1;
+      if (data.cantidad_cargas !== null && data.cantidad_cargas !== undefined) {
+        cantidadCargasValue = Number(data.cantidad_cargas);
+        if (isNaN(cantidadCargasValue) || cantidadCargasValue < 1) {
+          cantidadCargasValue = 1;
+        }
       }
 
       const { error } = await supabase.from("cargas").insert({
@@ -40,7 +57,7 @@ export const useCargoSubmission = () => {
         destino_ciudad: data.destino_ciudad,
         fecha_carga_desde: new Date(data.fecha_carga_desde).toISOString(),
         fecha_carga_hasta: data.fecha_carga_hasta ? new Date(data.fecha_carga_hasta).toISOString() : null,
-        cantidad_cargas: data.cantidad_cargas,
+        cantidad_cargas: cantidadCargasValue,
         tipo_carga: data.tipo_carga,
         tipo_camion: data.tipo_camion,
         tarifa: tarifaValue,

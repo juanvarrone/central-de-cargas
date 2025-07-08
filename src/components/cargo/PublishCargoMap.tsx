@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useLoadScript, GoogleMap, MarkerF } from "@react-google-maps/api";
 import { useApiConfiguration } from "@/hooks/useApiConfiguration";
 import { geocodeAddress } from "@/utils/geocoding";
-import { MapPin, Flag } from "lucide-react";
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
@@ -88,16 +87,15 @@ const PublishCargoMap = ({ origen, destino, className = "" }: PublishCargoMapPro
 
   const getMarkerOptions = (isOrigin: boolean) => ({
     icon: {
-      // Usar pin para origen y bandera para destino
       path: isOrigin 
         ? "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-        : "M2 3h20v1H2V3zm0 2h20v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5zm2 2v10h16V7H4zm2 2h4v2H6V9zm6 0h4v2h-4V9zm-6 4h4v2H6v-2zm6 0h4v2h-4v-2z", // Bandera corregida
-      fillColor: isOrigin ? "#22c55e" : "#ef4444",
+        : "M2 3l20 0 0 2-2 0 0 12-16 0 0-12-2 0 0-2z M6 5l0 10 12 0 0-10-12 0z", // Bandera simple
+      fillColor: isOrigin ? "#22c55e" : "#ef4444", // Verde para origen, rojo para destino
       fillOpacity: 1,
-      strokeWeight: 1,
+      strokeWeight: 2,
       strokeColor: isOrigin ? "#166534" : "#991b1b",
-      scale: 0.5, // Reducido de 2 a 0.5 (25% del tamaño original)
-      anchor: new google.maps.Point(12, isOrigin ? 17 : 2), // Diferentes puntos de anclaje
+      scale: 1.0, // Doble del tamaño actual (era 0.5)
+      anchor: new google.maps.Point(12, isOrigin ? 17 : 8), // Ajustado para la bandera
     },
   });
 
