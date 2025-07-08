@@ -3,11 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Loader2, AlertCircle, Check, X } from "lucide-react";
-import { useApiConfiguration } from "@/hooks/useApiConfiguration";
-import { useLoadScript } from "@react-google-maps/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-const libraries: ("places")[] = ["places"];
+import { useGoogleMaps } from "@/context/GoogleMapsContext";
 
 interface MapLocationInputProps {
   id: string;
@@ -35,13 +32,9 @@ const MapLocationInput = ({
   const [isValidSelection, setIsValidSelection] = useState(false);
   const [userTyping, setUserTyping] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { config, loading: apiKeyLoading, error: configError } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
-  const apiKey = config?.value || "";
-
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey,
-    libraries,
-  });
+  const [initializationError, setInitializationError] = useState<string | null>(null);
+  
+  const { isLoaded, loadError, apiKey, isApiKeyLoading, apiKeyError } = useGoogleMaps();
 
   // Initialize autocomplete only once when everything is ready
   useEffect(() => {
@@ -59,40 +52,53 @@ const MapLocationInput = ({
       });
 
       const handlePlaceChanged = () => {
-        const place = autocompleteInstance.getPlace();
-        console.log("Place selected:", place);
-        
-        if (place?.formatted_address && place?.geometry?.location) {
-          console.log("Valid place selected:", place.formatted_address);
-          setIsValidSelection(true);
-          setUserTyping(false);
-          onChange(place.formatted_address, place);
-          onValidationChange?.(true);
-        } else {
-          console.warn("Invalid place selected");
-          setIsValidSelection(false);
-          onValidationChange?.(false);
+        try {
+          const place = autocompleteInstance.getPlace();
+          console.log("Place selected:", place);
+          
+          if (place?.formatted_address && place?.geometry?.location) {
+            console.log("Valid place selected:", place.formatted_address);
+            setIsValidSelection(true);
+            setUserTyping(false);
+            onChange(place.formatted_address, place);
+            onValidationChange?.(true);
+          } else {
+            console.warn("Invalid place selected");
+            setIsValidSelection(false);
+            onValidationChange?.(false);
+          }
+        } catch (error) {
+          console.error("Error handling place selection:", error);
+          setInitializationError("Error al procesar la selección de ubicación");
         }
       };
 
       autocompleteInstance.addListener('place_changed', handlePlaceChanged);
       autocompleteRef.current = autocompleteInstance;
       setIsInitialized(true);
+      setInitializationError(null);
       
       console.log("✓ Autocomplete initialized successfully for", id);
     } catch (error) {
       console.error("Error initializing autocomplete:", error);
+      setInitializationError("Error al inicializar Google Places");
       setIsInitialized(false);
     }
   }, [isLoaded, apiKey, id, isInitialized, onChange, onValidationChange]);
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setUserTyping(true);
-    setIsValidSelection(false);
-    onChange(newValue);
-    onValidationChange?.(false);
+    try {
+      const newValue = e.target.value;
+      setUserTyping(true);
+      setIsValidSelection(false);
+      onChange(newValue);
+      onValidationChange?.(false);
+      setInitializationError(null);
+    } catch (error) {
+      console.error("Error handling input change:", error);
+      setInitializationError("Error al procesar el texto ingresado");
+    }
   };
 
   // Handle existing values (for pre-filled forms)
@@ -107,15 +113,19 @@ const MapLocationInput = ({
   // Cleanup
   useEffect(() => {
     return () => {
-      if (autocompleteRef.current && window.google?.maps?.event) {
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        autocompleteRef.current = null;
+      try {
+        if (autocompleteRef.current && window.google?.maps?.event) {
+          google.maps.event.clearInstanceListeners(autocompleteRef.current);
+          autocompleteRef.current = null;
+        }
+      } catch (error) {
+        console.error("Error during cleanup:", error);
       }
     };
   }, []);
 
   // Show configuration error
-  if (configError) {
+  if (apiKeyError) {
     return (
       <div className={`relative ${className}`}>
         {label && (
@@ -144,7 +154,7 @@ const MapLocationInput = ({
   }
 
   // Show API key missing error
-  if (!apiKey && !apiKeyLoading) {
+  if (!apiKey && !isApiKeyLoading) {
     return (
       <div className={`relative ${className}`}>
         {label && (
@@ -183,7 +193,35 @@ const MapLocationInput = ({
         <Alert variant="destructive" className="mb-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Error al cargar Google Maps. Verifique la configuración.
+            Error al cargar Google Maps: {loadError.message}
+          </AlertDescription>
+        </Alert>
+        <Input
+          ref={inputRef}
+          id={id}
+          value={value}
+          onChange={handleInputChange}
+          placeholder={placeholder}
+          className="w-full"
+          required={required}
+        />
+      </div>
+    );
+  }
+
+  // Show initialization error
+  if (initializationError) {
+    return (
+      <div className={`relative ${className}`}>
+        {label && (
+          <Label htmlFor={id} className="block text-sm font-medium mb-1">
+            {label} {required && <span className="text-red-500">*</span>}
+          </Label>
+        )}
+        <Alert variant="destructive" className="mb-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {initializationError}
           </AlertDescription>
         </Alert>
         <Input
@@ -251,10 +289,10 @@ const MapLocationInput = ({
               : ""
           }`}
           required={required}
-          disabled={apiKeyLoading || !apiKey || !!loadError}
+          disabled={isApiKeyLoading || !apiKey || !!loadError}
         />
 
-        {(apiKeyLoading || (!isLoaded && apiKey && !loadError)) && (
+        {(isApiKeyLoading || (!isLoaded && apiKey && !loadError)) && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             <Loader2 className="h-4 w-4 animate-spin" />
           </div>
