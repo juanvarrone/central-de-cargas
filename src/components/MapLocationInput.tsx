@@ -32,10 +32,9 @@ const MapLocationInput = ({
 }: MapLocationInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const [initializationError, setInitializationError] = useState<string | null>(null);
-  const [autocompleteReady, setAutocompleteReady] = useState(false);
   const [isValidSelection, setIsValidSelection] = useState(false);
   const [userTyping, setUserTyping] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { config, loading: apiKeyLoading, error: configError } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
   const apiKey = config?.value || "";
 
@@ -44,55 +43,48 @@ const MapLocationInput = ({
     libraries,
   });
 
-  // Initialize autocomplete when everything is ready
+  // Initialize autocomplete only once when everything is ready
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || !window.google?.maps?.places || !apiKey || autocompleteRef.current) {
+    if (!isLoaded || !inputRef.current || !window.google?.maps?.places || !apiKey || isInitialized) {
       return;
     }
 
+    console.log("Initializing Google Places Autocomplete for", id);
+    
     try {
-      console.log("Initializing Google Places Autocomplete for", id, "with API key:", apiKey.substring(0, 10) + "...");
-      
       const autocompleteInstance = new google.maps.places.Autocomplete(inputRef.current, {
         types: ['geocode'],
         componentRestrictions: { country: 'ar' },
         fields: ['formatted_address', 'geometry', 'place_id', 'address_components']
       });
 
-      autocompleteInstance.addListener('place_changed', () => {
+      const handlePlaceChanged = () => {
         const place = autocompleteInstance.getPlace();
         console.log("Place selected:", place);
         
-        if (place && place.formatted_address) {
+        if (place?.formatted_address && place?.geometry?.location) {
+          console.log("Valid place selected:", place.formatted_address);
           setIsValidSelection(true);
           setUserTyping(false);
           onChange(place.formatted_address, place);
           onValidationChange?.(true);
         } else {
-          console.warn("No formatted address in selected place");
+          console.warn("Invalid place selected");
           setIsValidSelection(false);
           onValidationChange?.(false);
         }
-      });
+      };
 
+      autocompleteInstance.addListener('place_changed', handlePlaceChanged);
       autocompleteRef.current = autocompleteInstance;
-      setAutocompleteReady(true);
-      setInitializationError(null);
+      setIsInitialized(true);
+      
       console.log("✓ Autocomplete initialized successfully for", id);
     } catch (error) {
       console.error("Error initializing autocomplete:", error);
-      setInitializationError("Error al inicializar el autocompletado de Google Places");
-      setAutocompleteReady(false);
+      setIsInitialized(false);
     }
-
-    return () => {
-      if (autocompleteRef.current && window.google?.maps?.event) {
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        autocompleteRef.current = null;
-        setAutocompleteReady(false);
-      }
-    };
-  }, [isLoaded, onChange, id, apiKey, onValidationChange]);
+  }, [isLoaded, apiKey, id, isInitialized, onChange, onValidationChange]);
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,23 +95,21 @@ const MapLocationInput = ({
     onValidationChange?.(false);
   };
 
-  // Validate existing value
+  // Handle existing values (for pre-filled forms)
   useEffect(() => {
-    if (value && !userTyping) {
-      // If there's a value and user is not typing, consider it valid (for pre-filled forms)
+    if (value && !userTyping && !isValidSelection) {
+      // If there's a pre-filled value, consider it valid
       setIsValidSelection(true);
       onValidationChange?.(true);
-    } else if (!value) {
-      setIsValidSelection(false);
-      onValidationChange?.(false);
     }
-  }, [value, userTyping, onValidationChange]);
+  }, [value, userTyping, isValidSelection, onValidationChange]);
 
-  // Clean up on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
       if (autocompleteRef.current && window.google?.maps?.event) {
         google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        autocompleteRef.current = null;
       }
     };
   }, []);
@@ -136,7 +126,7 @@ const MapLocationInput = ({
         <Alert variant="destructive" className="mb-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Error al cargar la configuración de Google Maps. Contacte al administrador.
+            Error al cargar la configuración de Google Maps.
           </AlertDescription>
         </Alert>
         <Input
@@ -165,7 +155,7 @@ const MapLocationInput = ({
         <Alert variant="destructive" className="mb-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            La API key de Google Maps no está configurada. Configure la API key en el panel de administración.
+            La API key de Google Maps no está configurada.
           </AlertDescription>
         </Alert>
         <Input
@@ -193,35 +183,7 @@ const MapLocationInput = ({
         <Alert variant="destructive" className="mb-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Error al cargar Google Maps: {loadError.message}. Verifique que la API key tenga los permisos correctos.
-          </AlertDescription>
-        </Alert>
-        <Input
-          ref={inputRef}
-          id={id}
-          value={value}
-          onChange={handleInputChange}
-          placeholder={placeholder}
-          className="w-full"
-          required={required}
-        />
-      </div>
-    );
-  }
-
-  // Show initialization error
-  if (initializationError) {
-    return (
-      <div className={`relative ${className}`}>
-        {label && (
-          <Label htmlFor={id} className="block text-sm font-medium mb-1">
-            {label} {required && <span className="text-red-500">*</span>}
-          </Label>
-        )}
-        <Alert variant="destructive" className="mb-2">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {initializationError}
+            Error al cargar Google Maps. Verifique la configuración.
           </AlertDescription>
         </Alert>
         <Input
@@ -256,7 +218,7 @@ const MapLocationInput = ({
     if (isValidSelection) {
       return "✓ Ubicación válida seleccionada";
     } else if (value && !isValidSelection) {
-      return "⚠️ Debe seleccionar una ubicación de la lista de Google Places";
+      return "⚠️ Debe seleccionar una ubicación de la lista";
     }
     return null;
   };
@@ -305,15 +267,9 @@ const MapLocationInput = ({
         )}
       </div>
       
-      {isLoaded && apiKey && !loadError && !initializationError && autocompleteReady && (
+      {isLoaded && apiKey && !loadError && isInitialized && (
         <p className="text-xs text-green-600 mt-1">
           ✓ Google Places habilitado
-        </p>
-      )}
-      
-      {isLoaded && apiKey && !loadError && !initializationError && !autocompleteReady && (
-        <p className="text-xs text-yellow-600 mt-1">
-          ⚠️ Inicializando Google Places...
         </p>
       )}
 

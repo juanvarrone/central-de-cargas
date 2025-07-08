@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,6 @@ interface CargoFormProps {
 }
 
 const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFormProps) => {
-  const [showTimeFrom, setShowTimeFrom] = useState(false);
-  const [showTimeTo, setShowTimeTo] = useState(false);
   const [origenValid, setOrigenValid] = useState(false);
   const [destinoValid, setDestinoValid] = useState(false);
 
@@ -49,7 +47,6 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
     formState: { errors },
     setValue,
     watch,
-    getValues,
     reset,
   } = useForm<CargoFormData>({
     resolver: zodResolver(cargoSchema),
@@ -64,7 +61,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
     },
   });
 
-  // Reset form with default values when they change (for copy functionality)
+  // Reset form with default values when they change
   useEffect(() => {
     if (defaultValues) {
       reset({
@@ -107,6 +104,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
   };
 
   const handleOrigenChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
+    console.log('Origen changed:', location, placeData);
     setValue('origen', location);
     
     if (placeData && placeData.geometry?.location) {
@@ -114,10 +112,32 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
       const lng = placeData.geometry.location.lng();
       setValue('origen_lat', lat);
       setValue('origen_lng', lng);
+      
+      // Extract province and city from address components
+      if (placeData.address_components) {
+        let provincia = '';
+        let ciudad = '';
+        
+        for (const component of placeData.address_components) {
+          const types = component.types;
+          
+          if (types.includes('administrative_area_level_1')) {
+            provincia = component.long_name;
+          }
+          
+          if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+            ciudad = component.long_name;
+          }
+        }
+        
+        setValue('origen_provincia', provincia);
+        setValue('origen_ciudad', ciudad);
+      }
     }
   };
 
   const handleDestinoChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
+    console.log('Destino changed:', location, placeData);
     setValue('destino', location);
     
     if (placeData && placeData.geometry?.location) {
@@ -125,12 +145,32 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
       const lng = placeData.geometry.location.lng();
       setValue('destino_lat', lat);
       setValue('destino_lng', lng);
+      
+      // Extract province and city from address components
+      if (placeData.address_components) {
+        let provincia = '';
+        let ciudad = '';
+        
+        for (const component of placeData.address_components) {
+          const types = component.types;
+          
+          if (types.includes('administrative_area_level_1')) {
+            provincia = component.long_name;
+          }
+          
+          if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+            ciudad = component.long_name;
+          }
+        }
+        
+        setValue('destino_provincia', provincia);
+        setValue('destino_ciudad', ciudad);
+      }
     }
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Form Section */}
       <div className="space-y-6">
         {isCopy && (
           <Alert>
@@ -142,7 +182,6 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         )}
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-          {/* ... keep existing code (Información de la Carga card) */}
           <Card>
             <CardHeader>
               <CardTitle>Información de la Carga</CardTitle>
@@ -226,7 +265,6 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
             </CardContent>
           </Card>
 
-          {/* ... keep existing code (Fechas, Tarifa y Pago, Observaciones cards) */}
           <Card>
             <CardHeader>
               <CardTitle>Fechas</CardTitle>
@@ -406,7 +444,6 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         </form>
       </div>
 
-      {/* Map Section */}
       <div className="lg:sticky lg:top-4">
         <Card>
           <CardHeader>
