@@ -18,6 +18,10 @@ export const cargoSchema = z.object({
   origen_lng: z.number().optional(),
   destino_lat: z.number().optional(),
   destino_lng: z.number().optional(),
+  origen_provincia: z.string().optional(),
+  origen_ciudad: z.string().optional(),
+  destino_provincia: z.string().optional(),
+  destino_ciudad: z.string().optional(),
 });
 
 export type CargoFormData = z.infer<typeof cargoSchema>;
