@@ -12,24 +12,38 @@ export const useCargoSubmission = () => {
       throw new Error("Usuario no autenticado");
     }
 
-    // Added error handling and more detailed error messages
     try {
-      console.log("Submitting cargo with user ID:", userData.user.id);
-      console.log("Data received:", data);
-      
-      // Handle tarifa properly - ensure it's a valid number
+      console.log("Raw data received:", data);
+
+      // Sanitize function to convert empty strings to null
+      const sanitizeValue = (value: any, isNumeric = false): any => {
+        if (value === null || value === undefined || value === '' || value === 'undefined') {
+          return null;
+        }
+        if (isNumeric) {
+          const numValue = Number(value);
+          return isNaN(numValue) ? null : numValue;
+        }
+        return value;
+      };
+
+      // Handle tarifa with strict validation
       let tarifaValue: number;
-      if (data.tarifa === null || data.tarifa === undefined || data.tarifa === '') {
+      const rawTarifa = data.tarifa;
+      
+      console.log("Processing tarifa:", rawTarifa, "type:", typeof rawTarifa);
+      
+      if (rawTarifa === null || rawTarifa === undefined || rawTarifa === '') {
         throw new Error("La tarifa es requerida");
       }
       
       // Convert to number if it's a string
-      if (typeof data.tarifa === 'string') {
+      if (typeof rawTarifa === 'string') {
         // Remove any non-numeric characters except dots and commas
-        const cleanedTarifa = data.tarifa.replace(/[^\d.,]/g, '').replace(',', '.');
+        const cleanedTarifa = rawTarifa.replace(/[^\d.,]/g, '').replace(',', '.');
         tarifaValue = parseFloat(cleanedTarifa);
       } else {
-        tarifaValue = Number(data.tarifa);
+        tarifaValue = Number(rawTarifa);
       }
       
       // Validate the number
@@ -39,65 +53,75 @@ export const useCargoSubmission = () => {
 
       // Handle cantidad_cargas properly
       let cantidadCargasValue: number = 1;
-      if (data.cantidad_cargas !== null && data.cantidad_cargas !== undefined) {
+      if (data.cantidad_cargas !== null && data.cantidad_cargas !== undefined && data.cantidad_cargas !== '') {
         cantidadCargasValue = Number(data.cantidad_cargas);
         if (isNaN(cantidadCargasValue) || cantidadCargasValue < 1) {
           cantidadCargasValue = 1;
         }
       }
 
-      // Handle coordinates - convert empty strings, undefined, or NaN to null
-      const validateCoordinate = (coord: any): number | null => {
-        if (coord === null || coord === undefined || coord === '' || coord === 'undefined') {
-          return null;
-        }
-        const numCoord = Number(coord);
-        return isNaN(numCoord) ? null : numCoord;
-      };
+      // Sanitize coordinates
+      const origenLat = sanitizeValue(data.origen_lat, true);
+      const origenLng = sanitizeValue(data.origen_lng, true);
+      const destinoLat = sanitizeValue(data.destino_lat, true);
+      const destinoLng = sanitizeValue(data.destino_lng, true);
 
-      const origenLat = validateCoordinate(data.origen_lat);
-      const origenLng = validateCoordinate(data.origen_lng);
-      const destinoLat = validateCoordinate(data.destino_lat);
-      const destinoLng = validateCoordinate(data.destino_lng);
-
-      console.log("Validated coordinates:", {
-        origen_lat: origenLat,
-        origen_lng: origenLng,
-        destino_lat: destinoLat,
-        destino_lng: destinoLng
-      });
-
-      const { error } = await supabase.from("cargas").insert({
-        origen: data.origen,
-        origen_detalle: data.origen_detalle,
-        origen_provincia: data.origen_provincia,
-        origen_ciudad: data.origen_ciudad,
-        destino: data.destino,
-        destino_detalle: data.destino_detalle,
-        destino_provincia: data.destino_provincia,
-        destino_ciudad: data.destino_ciudad,
+      // Sanitize all text fields to avoid empty strings
+      const cleanedData = {
+        origen: data.origen || null,
+        origen_detalle: sanitizeValue(data.origen_detalle),
+        origen_provincia: sanitizeValue(data.origen_provincia),
+        origen_ciudad: sanitizeValue(data.origen_ciudad),
+        destino: data.destino || null,
+        destino_detalle: sanitizeValue(data.destino_detalle),
+        destino_provincia: sanitizeValue(data.destino_provincia),
+        destino_ciudad: sanitizeValue(data.destino_ciudad),
         fecha_carga_desde: new Date(data.fecha_carga_desde).toISOString(),
         fecha_carga_hasta: data.fecha_carga_hasta ? new Date(data.fecha_carga_hasta).toISOString() : null,
         cantidad_cargas: cantidadCargasValue,
-        tipo_carga: data.tipo_carga,
-        tipo_camion: data.tipo_camion,
+        tipo_carga: data.tipo_carga || null,
+        tipo_camion: data.tipo_camion || null,
         tarifa: tarifaValue,
-        tipo_tarifa: data.tipo_tarifa,
-        tarifa_aproximada: data.tarifa_aproximada,
-        modo_pago: data.modo_pago,
-        observaciones: data.observaciones || null,
+        tipo_tarifa: data.tipo_tarifa || 'por_viaje',
+        tarifa_aproximada: data.tarifa_aproximada || false,
+        modo_pago: sanitizeValue(data.modo_pago),
+        observaciones: sanitizeValue(data.observaciones),
         origen_lat: origenLat,
         origen_lng: origenLng,
         destino_lat: destinoLat,
         destino_lng: destinoLng,
         estado: "disponible",
         usuario_id: userData.user.id,
-      });
+      };
+
+      console.log("Cleaned data before insert:", cleanedData);
+      
+      // Validate required fields
+      if (!cleanedData.origen) {
+        throw new Error("El origen es requerido");
+      }
+      if (!cleanedData.destino) {
+        throw new Error("El destino es requerido");
+      }
+      if (!cleanedData.tipo_carga) {
+        throw new Error("El tipo de carga es requerido");
+      }
+      if (!cleanedData.tipo_camion) {
+        throw new Error("El tipo de camión es requerido");
+      }
+
+      const { error } = await supabase.from("cargas").insert(cleanedData);
 
       if (error) {
         console.error("Error submitting cargo:", error);
+        console.error("Error details:", error.details);
+        console.error("Error hint:", error.hint);
+        console.error("Error message:", error.message);
         throw new Error(`Error al publicar carga: ${error.message}`);
       }
+
+      console.log("Cargo submitted successfully!");
+      
     } catch (error: any) {
       console.error("Error in submitCargo:", error);
       throw error;

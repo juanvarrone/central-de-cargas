@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Marker } from "@react-google-maps/api";
 import { TruckWithLocation, SelectedTruck } from "./useTruckMap";
@@ -20,13 +19,13 @@ const TruckMarkers = ({ trucks, onSelectTruck }: TruckMarkersProps) => {
   });
 
   const getDestinationIcon = () => ({
-    path: "M2 3l20 0 0 2-2 0 0 12-16 0 0-12-2 0 0-2z M6 5l0 10 12 0 0-10-12 0z", // Bandera simple
-    fillColor: "#ef4444",
+    path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+    fillColor: "#DC2626",
     fillOpacity: 1,
     strokeWeight: 2,
     strokeColor: "#991b1b",
-    scale: 0.75, // Ligeramente más pequeño que el doble original
-    anchor: new google.maps.Point(12, 8),
+    scale: 1.0,
+    anchor: new google.maps.Point(12, 17),
   });
 
   return (
