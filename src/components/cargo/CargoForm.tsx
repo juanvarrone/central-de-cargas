@@ -40,6 +40,7 @@ interface CargoFormProps {
 const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFormProps) => {
   const [origenValid, setOrigenValid] = useState(false);
   const [destinoValid, setDestinoValid] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState<string>('');
 
   const {
     register,
@@ -97,16 +98,38 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
   const destino = watch('destino');
 
   const handleFormSubmit = async (data: CargoFormData) => {
-    // Validate Google Places selections before submitting
-    if (!origenValid) {
-      alert('Debe seleccionar un origen válido de la lista de Google Places');
+    console.log("📝 Form submission started...");
+    console.log("Form data:", data);
+    console.log("Origen valid:", origenValid, "Destino valid:", destinoValid);
+
+    setSubmissionStatus('Validando ubicaciones...');
+
+    // More lenient validation - allow submission if there's text in origin/destination
+    const hasOriginText = data.origen && data.origen.trim().length > 0;
+    const hasDestinationText = data.destino && data.destino.trim().length > 0;
+
+    if (!hasOriginText) {
+      alert('Debe ingresar un origen válido');
+      setSubmissionStatus('');
       return;
     }
     
-    if (!destinoValid) {
-      alert('Debe seleccionar un destino válido de la lista de Google Places');
+    if (!hasDestinationText) {
+      alert('Debe ingresar un destino válido');
+      setSubmissionStatus('');
       return;
     }
+
+    // If Google Places wasn't used, that's OK - we'll still allow submission
+    if (!origenValid && hasOriginText) {
+      console.log("⚠️ Origen not validated by Google Places, but has text - allowing submission");
+    }
+    
+    if (!destinoValid && hasDestinationText) {
+      console.log("⚠️ Destino not validated by Google Places, but has text - allowing submission");
+    }
+
+    setSubmissionStatus('Preparando datos...');
 
     // Ensure coordinates are properly set - if not valid, set to null
     const formData = {
@@ -117,12 +140,21 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
       destino_lng: data.destino_lng || null,
     };
 
-    console.log("Form data before submit:", formData);
-    await onSubmit(formData);
+    console.log("📤 Final form data before submit:", formData);
+    
+    try {
+      setSubmissionStatus('Publicando carga...');
+      await onSubmit(formData);
+      setSubmissionStatus('¡Carga publicada exitosamente!');
+    } catch (error) {
+      console.error("❌ Form submission error:", error);
+      setSubmissionStatus('');
+      throw error;
+    }
   };
 
   const handleOrigenChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
-    console.log('Origen changed:', location, placeData);
+    console.log('🌍 Origen changed:', location, placeData);
     setValue('origen', location);
     
     if (placeData && placeData.geometry?.location) {
@@ -152,7 +184,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         setValue('origen_ciudad', ciudad);
       }
     } else {
-      // If no valid place data, clear coordinates
+      // If no valid place data, clear coordinates but don't block submission
       setValue('origen_lat', null);
       setValue('origen_lng', null);
       setValue('origen_provincia', '');
@@ -161,7 +193,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
   };
 
   const handleDestinoChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
-    console.log('Destino changed:', location, placeData);
+    console.log('🌍 Destino changed:', location, placeData);
     setValue('destino', location);
     
     if (placeData && placeData.geometry?.location) {
@@ -191,7 +223,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         setValue('destino_ciudad', ciudad);
       }
     } else {
-      // If no valid place data, clear coordinates
+      // If no valid place data, clear coordinates but don't block submission
       setValue('destino_lat', null);
       setValue('destino_lng', null);
       setValue('destino_provincia', '');
@@ -207,6 +239,15 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
             <Info className="h-4 w-4" />
             <AlertDescription>
               Se han copiado los datos de una carga existente. Modifique las fechas y cualquier otro dato según sea necesario antes de publicar.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {submissionStatus && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              {submissionStatus}
             </AlertDescription>
           </Alert>
         )}
@@ -295,6 +336,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
             </CardContent>
           </Card>
 
+          
           <Card>
             <CardHeader>
               <CardTitle>Fechas</CardTitle>
@@ -380,6 +422,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
             </CardContent>
           </Card>
 
+          
           <Card>
             <CardHeader>
               <CardTitle>Tarifa y Pago</CardTitle>
@@ -444,6 +487,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
             </CardContent>
           </Card>
 
+          
           <Card>
             <CardHeader>
               <CardTitle>Observaciones</CardTitle>
@@ -464,11 +508,11 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
           <div className="flex justify-end">
             <Button 
               type="submit" 
-              disabled={loading || !origenValid || !destinoValid} 
+              disabled={loading} 
               className="w-full md:w-auto"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? 'Publicando...' : 'Publicar Carga'}
+              {loading ? (submissionStatus || 'Publicando...') : 'Publicar Carga'}
             </Button>
           </div>
         </form>

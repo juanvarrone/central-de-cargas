@@ -3,44 +3,59 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const useCargoSubmission = () => {
   const submitCargo = async (data: any) => {
-    // Get the current user
+    console.log("🚀 Starting cargo submission process...");
+    console.log("📦 Raw form data received:", data);
+
+    // Step 1: Authentication check
+    console.log("🔒 Checking authentication...");
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
-    // Check if user is authenticated
     if (userError || !userData.user) {
-      console.error("Authentication error:", userError);
+      console.error("❌ Authentication error:", userError);
       throw new Error("Usuario no autenticado");
     }
+    console.log("✅ User authenticated:", userData.user.id);
 
     try {
-      console.log("Raw data received:", data);
-
+      // Step 2: Data sanitization
+      console.log("🧹 Starting data sanitization...");
+      
       // Sanitize function to convert empty strings to null
       const sanitizeValue = (value: any, isNumeric = false): any => {
+        console.log(`🔍 Sanitizing value: ${JSON.stringify(value)} (isNumeric: ${isNumeric})`);
+        
         if (value === null || value === undefined || value === '' || value === 'undefined') {
+          console.log("→ Converting to null");
           return null;
         }
+        
         if (isNumeric) {
           const numValue = Number(value);
-          return isNaN(numValue) ? null : numValue;
+          const result = isNaN(numValue) ? null : numValue;
+          console.log(`→ Numeric conversion result: ${result}`);
+          return result;
         }
+        
+        console.log(`→ Keeping as: ${value}`);
         return value;
       };
 
-      // Handle tarifa with strict validation
+      // Step 3: Handle tarifa with detailed validation
+      console.log("💰 Processing tarifa...");
       let tarifaValue: number;
       const rawTarifa = data.tarifa;
       
-      console.log("Processing tarifa:", rawTarifa, "type:", typeof rawTarifa);
+      console.log("Raw tarifa value:", rawTarifa, "type:", typeof rawTarifa);
       
       if (rawTarifa === null || rawTarifa === undefined || rawTarifa === '') {
+        console.error("❌ Tarifa is required but empty");
         throw new Error("La tarifa es requerida");
       }
       
       // Convert to number if it's a string
       if (typeof rawTarifa === 'string') {
-        // Remove any non-numeric characters except dots and commas
         const cleanedTarifa = rawTarifa.replace(/[^\d.,]/g, '').replace(',', '.');
+        console.log("Cleaned tarifa string:", cleanedTarifa);
         tarifaValue = parseFloat(cleanedTarifa);
       } else {
         tarifaValue = Number(rawTarifa);
@@ -48,25 +63,60 @@ export const useCargoSubmission = () => {
       
       // Validate the number
       if (isNaN(tarifaValue) || tarifaValue <= 0) {
+        console.error("❌ Invalid tarifa value:", tarifaValue);
         throw new Error("La tarifa debe ser un número válido mayor a 0");
       }
+      console.log("✅ Tarifa validated:", tarifaValue);
 
-      // Handle cantidad_cargas properly
+      // Step 4: Handle cantidad_cargas
+      console.log("📊 Processing cantidad_cargas...");
       let cantidadCargasValue: number = 1;
       if (data.cantidad_cargas !== null && data.cantidad_cargas !== undefined && data.cantidad_cargas !== '') {
         cantidadCargasValue = Number(data.cantidad_cargas);
         if (isNaN(cantidadCargasValue) || cantidadCargasValue < 1) {
+          console.log("⚠️ Invalid cantidad_cargas, defaulting to 1");
           cantidadCargasValue = 1;
         }
       }
+      console.log("✅ Cantidad cargas:", cantidadCargasValue);
 
-      // Sanitize coordinates
+      // Step 5: Process coordinates
+      console.log("🗺️ Processing coordinates...");
       const origenLat = sanitizeValue(data.origen_lat, true);
       const origenLng = sanitizeValue(data.origen_lng, true);
       const destinoLat = sanitizeValue(data.destino_lat, true);
       const destinoLng = sanitizeValue(data.destino_lng, true);
+      
+      console.log("Coordinates processed:", {
+        origenLat,
+        origenLng,
+        destinoLat,
+        destinoLng
+      });
 
-      // Sanitize all text fields to avoid empty strings
+      // Step 6: Process dates
+      console.log("📅 Processing dates...");
+      let fechaCargaDesde: string;
+      let fechaCargaHasta: string | null = null;
+
+      try {
+        if (!data.fecha_carga_desde) {
+          throw new Error("La fecha de carga desde es requerida");
+        }
+        fechaCargaDesde = new Date(data.fecha_carga_desde).toISOString();
+        console.log("✅ Fecha desde processed:", fechaCargaDesde);
+
+        if (data.fecha_carga_hasta) {
+          fechaCargaHasta = new Date(data.fecha_carga_hasta).toISOString();
+          console.log("✅ Fecha hasta processed:", fechaCargaHasta);
+        }
+      } catch (dateError) {
+        console.error("❌ Date processing error:", dateError);
+        throw new Error("Error en el formato de fechas");
+      }
+
+      // Step 7: Create clean data object
+      console.log("📋 Creating clean data object...");
       const cleanedData = {
         origen: data.origen || null,
         origen_detalle: sanitizeValue(data.origen_detalle),
@@ -76,8 +126,8 @@ export const useCargoSubmission = () => {
         destino_detalle: sanitizeValue(data.destino_detalle),
         destino_provincia: sanitizeValue(data.destino_provincia),
         destino_ciudad: sanitizeValue(data.destino_ciudad),
-        fecha_carga_desde: new Date(data.fecha_carga_desde).toISOString(),
-        fecha_carga_hasta: data.fecha_carga_hasta ? new Date(data.fecha_carga_hasta).toISOString() : null,
+        fecha_carga_desde: fechaCargaDesde,
+        fecha_carga_hasta: fechaCargaHasta,
         cantidad_cargas: cantidadCargasValue,
         tipo_carga: data.tipo_carga || null,
         tipo_camion: data.tipo_camion || null,
@@ -94,36 +144,53 @@ export const useCargoSubmission = () => {
         usuario_id: userData.user.id,
       };
 
-      console.log("Cleaned data before insert:", cleanedData);
+      console.log("📦 Final cleaned data:", cleanedData);
       
-      // Validate required fields
-      if (!cleanedData.origen) {
-        throw new Error("El origen es requerido");
-      }
-      if (!cleanedData.destino) {
-        throw new Error("El destino es requerido");
-      }
-      if (!cleanedData.tipo_carga) {
-        throw new Error("El tipo de carga es requerido");
-      }
-      if (!cleanedData.tipo_camion) {
-        throw new Error("El tipo de camión es requerido");
+      // Step 8: Validate required fields
+      console.log("✅ Validating required fields...");
+      const requiredFields = [
+        { field: 'origen', value: cleanedData.origen, name: 'origen' },
+        { field: 'destino', value: cleanedData.destino, name: 'destino' },
+        { field: 'tipo_carga', value: cleanedData.tipo_carga, name: 'tipo de carga' },
+        { field: 'tipo_camion', value: cleanedData.tipo_camion, name: 'tipo de camión' }
+      ];
+
+      for (const { field, value, name } of requiredFields) {
+        if (!value) {
+          console.error(`❌ Missing required field: ${field}`);
+          throw new Error(`El ${name} es requerido`);
+        }
+        console.log(`✅ ${field} is valid:`, value);
       }
 
-      const { error } = await supabase.from("cargas").insert(cleanedData);
+      // Step 9: Database insertion with timeout
+      console.log("💾 Inserting into database...");
+      
+      const insertPromise = supabase.from("cargas").insert(cleanedData);
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("La operación tardó demasiado tiempo")), 30000);
+      });
+
+      const { error } = await Promise.race([insertPromise, timeoutPromise]) as any;
 
       if (error) {
-        console.error("Error submitting cargo:", error);
-        console.error("Error details:", error.details);
-        console.error("Error hint:", error.hint);
-        console.error("Error message:", error.message);
+        console.error("❌ Database insertion error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw new Error(`Error al publicar carga: ${error.message}`);
       }
 
-      console.log("Cargo submitted successfully!");
+      console.log("🎉 Cargo submitted successfully!");
       
     } catch (error: any) {
-      console.error("Error in submitCargo:", error);
+      console.error("💥 Error in submitCargo:", error);
+      console.error("Error stack:", error.stack);
       throw error;
     }
   };
