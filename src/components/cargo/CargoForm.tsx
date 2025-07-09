@@ -57,6 +57,10 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
       modo_pago: '',
       origen: '',
       destino: '',
+      origen_lat: null,
+      origen_lng: null,
+      destino_lat: null,
+      destino_lng: null,
       ...defaultValues,
     },
   });
@@ -71,6 +75,10 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         modo_pago: '',
         origen: '',
         destino: '',
+        origen_lat: null,
+        origen_lng: null,
+        destino_lat: null,
+        destino_lng: null,
         ...defaultValues,
       });
       
@@ -100,7 +108,17 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
       return;
     }
 
-    await onSubmit(data);
+    // Ensure coordinates are properly set - if not valid, set to null
+    const formData = {
+      ...data,
+      origen_lat: data.origen_lat || null,
+      origen_lng: data.origen_lng || null,
+      destino_lat: data.destino_lat || null,
+      destino_lng: data.destino_lng || null,
+    };
+
+    console.log("Form data before submit:", formData);
+    await onSubmit(formData);
   };
 
   const handleOrigenChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
@@ -133,6 +151,12 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         setValue('origen_provincia', provincia);
         setValue('origen_ciudad', ciudad);
       }
+    } else {
+      // If no valid place data, clear coordinates
+      setValue('origen_lat', null);
+      setValue('origen_lng', null);
+      setValue('origen_provincia', '');
+      setValue('origen_ciudad', '');
     }
   };
 
@@ -166,6 +190,12 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         setValue('destino_provincia', provincia);
         setValue('destino_ciudad', ciudad);
       }
+    } else {
+      // If no valid place data, clear coordinates
+      setValue('destino_lat', null);
+      setValue('destino_lng', null);
+      setValue('destino_provincia', '');
+      setValue('destino_ciudad', '');
     }
   };
 

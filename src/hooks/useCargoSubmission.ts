@@ -46,6 +46,27 @@ export const useCargoSubmission = () => {
         }
       }
 
+      // Handle coordinates - convert empty strings, undefined, or NaN to null
+      const validateCoordinate = (coord: any): number | null => {
+        if (coord === null || coord === undefined || coord === '' || coord === 'undefined') {
+          return null;
+        }
+        const numCoord = Number(coord);
+        return isNaN(numCoord) ? null : numCoord;
+      };
+
+      const origenLat = validateCoordinate(data.origen_lat);
+      const origenLng = validateCoordinate(data.origen_lng);
+      const destinoLat = validateCoordinate(data.destino_lat);
+      const destinoLng = validateCoordinate(data.destino_lng);
+
+      console.log("Validated coordinates:", {
+        origen_lat: origenLat,
+        origen_lng: origenLng,
+        destino_lat: destinoLat,
+        destino_lng: destinoLng
+      });
+
       const { error } = await supabase.from("cargas").insert({
         origen: data.origen,
         origen_detalle: data.origen_detalle,
@@ -65,10 +86,10 @@ export const useCargoSubmission = () => {
         tarifa_aproximada: data.tarifa_aproximada,
         modo_pago: data.modo_pago,
         observaciones: data.observaciones || null,
-        origen_lat: data.origen_lat,
-        origen_lng: data.origen_lng,
-        destino_lat: data.destino_lat,
-        destino_lng: data.destino_lng,
+        origen_lat: origenLat,
+        origen_lng: origenLng,
+        destino_lat: destinoLat,
+        destino_lng: destinoLng,
         estado: "disponible",
         usuario_id: userData.user.id,
       });
