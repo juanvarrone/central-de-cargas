@@ -19,21 +19,23 @@ export const useCargoSubmission = () => {
       
       // Handle tarifa properly - ensure it's a valid number
       let tarifaValue: number;
-      if (data.tarifa === null || data.tarifa === undefined || data.tarifa === '') {
-        throw new Error("La tarifa es requerida");
+      
+      // Check if tarifa is null, undefined, empty string, or 0
+      if (data.tarifa === null || data.tarifa === undefined || data.tarifa === '' || data.tarifa === 0) {
+        throw new Error("La tarifa es requerida y debe ser mayor a 0");
       }
       
       // Convert to number if it's a string
       if (typeof data.tarifa === 'string') {
-        // Remove any non-numeric characters except dots and commas
-        const cleanedTarifa = data.tarifa.replace(/[^\d.,]/g, '').replace(',', '.');
+        // Remove any non-numeric characters except dots and commas, then convert comma to dot
+        const cleanedTarifa = data.tarifa.trim().replace(/[^\d.,]/g, '').replace(',', '.');
         tarifaValue = parseFloat(cleanedTarifa);
       } else {
         tarifaValue = Number(data.tarifa);
       }
       
-      // Validate the number
-      if (isNaN(tarifaValue) || tarifaValue <= 0) {
+      // Validate the number is valid and positive
+      if (isNaN(tarifaValue) || !isFinite(tarifaValue) || tarifaValue <= 0) {
         throw new Error("La tarifa debe ser un número válido mayor a 0");
       }
 
@@ -67,24 +69,25 @@ export const useCargoSubmission = () => {
         destino_lng: destinoLng
       });
 
-      const { error } = await supabase.from("cargas").insert({
-        origen: data.origen,
-        origen_detalle: data.origen_detalle,
-        origen_provincia: data.origen_provincia,
-        origen_ciudad: data.origen_ciudad,
-        destino: data.destino,
-        destino_detalle: data.destino_detalle,
-        destino_provincia: data.destino_provincia,
-        destino_ciudad: data.destino_ciudad,
+      // Prepare the insert data with clean values
+      const insertData = {
+        origen: data.origen || '',
+        origen_detalle: data.origen_detalle || null,
+        origen_provincia: data.origen_provincia || null,
+        origen_ciudad: data.origen_ciudad || null,
+        destino: data.destino || '',
+        destino_detalle: data.destino_detalle || null,
+        destino_provincia: data.destino_provincia || null,
+        destino_ciudad: data.destino_ciudad || null,
         fecha_carga_desde: new Date(data.fecha_carga_desde).toISOString(),
         fecha_carga_hasta: data.fecha_carga_hasta ? new Date(data.fecha_carga_hasta).toISOString() : null,
         cantidad_cargas: cantidadCargasValue,
-        tipo_carga: data.tipo_carga,
-        tipo_camion: data.tipo_camion,
+        tipo_carga: data.tipo_carga || '',
+        tipo_camion: data.tipo_camion || '',
         tarifa: tarifaValue,
-        tipo_tarifa: data.tipo_tarifa,
-        tarifa_aproximada: data.tarifa_aproximada,
-        modo_pago: data.modo_pago,
+        tipo_tarifa: data.tipo_tarifa || 'por_viaje',
+        tarifa_aproximada: Boolean(data.tarifa_aproximada),
+        modo_pago: data.modo_pago || null,
         observaciones: data.observaciones || null,
         origen_lat: origenLat,
         origen_lng: origenLng,
@@ -92,7 +95,11 @@ export const useCargoSubmission = () => {
         destino_lng: destinoLng,
         estado: "disponible",
         usuario_id: userData.user.id,
-      });
+      };
+
+      console.log("Insert data prepared:", insertData);
+
+      const { error } = await supabase.from("cargas").insert(insertData);
 
       if (error) {
         console.error("Error submitting cargo:", error);
