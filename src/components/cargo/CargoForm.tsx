@@ -26,9 +26,11 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { cargoSchema, type CargoFormData } from '@/types/cargo';
 import MapLocationInput from '@/components/MapLocationInput';
+import MapLocationInputFallback from '@/components/MapLocationInputFallback';
 import PublishCargoMap from './PublishCargoMap';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
+import { useGoogleMaps } from '@/context/GoogleMapsContext';
 
 interface CargoFormProps {
   onSubmit: (data: CargoFormData) => Promise<void>;
@@ -40,6 +42,10 @@ interface CargoFormProps {
 const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFormProps) => {
   const [origenValid, setOrigenValid] = useState(false);
   const [destinoValid, setDestinoValid] = useState(false);
+  const { isLoaded, loadError, isApiKeyLoading, apiKeyError } = useGoogleMaps();
+  
+  // Determine if we should use Google Maps or fallback
+  const shouldUseGoogleMaps = isLoaded && !loadError && !apiKeyError;
 
   const {
     register,
@@ -97,18 +103,21 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
   const destino = watch('destino');
 
   const handleFormSubmit = async (data: CargoFormData) => {
-    // Validate Google Places selections before submitting
-    if (!origenValid) {
-      alert('Debe seleccionar un origen válido de la lista de Google Places');
+    console.log('[CargoForm] Starting form submission with validation check');
+    console.log('[CargoForm] Validation status:', { origenValid, destinoValid });
+    
+    // More flexible validation - allow submission if location has text, even without Google Places selection
+    if (!data.origen || data.origen.trim().length < 3) {
+      alert('Debe ingresar un origen válido (mínimo 3 caracteres)');
       return;
     }
     
-    if (!destinoValid) {
-      alert('Debe seleccionar un destino válido de la lista de Google Places');
+    if (!data.destino || data.destino.trim().length < 3) {
+      alert('Debe ingresar un destino válido (mínimo 3 caracteres)');
       return;
     }
 
-    // Ensure coordinates are properly set - if not valid, set to null
+    // Prepare form data with fallback coordinates
     const formData = {
       ...data,
       origen_lat: data.origen_lat || null,
@@ -117,12 +126,12 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
       destino_lng: data.destino_lng || null,
     };
 
-    console.log("Form data before submit:", formData);
+    console.log('[CargoForm] Submitting form data:', formData);
     await onSubmit(formData);
   };
 
   const handleOrigenChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
-    console.log('Origen changed:', location, placeData);
+    console.log('[CargoForm] Origen changed:', location, !!placeData);
     setValue('origen', location);
     
     if (placeData && placeData.geometry?.location) {
@@ -152,7 +161,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         setValue('origen_ciudad', ciudad);
       }
     } else {
-      // If no valid place data, clear coordinates
+      // If no valid place data, clear coordinates but keep the location text
       setValue('origen_lat', null);
       setValue('origen_lng', null);
       setValue('origen_provincia', '');
@@ -160,8 +169,18 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
     }
   };
 
+  const handleOrigenChangeFallback = (location: string) => {
+    console.log('[CargoForm] Origen changed (fallback):', location);
+    setValue('origen', location);
+    // Clear coordinates since we can't geocode
+    setValue('origen_lat', null);
+    setValue('origen_lng', null);
+    setValue('origen_provincia', '');
+    setValue('origen_ciudad', '');
+  };
+
   const handleDestinoChange = (location: string, placeData?: google.maps.places.PlaceResult) => {
-    console.log('Destino changed:', location, placeData);
+    console.log('[CargoForm] Destino changed:', location, !!placeData);
     setValue('destino', location);
     
     if (placeData && placeData.geometry?.location) {
@@ -191,12 +210,22 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
         setValue('destino_ciudad', ciudad);
       }
     } else {
-      // If no valid place data, clear coordinates
+      // If no valid place data, clear coordinates but keep the location text
       setValue('destino_lat', null);
       setValue('destino_lng', null);
       setValue('destino_provincia', '');
       setValue('destino_ciudad', '');
     }
+  };
+
+  const handleDestinoChangeFallback = (location: string) => {
+    console.log('[CargoForm] Destino changed (fallback):', location);
+    setValue('destino', location);
+    // Clear coordinates since we can't geocode
+    setValue('destino_lat', null);
+    setValue('destino_lng', null);
+    setValue('destino_provincia', '');
+    setValue('destino_ciudad', '');
   };
 
   return (
@@ -267,30 +296,60 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
               <CardTitle>Ubicaciones</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <MapLocationInput
-                id="origen"
-                label="Origen"
-                value={origen}
-                onChange={handleOrigenChange}
-                onValidationChange={setOrigenValid}
-                placeholder="Ingrese dirección de origen"
-                required
-              />
-              {errors.origen && (
-                <p className="text-sm text-red-500">{errors.origen.message}</p>
-              )}
+              {!isApiKeyLoading && shouldUseGoogleMaps ? (
+                <>
+                  <MapLocationInput
+                    id="origen"
+                    label="Origen"
+                    value={origen}
+                    onChange={handleOrigenChange}
+                    onValidationChange={setOrigenValid}
+                    placeholder="Ingrese dirección de origen"
+                    required
+                  />
+                  {errors.origen && (
+                    <p className="text-sm text-red-500">{errors.origen.message}</p>
+                  )}
 
-              <MapLocationInput
-                id="destino"
-                label="Destino"
-                value={destino}
-                onChange={handleDestinoChange}
-                onValidationChange={setDestinoValid}
-                placeholder="Ingrese dirección de destino"
-                required
-              />
-              {errors.destino && (
-                <p className="text-sm text-red-500">{errors.destino.message}</p>
+                  <MapLocationInput
+                    id="destino"
+                    label="Destino"
+                    value={destino}
+                    onChange={handleDestinoChange}
+                    onValidationChange={setDestinoValid}
+                    placeholder="Ingrese dirección de destino"
+                    required
+                  />
+                  {errors.destino && (
+                    <p className="text-sm text-red-500">{errors.destino.message}</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <MapLocationInputFallback
+                    id="origen"
+                    label="Origen"
+                    value={origen}
+                    onChange={handleOrigenChangeFallback}
+                    placeholder="Ingrese dirección de origen"
+                    required
+                  />
+                  {errors.origen && (
+                    <p className="text-sm text-red-500">{errors.origen.message}</p>
+                  )}
+
+                  <MapLocationInputFallback
+                    id="destino"
+                    label="Destino"
+                    value={destino}
+                    onChange={handleDestinoChangeFallback}
+                    placeholder="Ingrese dirección de destino"
+                    required
+                  />
+                  {errors.destino && (
+                    <p className="text-sm text-red-500">{errors.destino.message}</p>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -464,7 +523,7 @@ const CargoForm = ({ onSubmit, loading, defaultValues, isCopy = false }: CargoFo
           <div className="flex justify-end">
             <Button 
               type="submit" 
-              disabled={loading || !origenValid || !destinoValid} 
+              disabled={loading || !origen || !destino} 
               className="w-full md:w-auto"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

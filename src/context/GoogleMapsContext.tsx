@@ -19,14 +19,25 @@ export const GoogleMapsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const { config, loading: apiKeyLoading, error: configError } = useApiConfiguration("GOOGLE_MAPS_API_KEY");
   const apiKey = config?.value || "";
   
+  console.log('[GoogleMapsProvider] Status:', {
+    apiKeyLoading,
+    hasApiKey: !!apiKey,
+    configError: !!configError
+  });
+  
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey,
     libraries,
+    // Add timeout to prevent hanging
+    id: "google-maps-script",
   });
 
+  // Provide fallback when API key loading fails
+  const shouldLoadMaps = !apiKeyLoading && !!apiKey;
+  
   const contextValue: GoogleMapsContextType = {
-    isLoaded: isLoaded && !!apiKey,
-    loadError,
+    isLoaded: shouldLoadMaps ? isLoaded : false,
+    loadError: configError || loadError,
     apiKey,
     isApiKeyLoading: apiKeyLoading,
     apiKeyError: configError,

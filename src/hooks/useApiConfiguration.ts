@@ -20,46 +20,54 @@ export const useApiConfiguration = (configKey: string) => {
       try {
         setLoading(true);
         setError(null);
-        console.log(`Fetching API configuration for key: ${configKey}`);
+        console.log(`[useApiConfiguration] Fetching config for: ${configKey}`);
         
-        // With RLS policies now in place, all users can read API configurations
-        const { data, error } = await supabase
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Configuration fetch timeout')), 10000);
+        });
+
+        const fetchPromise = supabase
           .from('api_configurations')
           .select('*')
           .eq('key', configKey)
           .maybeSingle();
 
-        console.log(`Query result for ${configKey}:`, { data, error });
+        const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
+        console.log(`[useApiConfiguration] Result for ${configKey}:`, { hasData: !!data, error });
 
         if (error) {
-          console.error(`Error fetching configuration for ${configKey}:`, error);
-          throw error;
+          console.error(`[useApiConfiguration] Error for ${configKey}:`, error);
+          setError(error);
+          setConfig(null);
+          return;
         }
 
         if (data) {
           setConfig({
             key: data.key,
-            value: data.value, // Using the value field for the API key
+            value: data.value,
             url: data.url
           });
-          console.log(`Configuration loaded for ${configKey}:`, {
+          console.log(`[useApiConfiguration] Config loaded for ${configKey}:`, {
             hasValue: !!data.value,
-            valueLength: data.value ? data.value.length : 0,
-            url: data.url
+            valueLength: data.value ? data.value.length : 0
           });
         } else {
-          console.warn(`No configuration found for key: ${configKey}`);
+          console.warn(`[useApiConfiguration] No config found for: ${configKey}`);
           setConfig(null);
         }
       } catch (err: any) {
-        console.error(`Error getting API configuration ${configKey}:`, err);
+        console.error(`[useApiConfiguration] Error for ${configKey}:`, err);
         setError(err);
+        setConfig(null);
         
-        // Only show toast for critical errors, not missing configs
-        if (err.message && !err.message.includes('No rows')) {
+        // Only show toast for timeout errors
+        if (err.message?.includes('timeout')) {
           toast({
             title: "Error de configuración",
-            description: `No se pudo cargar la configuración de ${configKey}: ${err.message}`,
+            description: `Tiempo de espera agotado para ${configKey}`,
             variant: "destructive"
           });
         }

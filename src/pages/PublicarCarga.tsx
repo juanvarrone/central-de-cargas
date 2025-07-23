@@ -36,12 +36,14 @@ const PublicarCarga = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
+      console.log('[PublicarCarga] Fetching user...');
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        console.log('[PublicarCarga] User fetched:', !!user);
         setUser(user);
         setAuthLoading(false);
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error('[PublicarCarga] Error fetching user:', error);
         setAuthLoading(false);
       }
     };
@@ -51,7 +53,15 @@ const PublicarCarga = () => {
 
   // Redirect if user doesn't have permission to publish loads
   useEffect(() => {
+    console.log('[PublicarCarga] Permission check:', {
+      authLoading,
+      contextLoading,
+      canPublishCarga,
+      hasUser: !!user
+    });
+    
     if (!authLoading && !contextLoading && !canPublishCarga && user) {
+      console.log('[PublicarCarga] Redirecting due to insufficient permissions');
       toast({
         title: "Acceso restringido",
         description: "No tienes permisos para publicar cargas. Esta funcionalidad es solo para Dadores de Cargas y Administradores.",
@@ -114,13 +124,23 @@ const PublicarCarga = () => {
 
   const isPremium = profile?.subscription_tier === 'premium';
 
+  console.log('[PublicarCarga] Render check:', {
+    authLoading,
+    contextLoading,
+    canPublishCarga,
+    hasUser: !!user
+  });
+
   if (authLoading || contextLoading) {
+    console.log('[PublicarCarga] Still loading...');
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
   }
+
+  console.log('[PublicarCarga] Rendering main content');
 
   return (
     <div className="min-h-screen bg-neutral-50 py-8">
