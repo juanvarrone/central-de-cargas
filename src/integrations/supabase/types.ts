@@ -505,6 +505,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action_type: string
+          attempts: number | null
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          user_id: string | null
+          window_start: string | null
+        }
+        Insert: {
+          action_type: string
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          action_type?: string
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       review_category_settings: {
         Row: {
           category: string
@@ -843,6 +873,16 @@ export type Database = {
           f_table_schema?: unknown | null
           srid?: number | null
           type?: string | null
+        }
+        Relationships: []
+      }
+      security_dashboard: {
+        Row: {
+          action: string | null
+          event_count: number | null
+          hour: string | null
+          table_name: string | null
+          unique_users: number | null
         }
         Relationships: []
       }
@@ -1341,6 +1381,10 @@ export type Database = {
         Args: { "": unknown }
         Returns: Json
       }
+      log_security_event: {
+        Args: { p_event_type: string; p_details?: Json; p_user_id?: string }
+        Returns: undefined
+      }
       longtransactionsenabled: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1533,6 +1577,10 @@ export type Database = {
       }
       postgis_wagyu_version: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      sanitize_text: {
+        Args: { input_text: string }
         Returns: string
       }
       spheroid_in: {
