@@ -1081,6 +1081,14 @@ export type Database = {
         Args: { "": unknown } | { "": unknown }
         Returns: string
       }
+      check_rate_limit: {
+        Args: {
+          action_type: string
+          max_attempts?: number
+          window_minutes?: number
+        }
+        Returns: boolean
+      }
       disablelongtransactions: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1336,6 +1344,10 @@ export type Database = {
         Args: { "": string }
         Returns: unknown
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_proj4_from_srid: {
         Args: { "": number }
         Returns: string
@@ -1365,6 +1377,13 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
       has_valid_phone: {
         Args: { user_id: string }
         Returns: boolean
@@ -1382,7 +1401,14 @@ export type Database = {
         Returns: Json
       }
       log_security_event: {
-        Args: { p_event_type: string; p_details?: Json; p_user_id?: string }
+        Args:
+          | {
+              event_type: string
+              table_name?: string
+              record_id?: string
+              details?: Json
+            }
+          | { p_event_type: string; p_details?: Json; p_user_id?: string }
         Returns: undefined
       }
       longtransactionsenabled: {
