@@ -5,6 +5,7 @@ import { PushNotificationProvider } from '@/components/PushNotificationProvider'
 import { GoogleMapsProvider } from '@/context/GoogleMapsContext'
 import App from './App.tsx'
 import './index.css'
+import './utils/supabaseMonitor.ts' // Initialize query monitoring
 
 // Create a client
 const queryClient = new QueryClient({

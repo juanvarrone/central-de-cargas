@@ -9,12 +9,18 @@ import {
 import ModuleManagement from "./ModuleManagement";
 import UserManagement from "./UserManagement";
 import ConfigurationManagement from "./ConfigurationManagement";
-import { Settings } from "lucide-react";
+import QueryMonitorPanel from "./QueryMonitorPanel";
+import { Settings, Activity } from "lucide-react";
 
 const AdminPageLayout = () => {
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Panel de Administración</h1>
+      
+      {/* Query Monitor Panel - Always visible at top */}
+      <div className="mb-8">
+        <QueryMonitorPanel />
+      </div>
       
       <Tabs defaultValue="modules" className="w-full">
         <TabsList className="mb-6">
