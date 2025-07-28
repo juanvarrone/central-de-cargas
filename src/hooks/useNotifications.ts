@@ -143,12 +143,14 @@ export const useNotifications = () => {
               // Enviar email notification automáticamente
               setTimeout(async () => {
                 try {
-                  await sendEmailNotification({
-                    user_id: newNotification.user_id,
-                    type: newNotification.type,
-                    title: newNotification.title,
-                    message: newNotification.message,
-                    link: newNotification.link
+                  await supabase.functions.invoke('send-notification-email', {
+                    body: {
+                      user_id: newNotification.user_id,
+                      type: newNotification.type,
+                      title: newNotification.title,
+                      message: newNotification.message,
+                      link: newNotification.link
+                    }
                   });
                 } catch (error) {
                   console.error('Error sending email notification:', error);
@@ -165,7 +167,7 @@ export const useNotifications = () => {
     };
 
     setupRealtimeSubscription();
-  }, [toast, sendEmailNotification]);
+  }, []);
 
   return {
     notifications,
