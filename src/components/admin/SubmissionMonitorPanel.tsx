@@ -100,7 +100,8 @@ const SubmissionMonitorPanel = () => {
         <ScrollArea className="h-[600px] w-full">
           {logs.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              No hay registros de envíos aún
+              <p>No hay registros de envíos aún</p>
+              <p className="text-sm mt-2">Los logs aparecerán aquí cuando se publiquen cargas o camiones</p>
             </div>
           ) : (
             <div className="space-y-2">
