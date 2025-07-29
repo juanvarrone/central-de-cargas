@@ -139,6 +139,22 @@ export const useCargoSubmission = () => {
         usuario_id: userData.user.id,
       };
 
+      // Log all field validations before insert
+      submissionMonitor.logBulkValidation('cargo', [
+        { field: 'origen', value: insertData.origen, isValid: !!insertData.origen, errorMessage: insertData.origen ? undefined : 'Origen requerido' },
+        { field: 'destino', value: insertData.destino, isValid: !!insertData.destino, errorMessage: insertData.destino ? undefined : 'Destino requerido' },
+        { field: 'fecha_carga_desde', value: insertData.fecha_carga_desde, isValid: !!insertData.fecha_carga_desde, errorMessage: insertData.fecha_carga_desde ? undefined : 'Fecha desde requerida' },
+        { field: 'cantidad_cargas', value: insertData.cantidad_cargas, isValid: typeof insertData.cantidad_cargas === 'number' && insertData.cantidad_cargas > 0, errorMessage: typeof insertData.cantidad_cargas === 'number' && insertData.cantidad_cargas > 0 ? undefined : 'Cantidad debe ser número > 0' },
+        { field: 'tipo_carga', value: insertData.tipo_carga, isValid: !!insertData.tipo_carga, errorMessage: insertData.tipo_carga ? undefined : 'Tipo de carga requerido' },
+        { field: 'tipo_camion', value: insertData.tipo_camion, isValid: !!insertData.tipo_camion, errorMessage: insertData.tipo_camion ? undefined : 'Tipo de camión requerido' },
+        { field: 'tarifa', value: insertData.tarifa, isValid: typeof insertData.tarifa === 'number' && insertData.tarifa > 0, errorMessage: typeof insertData.tarifa === 'number' && insertData.tarifa > 0 ? undefined : 'Tarifa debe ser número > 0' },
+        { field: 'tipo_tarifa', value: insertData.tipo_tarifa, isValid: ['por_viaje', 'por_tonelada'].includes(insertData.tipo_tarifa), errorMessage: ['por_viaje', 'por_tonelada'].includes(insertData.tipo_tarifa) ? undefined : 'Tipo tarifa inválido' },
+        { field: 'origen_lat', value: insertData.origen_lat, isValid: insertData.origen_lat === null || typeof insertData.origen_lat === 'number', errorMessage: insertData.origen_lat === null || typeof insertData.origen_lat === 'number' ? undefined : 'Latitud origen debe ser número o null' },
+        { field: 'origen_lng', value: insertData.origen_lng, isValid: insertData.origen_lng === null || typeof insertData.origen_lng === 'number', errorMessage: insertData.origen_lng === null || typeof insertData.origen_lng === 'number' ? undefined : 'Longitud origen debe ser número o null' },
+        { field: 'destino_lat', value: insertData.destino_lat, isValid: insertData.destino_lat === null || typeof insertData.destino_lat === 'number', errorMessage: insertData.destino_lat === null || typeof insertData.destino_lat === 'number' ? undefined : 'Latitud destino debe ser número o null' },
+        { field: 'destino_lng', value: insertData.destino_lng, isValid: insertData.destino_lng === null || typeof insertData.destino_lng === 'number', errorMessage: insertData.destino_lng === null || typeof insertData.destino_lng === 'number' ? undefined : 'Longitud destino debe ser número o null' },
+      ]);
+
       console.log("Insert data prepared:", insertData);
 
       const connectionLogId = submissionMonitor.logConnectionAttempt('cargo', 'Insertando datos en tabla cargas');

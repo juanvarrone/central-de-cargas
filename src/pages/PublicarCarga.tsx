@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import CargaMasivaForm from "@/components/cargo/CargaMasivaForm";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import RealTimeSubmissionLogger from "@/components/RealTimeSubmissionLogger";
+import { useSubmissionMonitor } from "@/hooks/useSubmissionMonitor";
 
 const PublicarCarga = () => {
   const [loading, setLoading] = useState(false);
@@ -177,12 +179,19 @@ const PublicarCarga = () => {
             </Dialog>
           )}
         </div>
-        <CargoForm 
-          onSubmit={handleSubmit} 
-          loading={loading} 
-          defaultValues={defaultValues}
-          isCopy={isCopy}
-        />
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2">
+            <CargoForm 
+              onSubmit={handleSubmit} 
+              loading={loading} 
+              defaultValues={defaultValues}
+              isCopy={isCopy}
+            />
+          </div>
+          <div className="xl:col-span-1">
+            <RealTimeSubmissionLogger isActive={loading} height="h-[600px]" />
+          </div>
+        </div>
       </div>
     </div>
   );
